@@ -39,17 +39,26 @@ export default function Dashboard() {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const project = getProject(projectId!);
-  if (!project) {
+  const activeVersion = useMemo(
+    () => project?.versions.find((v) => v.id === project.activeVersionId) || project?.versions[0],
+    [project]
+  );
+  const kpis = useMemo(
+    () => activeVersion ? calculateKPIs(activeVersion.inputs, scenario) : null,
+    [activeVersion, scenario]
+  );
+  const monthlyData = useMemo(
+    () => activeVersion ? getMonthlyEvolution(activeVersion.inputs, scenario) : [],
+    [activeVersion, scenario]
+  );
+
+  if (!project || !activeVersion || !kpis) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p className="text-muted-foreground">Project not found</p>
       </div>
     );
   }
-
-  const activeVersion = project.versions.find((v) => v.id === project.activeVersionId) || project.versions[0];
-  const kpis = useMemo(() => calculateKPIs(activeVersion.inputs, scenario), [activeVersion, scenario]);
-  const monthlyData = useMemo(() => getMonthlyEvolution(activeVersion.inputs, scenario), [activeVersion, scenario]);
 
   const handleNewVersion = () => {
     if (!newVersionName.trim()) return;
