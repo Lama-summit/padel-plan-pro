@@ -61,9 +61,10 @@ export function DashboardCharts({ monthlyData, kpis }: DashboardChartsProps) {
     { name: "Costs", value: Math.round(kpis.annualCosts), color: "hsl(0 72% 51%)" },
   ];
 
+  const beVal = isSafeValid(kpis.breakEvenOccupancy) ? kpis.breakEvenOccupancy.value! : 0;
   const occupancyData = [
-    { name: "Break-even", value: kpis.breakEvenOccupancy, fill: "hsl(220 13% 80%)" },
-    { name: "Current", value: kpis.weightedOccupancy, fill: kpis.weightedOccupancy >= kpis.breakEvenOccupancy ? "hsl(152 69% 41%)" : "hsl(0 72% 51%)" },
+    { name: "Break-even", value: beVal, fill: "hsl(220 13% 80%)" },
+    { name: "Current", value: kpis.weightedOccupancy, fill: kpis.weightedOccupancy >= beVal ? "hsl(152 69% 41%)" : "hsl(0 72% 51%)" },
   ];
 
   return (
