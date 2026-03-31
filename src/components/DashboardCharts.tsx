@@ -26,7 +26,6 @@ interface DashboardChartsProps {
   monthlyData: MonthlyData[];
   kpis: {
     annualCourtRevenue: number;
-    annualClassRevenue: number;
     annualOtherRevenue: number;
     annualCosts: number;
     breakEvenOccupancy: number;
