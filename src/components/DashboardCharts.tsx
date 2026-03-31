@@ -26,7 +26,6 @@ interface DashboardChartsProps {
   monthlyData: MonthlyData[];
   kpis: {
     annualCourtRevenue: number;
-    annualClassRevenue: number;
     annualOtherRevenue: number;
     annualCosts: number;
     breakEvenOccupancy: number;
@@ -57,8 +56,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export function DashboardCharts({ monthlyData, kpis }: DashboardChartsProps) {
   const revenueBreakdown = [
     { name: "Court Rental", value: Math.round(kpis.annualCourtRevenue), color: "hsl(168 76% 36%)" },
-    { name: "Classes", value: Math.round(kpis.annualClassRevenue), color: "hsl(222 60% 32%)" },
-    { name: "Other", value: Math.round(kpis.annualOtherRevenue), color: "hsl(217 91% 60%)" },
+    { name: "Other Revenue", value: Math.round(kpis.annualOtherRevenue), color: "hsl(217 91% 60%)" },
     { name: "Costs", value: Math.round(kpis.annualCosts), color: "hsl(0 72% 51%)" },
   ];
 

@@ -107,7 +107,7 @@ const CATEGORY_FIELDS: Record<Category, FieldDef[]> = {
     { key: "insuranceCosts", label: "Insurance / Month", suffix: "€" },
   ],
   financing: [
-    { key: "loanAmount", label: "Loan Amount", suffix: "€" },
+    { key: "debtPercentage", label: "Debt Percentage", suffix: "%", slider: { min: 0, max: 100, step: 5 }, helper: "% of investment financed by loan" },
     { key: "interestRate", label: "Interest Rate", suffix: "%", slider: { min: 0, max: 15, step: 0.25 } },
     { key: "loanTermYears", label: "Loan Term", suffix: "years", slider: { min: 1, max: 30, step: 1 } },
   ],

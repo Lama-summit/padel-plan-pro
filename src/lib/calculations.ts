@@ -1,71 +1,157 @@
 import { ProjectInputs, Scenario, SCENARIO_MULTIPLIERS } from "./types";
 
-export function calculateKPIs(inputs: ProjectInputs, scenario: Scenario) {
+// ─── Constants ───────────────────────────────────────────────
+const DAYS_PER_MONTH = 30;
+const MONTHS_PER_YEAR = 12;
+const PEAK_RATIO = 0.4; // 40% of hours are peak
+const OFFPEAK_RATIO = 0.6;
+
+// ─── KPI result shape ────────────────────────────────────────
+export interface KPIResult {
+  // Investment
+  totalInvestment: number;
+
+  // Monthly
+  totalHoursMonth: number;
+  peakHoursMonth: number;
+  offPeakHoursMonth: number;
+  courtRevenueMonth: number;
+  otherRevenueMonth: number;
+  totalRevenueMonth: number;
+  ebitdaMonth: number;
+  loanPaymentMonth: number;
+  netCashflowMonth: number;
+
+  // Annual
+  totalRevenueYear: number;
+  ebitdaYear: number;
+  netCashflowYear: number;
+
+  // Ratios
+  ebitdaMargin: number; // 0-1
+  roi: number;          // percentage
+  paybackYears: number;
+
+  // Break-even
+  breakEvenOccupancy: number; // 0-100
+  weightedOccupancy: number;  // 0-100
+
+  // Financing
+  loanAmount: number;
+
+  // For charts
+  annualCourtRevenue: number;
+  annualOtherRevenue: number;
+  annualCosts: number;
+}
+
+// ─── Loan payment (standard amortisation formula) ────────────
+function calcMonthlyLoanPayment(principal: number, annualRate: number, years: number): number {
+  if (principal <= 0 || years <= 0) return 0;
+  if (annualRate <= 0) return principal / (years * MONTHS_PER_YEAR);
+
+  const r = annualRate / 100 / MONTHS_PER_YEAR;
+  const n = years * MONTHS_PER_YEAR;
+  return principal * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+}
+
+// ─── Main KPI calculation ────────────────────────────────────
+export function calculateKPIs(inputs: ProjectInputs, scenario: Scenario): KPIResult {
   const m = SCENARIO_MULTIPLIERS[scenario];
 
+  // Apply scenario adjustments
   const peakOcc = Math.min(100, Math.max(0, inputs.peakOccupancy + m.occupancyOffset)) / 100;
   const offPeakOcc = Math.min(100, Math.max(0, inputs.offPeakOccupancy + m.occupancyOffset)) / 100;
+  const peakPrice = inputs.peakPrice * m.pricingMultiplier;
+  const offPeakPrice = inputs.offPeakPrice * m.pricingMultiplier;
 
-  const offPeakHours = inputs.openingHoursPerDay - inputs.peakHoursPerDay;
-  const dailyCourtRevenue =
-    inputs.peakPrice * inputs.peakHoursPerDay * peakOcc +
-    inputs.offPeakPrice * offPeakHours * offPeakOcc;
-  const annualCourtRevenue =
-    dailyCourtRevenue * inputs.numberOfCourts * inputs.operatingDaysPerYear * m.revenueMultiplier;
+  // ── Step 1: Capacity ──
+  const totalHoursMonth = inputs.numberOfCourts * inputs.openingHoursPerDay * DAYS_PER_MONTH;
+  const peakHoursMonth = totalHoursMonth * PEAK_RATIO;
+  const offPeakHoursMonth = totalHoursMonth * OFFPEAK_RATIO;
 
-  const annualClassRevenue =
-    inputs.classesPerWeek * 52 * inputs.avgClassPrice * inputs.avgClassSize * m.revenueMultiplier;
-  const annualOtherRevenue =
-    (inputs.otherMonthlyRevenue + inputs.proshopRevenue + inputs.fAndBRevenue + inputs.membershipFees) *
-    12 *
-    m.revenueMultiplier;
+  // ── Step 2: Court revenue (monthly) ──
+  const peakRevenue = peakHoursMonth * peakOcc * peakPrice;
+  const offPeakRevenue = offPeakHoursMonth * offPeakOcc * offPeakPrice;
+  const courtRevenueMonth = peakRevenue + offPeakRevenue;
 
-  const annualRevenue = annualCourtRevenue + annualClassRevenue + annualOtherRevenue;
+  // ── Step 3: Total revenue ──
+  const otherRevenueMonth = inputs.otherMonthlyRevenue + inputs.proshopRevenue + inputs.fAndBRevenue + inputs.membershipFees;
+  const totalRevenueMonth = courtRevenueMonth + otherRevenueMonth;
+  const totalRevenueYear = totalRevenueMonth * MONTHS_PER_YEAR;
 
-  const annualCosts = inputs.monthlyOperatingCosts * 12 * m.costMultiplier;
-  const annualCoachingCost = inputs.classesPerWeek * 52 * inputs.coachingCostPerHour;
-  const totalAnnualCosts = annualCosts + annualCoachingCost;
+  // ── Step 4: EBITDA ──
+  const ebitdaMonth = totalRevenueMonth - inputs.monthlyOperatingCosts;
+  const ebitdaYear = ebitdaMonth * MONTHS_PER_YEAR;
+  const ebitdaMargin = totalRevenueMonth > 0 ? ebitdaMonth / totalRevenueMonth : 0;
 
-  const ebitda = annualRevenue - totalAnnualCosts;
-  const roi = inputs.initialInvestment > 0 ? (ebitda / inputs.initialInvestment) * 100 : 0;
-  const paybackYears = ebitda > 0 ? inputs.initialInvestment / ebitda : Infinity;
+  // ── Step 5: Financing ──
+  const loanAmount = inputs.initialInvestment * (inputs.debtPercentage / 100);
+  const loanPaymentMonth = calcMonthlyLoanPayment(loanAmount, inputs.interestRate, inputs.loanTermYears);
 
-  // Break-even occupancy: find occ% where revenue = costs
-  const revenuePerOccPoint =
-    (inputs.peakPrice * inputs.peakHoursPerDay + inputs.offPeakPrice * offPeakHours) *
-    inputs.numberOfCourts *
-    inputs.operatingDaysPerYear *
-    m.revenueMultiplier / 100;
-  const breakEvenOccupancy = revenuePerOccPoint > 0 ? (totalAnnualCosts / revenuePerOccPoint) : 0;
+  // ── Step 6: Net cashflow ──
+  const netCashflowMonth = ebitdaMonth - loanPaymentMonth;
+  const netCashflowYear = netCashflowMonth * MONTHS_PER_YEAR;
 
-  const weightedOccupancy =
-    (inputs.peakOccupancy * inputs.peakHoursPerDay + inputs.offPeakOccupancy * offPeakHours) /
-    inputs.openingHoursPerDay;
+  // ── Step 7: ROI ──
+  const roi = inputs.initialInvestment > 0 ? (ebitdaYear / inputs.initialInvestment) * 100 : 0;
+
+  // ── Step 8: Payback ──
+  const paybackYears = ebitdaYear > 0 ? inputs.initialInvestment / ebitdaYear : Infinity;
+
+  // ── Step 9: Break-even occupancy ──
+  // Revenue at 100% occupancy (monthly)
+  const courtRevenueAt100 = (peakHoursMonth * peakPrice) + (offPeakHoursMonth * offPeakPrice);
+  const requiredRevenue = inputs.monthlyOperatingCosts + loanPaymentMonth;
+  // required_revenue = break_even_ratio * courtRevenueAt100 + otherRevenueMonth
+  // → break_even_ratio = (required_revenue - otherRevenueMonth) / courtRevenueAt100
+  const breakEvenOccupancy = courtRevenueAt100 > 0
+    ? Math.max(0, Math.min(100, ((requiredRevenue - otherRevenueMonth) / courtRevenueAt100) * 100))
+    : 100;
+
+  // Weighted current occupancy (blended peak/off-peak)
+  const weightedOccupancy = (inputs.peakOccupancy * PEAK_RATIO + inputs.offPeakOccupancy * OFFPEAK_RATIO) + m.occupancyOffset;
 
   return {
     totalInvestment: inputs.initialInvestment,
-    annualRevenue,
-    annualCosts: totalAnnualCosts,
-    ebitda,
+    totalHoursMonth,
+    peakHoursMonth,
+    offPeakHoursMonth,
+    courtRevenueMonth,
+    otherRevenueMonth,
+    totalRevenueMonth,
+    ebitdaMonth,
+    loanPaymentMonth,
+    netCashflowMonth,
+    totalRevenueYear,
+    ebitdaYear,
+    netCashflowYear,
+    ebitdaMargin,
     roi,
     paybackYears,
-    breakEvenOccupancy: Math.min(100, Math.max(0, breakEvenOccupancy)),
-    weightedOccupancy: weightedOccupancy + m.occupancyOffset,
-    annualCourtRevenue,
-    annualClassRevenue,
-    annualOtherRevenue,
+    breakEvenOccupancy,
+    weightedOccupancy: Math.min(100, Math.max(0, weightedOccupancy)),
+    loanAmount,
+    annualCourtRevenue: courtRevenueMonth * MONTHS_PER_YEAR,
+    annualOtherRevenue: otherRevenueMonth * MONTHS_PER_YEAR,
+    annualCosts: inputs.monthlyOperatingCosts * MONTHS_PER_YEAR,
   };
 }
 
+// ─── Monthly evolution (flat projection with seasonality) ────
 export function getMonthlyEvolution(inputs: ProjectInputs, scenario: Scenario) {
   const kpis = calculateKPIs(inputs, scenario);
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const seasonality = [0.7, 0.75, 0.85, 0.9, 1.0, 1.1, 1.15, 1.1, 1.05, 0.95, 0.85, 0.8];
 
-  return months.map((month, i) => ({
-    month,
-    revenue: Math.round((kpis.annualRevenue / 12) * seasonality[i]),
-    costs: Math.round(kpis.annualCosts / 12),
-    profit: Math.round((kpis.annualRevenue / 12) * seasonality[i] - kpis.annualCosts / 12),
-  }));
+  return months.map((month, i) => {
+    const revenue = Math.round(kpis.totalRevenueMonth * seasonality[i]);
+    const costs = Math.round(kpis.ebitdaMonth < kpis.totalRevenueMonth ? (kpis.totalRevenueMonth - kpis.ebitdaMonth) : 0);
+    return {
+      month,
+      revenue,
+      costs,
+      profit: revenue - costs,
+    };
+  });
 }

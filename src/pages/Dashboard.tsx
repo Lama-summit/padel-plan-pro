@@ -188,11 +188,11 @@ export default function Dashboard() {
           />
           <KPICard
             label="Annual EBITDA"
-            value={formatCurrency(kpis.ebitda)}
+            value={formatCurrency(kpis.ebitdaYear)}
             icon={BarChart3}
             size="large"
-            variant={kpis.ebitda >= 0 ? "success" : "destructive"}
-            subtitle={kpis.ebitda >= 0 ? "Profitable" : "Loss-making"}
+            variant={kpis.ebitdaYear >= 0 ? "success" : "destructive"}
+            subtitle={`${(kpis.ebitdaMargin * 100).toFixed(0)}% margin · ${kpis.ebitdaYear >= 0 ? "Profitable" : "Loss-making"}`}
           />
         </div>
 
@@ -200,21 +200,24 @@ export default function Dashboard() {
         <div className="grid gap-5 md:grid-cols-3">
           <KPICard
             label="Annual Revenue"
-            value={formatCurrency(kpis.annualRevenue)}
+            value={formatCurrency(kpis.totalRevenueYear)}
             icon={TrendingUp}
             variant="accent"
+            subtitle={`${formatCurrency(kpis.totalRevenueMonth)}/month`}
           />
           <KPICard
             label="Return on Investment"
             value={`${kpis.roi.toFixed(1)}%`}
             icon={PieChart}
             variant={kpis.roi >= 15 ? "success" : kpis.roi >= 0 ? "warning" : "destructive"}
+            subtitle={`Annual · ${kpis.roi >= 15 ? "Strong" : kpis.roi >= 0 ? "Moderate" : "Negative"}`}
           />
           <KPICard
             label="Payback Period"
             value={kpis.paybackYears === Infinity ? "N/A" : `${kpis.paybackYears.toFixed(1)} years`}
             icon={Clock}
             variant={kpis.paybackYears <= 5 ? "success" : kpis.paybackYears <= 8 ? "warning" : "destructive"}
+            subtitle={kpis.paybackYears === Infinity ? "Not profitable" : `Net cashflow ${formatCurrency(kpis.netCashflowYear)}/yr`}
           />
         </div>
 
@@ -231,7 +234,9 @@ export default function Dashboard() {
           <div className="hidden sm:block text-right">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Current Avg. Occupancy</p>
             <p className={`text-4xl font-bold tracking-tight ${
-              kpis.weightedOccupancy >= kpis.breakEvenOccupancy ? "text-success" : "text-destructive"
+              kpis.weightedOccupancy >= kpis.breakEvenOccupancy ? "text-success"
+                : kpis.weightedOccupancy >= kpis.breakEvenOccupancy * 0.9 ? "text-warning"
+                : "text-destructive"
             }`}>
               {kpis.weightedOccupancy.toFixed(0)}%
             </p>
@@ -240,9 +245,13 @@ export default function Dashboard() {
             <div className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
               kpis.weightedOccupancy >= kpis.breakEvenOccupancy
                 ? "bg-success/10 text-success"
+                : kpis.weightedOccupancy >= kpis.breakEvenOccupancy * 0.9
+                ? "bg-warning/10 text-warning"
                 : "bg-destructive/10 text-destructive"
             }`}>
-              {kpis.weightedOccupancy >= kpis.breakEvenOccupancy ? "Above target" : "Below target"}
+              {kpis.weightedOccupancy >= kpis.breakEvenOccupancy ? "Above target"
+                : kpis.weightedOccupancy >= kpis.breakEvenOccupancy * 0.9 ? "Near target"
+                : "Below target"}
             </div>
           </div>
         </div>
