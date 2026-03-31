@@ -210,12 +210,14 @@ export default function Dashboard() {
             value={`${kpis.roi.toFixed(1)}%`}
             icon={PieChart}
             variant={kpis.roi >= 15 ? "success" : kpis.roi >= 0 ? "warning" : "destructive"}
+            subtitle={`Annual · ${kpis.roi >= 15 ? "Strong" : kpis.roi >= 0 ? "Moderate" : "Negative"}`}
           />
           <KPICard
             label="Payback Period"
             value={kpis.paybackYears === Infinity ? "N/A" : `${kpis.paybackYears.toFixed(1)} years`}
             icon={Clock}
             variant={kpis.paybackYears <= 5 ? "success" : kpis.paybackYears <= 8 ? "warning" : "destructive"}
+            subtitle={kpis.paybackYears === Infinity ? "Not profitable" : `Net cashflow ${formatCurrency(kpis.netCashflowYear)}/yr`}
           />
         </div>
 
