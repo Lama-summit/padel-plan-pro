@@ -97,6 +97,13 @@ const CATEGORY_FIELDS: Record<Category, FieldDef[]> = {
     { key: "marketingCosts", label: "Marketing / Month", suffix: "€" },
     { key: "insuranceCosts", label: "Insurance / Month", suffix: "€" },
   ],
+  detailedCosts: [
+    { key: "staffCostPerCourtHour", label: "Staff Cost / Court-Hour", suffix: "€", helper: "Scales with courts × hours" },
+    { key: "softwareManagementCost", label: "Software & Management", suffix: "€/mo" },
+    { key: "energyCostPerHour", label: "Energy / Court-Hour", suffix: "€", helper: "Scales with operating hours" },
+    { key: "maintenanceCostPerUsage", label: "Maintenance / Booked Hour", suffix: "€", helper: "Scales with usage" },
+    { key: "cleaningCostPerDay", label: "Cleaning / Court / Day", suffix: "€" },
+  ],
   financing: [
     { key: "debtPercentage", label: "Debt Percentage", suffix: "%", slider: { min: 0, max: 100, step: 5 }, helper: "% of investment financed by loan" },
     { key: "interestRate", label: "Interest Rate", suffix: "%", slider: { min: 0, max: 15, step: 0.25 } },

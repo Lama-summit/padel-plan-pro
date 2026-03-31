@@ -29,6 +29,7 @@ interface DashboardChartsProps {
     annualCosts: number;
     breakEvenOccupancy: SafeMetric;
     weightedOccupancy: number;
+    costBreakdown: CostBreakdown;
   };
 }
 
