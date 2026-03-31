@@ -193,21 +193,30 @@ export interface InvestmentVerdict {
   explanation: string;
 }
 
-export function getInvestmentVerdict(kpis: KPIResult): InvestmentVerdict {
+export function getInvestmentVerdict(kpis: KPIResult): InvestmentVerdict & { metrics: { payback: string; margin: string; buffer: string }; interpretation: string } {
   const marginVal = isSafeValid(kpis.ebitdaMargin) ? kpis.ebitdaMargin.value! : null;
   const paybackVal = isSafeValid(kpis.paybackYears) ? kpis.paybackYears.value! : null;
+  const beVal = isSafeValid(kpis.breakEvenOccupancy) ? kpis.breakEvenOccupancy.value! : null;
+  const buffer = beVal !== null ? Math.round(kpis.weightedOccupancy - beVal) : null;
+
+  const metrics = {
+    payback: paybackVal !== null ? `${paybackVal.toFixed(1)} years` : "—",
+    margin: marginVal !== null ? `${marginVal.toFixed(0)}%` : "—",
+    buffer: buffer !== null ? `${buffer >= 0 ? "+" : ""}${buffer} pts` : "—",
+  };
 
   if (paybackVal === null || marginVal === null) {
-    return { level: "incomplete", label: "Incomplete", explanation: "Complete inputs to assess investment attractiveness" };
+    return { level: "incomplete", label: "Incomplete", explanation: "Complete inputs to assess investment attractiveness", metrics, interpretation: "Add pricing and cost inputs to get a verdict." };
   }
 
   if (paybackVal <= 3 && marginVal > 25) {
-    return { level: "strong", label: "Strong", explanation: `Payback in ${paybackVal.toFixed(1)} years with ${marginVal.toFixed(0)}% margin` };
+    const interp = marginVal > 55 ? "Returns are very high — validate cost assumptions" : "Strong economics with healthy margins";
+    return { level: "strong", label: "Strong", explanation: `Payback in ${paybackVal.toFixed(1)} years with ${marginVal.toFixed(0)}% margin`, metrics, interpretation: interp };
   }
   if (paybackVal <= 5) {
-    return { level: "moderate", label: "Moderate", explanation: `Payback in ${paybackVal.toFixed(1)} years — solid but not exceptional` };
+    return { level: "moderate", label: "Moderate", explanation: `Payback in ${paybackVal.toFixed(1)} years — solid but not exceptional`, metrics, interpretation: "Viable investment with room for improvement" };
   }
-  return { level: "weak", label: "Weak", explanation: `${paybackVal.toFixed(1)}-year payback suggests challenging economics` };
+  return { level: "weak", label: "Weak", explanation: `${paybackVal.toFixed(1)}-year payback suggests challenging economics`, metrics, interpretation: "Consider reducing costs or increasing revenue levers" };
 }
 
 // ─── Model confidence ────────────────────────────────────────
