@@ -192,7 +192,7 @@ export default function Dashboard() {
             icon={BarChart3}
             size="large"
             variant={kpis.ebitdaYear >= 0 ? "success" : "destructive"}
-            subtitle={`${(kpis.ebitdaMargin * 100).toFixed(0)}% margin · ${kpis.ebitdaYear >= 0 ? "Profitable" : "Loss-making"}`}
+            subtitle={`${isSafeValid(kpis.ebitdaMargin) ? `${kpis.ebitdaMargin.value!.toFixed(0)}% margin · ` : ""}${kpis.ebitdaYear >= 0 ? "Profitable" : "Loss-making"}`}
           />
         </div>
 
@@ -207,17 +207,17 @@ export default function Dashboard() {
           />
           <KPICard
             label="Return on Investment"
-            value={`${kpis.roi.toFixed(1)}%`}
+            value={isSafeValid(kpis.roi) ? `${kpis.roi.value!.toFixed(1)}%` : "—"}
             icon={PieChart}
-            variant={kpis.roi >= 15 ? "success" : kpis.roi >= 0 ? "warning" : "destructive"}
-            subtitle={`Annual · ${kpis.roi >= 15 ? "Strong" : kpis.roi >= 0 ? "Moderate" : "Negative"}`}
+            variant={isSafeValid(kpis.roi) ? (kpis.roi.value! >= 15 ? "success" : kpis.roi.value! >= 0 ? "warning" : "destructive") : "default"}
+            subtitle={isSafeValid(kpis.roi) ? `Annual · ${kpis.roi.value! >= 15 ? "Strong" : kpis.roi.value! >= 0 ? "Moderate" : "Negative"}` : "Set investment to calculate"}
           />
           <KPICard
             label="Payback Period"
-            value={kpis.paybackYears === Infinity ? "N/A" : `${kpis.paybackYears.toFixed(1)} years`}
+            value={formatSafeYears(kpis.paybackYears)}
             icon={Clock}
-            variant={kpis.paybackYears <= 5 ? "success" : kpis.paybackYears <= 8 ? "warning" : "destructive"}
-            subtitle={kpis.paybackYears === Infinity ? "Not profitable" : `Net cashflow ${formatCurrency(kpis.netCashflowYear)}/yr`}
+            variant={isSafeValid(kpis.paybackYears) ? (kpis.paybackYears.value! <= 5 ? "success" : kpis.paybackYears.value! <= 8 ? "warning" : "destructive") : "default"}
+            subtitle={!isSafeValid(kpis.paybackYears) ? "Not profitable" : `Net cashflow ${formatCurrency(kpis.netCashflowYear)}/yr`}
           />
         </div>
 
