@@ -2,11 +2,11 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useStore } from "@/lib/store";
 import { ProjectInputs } from "@/lib/types";
+import { KeyDriversPanel } from "@/components/KeyDriversPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -19,24 +19,28 @@ import {
   Save,
   Copy,
   Landmark,
-  LayoutGrid,
   Clock,
-  Tag,
-  BarChart3,
   GraduationCap,
   Store,
   Wallet,
   Banknote,
-  Zap,
 } from "lucide-react";
 import { LucideIcon } from "lucide-react";
 
+/* ─── Key driver field keys (excluded from category panels) ── */
+const KEY_DRIVER_KEYS: Set<keyof ProjectInputs> = new Set([
+  "numberOfCourts",
+  "openingHoursPerDay",
+  "offPeakPrice",
+  "peakPrice",
+  "offPeakOccupancy",
+  "peakOccupancy",
+  "courtType",
+]);
+
 type Category =
   | "investment"
-  | "courts"
   | "hours"
-  | "pricing"
-  | "occupancy"
   | "classes"
   | "otherRevenue"
   | "operatingCosts"
@@ -44,10 +48,7 @@ type Category =
 
 const CATEGORIES: { key: Category; label: string; icon: LucideIcon; description: string }[] = [
   { key: "investment", label: "Initial Investment", icon: Landmark, description: "Setup and construction costs" },
-  { key: "courts", label: "Courts & Capacity", icon: LayoutGrid, description: "Number and type of courts" },
-  { key: "hours", label: "Opening Hours", icon: Clock, description: "Operating schedule" },
-  { key: "pricing", label: "Pricing", icon: Tag, description: "Court rental pricing" },
-  { key: "occupancy", label: "Occupancy", icon: BarChart3, description: "Expected usage rates" },
+  { key: "hours", label: "Schedule & Peak", icon: Clock, description: "Operating schedule details" },
   { key: "classes", label: "Classes / Coaching", icon: GraduationCap, description: "Lessons and coaching revenue" },
   { key: "otherRevenue", label: "Other Revenue", icon: Store, description: "Pro shop, F&B, memberships" },
   { key: "operatingCosts", label: "Operating Costs", icon: Wallet, description: "Monthly running expenses" },
@@ -69,21 +70,9 @@ const CATEGORY_FIELDS: Record<Category, FieldDef[]> = {
     { key: "facilityBuildout", label: "Facility Buildout", suffix: "€", helper: "Clubhouse, reception, amenities" },
     { key: "equipmentCost", label: "Equipment Cost", suffix: "€", helper: "Nets, lighting, furniture" },
   ],
-  courts: [
-    { key: "numberOfCourts", label: "Number of Courts", slider: { min: 1, max: 16, step: 1 } },
-  ],
   hours: [
-    { key: "openingHoursPerDay", label: "Opening Hours / Day", suffix: "hrs", slider: { min: 6, max: 20, step: 1 } },
     { key: "operatingDaysPerYear", label: "Operating Days / Year", suffix: "days" },
     { key: "peakHoursPerDay", label: "Peak Hours / Day", suffix: "hrs", slider: { min: 1, max: 10, step: 1 } },
-  ],
-  pricing: [
-    { key: "offPeakPrice", label: "Off-Peak Price", suffix: "€/hr" },
-    { key: "peakPrice", label: "Peak Price", suffix: "€/hr" },
-  ],
-  occupancy: [
-    { key: "offPeakOccupancy", label: "Off-Peak Occupancy", suffix: "%", slider: { min: 0, max: 100, step: 5 } },
-    { key: "peakOccupancy", label: "Peak Occupancy", suffix: "%", slider: { min: 0, max: 100, step: 5 } },
   ],
   classes: [
     { key: "classesPerWeek", label: "Classes per Week", slider: { min: 0, max: 30, step: 1 } },
@@ -135,18 +124,12 @@ export default function InputsView() {
     updateVersionInputs(project.id, version.id, { [key]: numVal });
   };
 
-  const essentialFields: FieldDef[] = [
-    { key: "numberOfCourts", label: "Number of Courts", slider: { min: 1, max: 16, step: 1 } },
-    { key: "openingHoursPerDay", label: "Hours / Day", suffix: "hrs", slider: { min: 6, max: 20, step: 1 } },
-    { key: "offPeakPrice", label: "Off-Peak Price", suffix: "€/hr" },
-    { key: "peakPrice", label: "Peak Price", suffix: "€/hr" },
-    { key: "offPeakOccupancy", label: "Off-Peak Occupancy", suffix: "%", slider: { min: 0, max: 100, step: 5 } },
-    { key: "peakOccupancy", label: "Peak Occupancy", suffix: "%", slider: { min: 0, max: 100, step: 5 } },
-    { key: "initialInvestment", label: "Initial Investment", suffix: "€" },
-    { key: "monthlyOperatingCosts", label: "Monthly OpCosts", suffix: "€" },
-  ];
-
   const activeCat = CATEGORIES.find((c) => c.key === activeCategory)!;
+
+  // Filter out key-driver fields from category panels
+  const categoryFields = CATEGORY_FIELDS[activeCategory].filter(
+    (f) => !KEY_DRIVER_KEYS.has(f.key)
+  );
 
   const renderField = (field: FieldDef) => {
     const currentVal = version.inputs[field.key] as number;
@@ -198,10 +181,10 @@ export default function InputsView() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="border-b bg-card sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center gap-4 flex-wrap">
+        <div className="max-w-full mx-auto px-6 py-4 flex items-center gap-4 flex-wrap">
           <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => navigate(`/project/${project.id}`)}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
@@ -227,93 +210,74 @@ export default function InputsView() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-8 flex gap-8 animate-fade-in">
-        {/* Sidebar */}
-        <aside className="w-60 flex-shrink-0 hidden lg:block">
-          <nav className="space-y-1 sticky top-24">
-            <p className="section-title px-3 mb-3">Categories</p>
-            {CATEGORIES.map((cat) => {
-              const CatIcon = cat.icon;
-              const isActive = activeCategory === cat.key;
-              return (
-                <button
-                  key={cat.key}
-                  onClick={() => setActiveCategory(cat.key)}
-                  className={`w-full text-left px-3 py-2.5 rounded-xl text-sm transition-all flex items-center gap-3 group ${
-                    isActive
-                      ? "bg-primary text-primary-foreground font-medium shadow-md shadow-primary/20"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  }`}
-                >
-                  <CatIcon className={`h-4 w-4 flex-shrink-0 ${isActive ? '' : 'text-muted-foreground group-hover:text-foreground'}`} />
-                  <span className="truncate">{cat.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-        </aside>
-
-        {/* Main */}
-        <div className="flex-1 min-w-0 space-y-8">
-          {/* Mobile category selector */}
-          <div className="lg:hidden">
-            <Select value={activeCategory} onValueChange={(v) => setActiveCategory(v as Category)}>
-              <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {CATEGORIES.map((cat) => (
-                  <SelectItem key={cat.key} value={cat.key}>{cat.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Essential Inputs */}
-          <div className="bg-card border-2 border-accent/15 rounded-2xl p-7">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-10 w-10 rounded-xl gradient-accent flex items-center justify-center shadow-md shadow-accent/20">
-                <Zap className="h-5 w-5 text-accent-foreground" />
-              </div>
-              <div>
-                <h2 className="font-bold text-lg">Key Business Drivers</h2>
-                <p className="text-xs text-muted-foreground">Core inputs that most impact your results</p>
-              </div>
-            </div>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {essentialFields.map(renderField)}
-              {/* Court type toggle */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-foreground">Court Type</Label>
-                <div className="flex bg-muted rounded-xl p-1 gap-0.5">
-                  {(["indoor", "outdoor", "mixed"] as const).map((type) => (
+      <div className="flex flex-1 overflow-hidden">
+        {/* Main content area */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-5xl mx-auto px-6 py-8 flex gap-8 animate-fade-in">
+            {/* Sidebar */}
+            <aside className="w-56 flex-shrink-0 hidden lg:block">
+              <nav className="space-y-1 sticky top-24">
+                <p className="section-title px-3 mb-3">Categories</p>
+                {CATEGORIES.map((cat) => {
+                  const CatIcon = cat.icon;
+                  const isActive = activeCategory === cat.key;
+                  return (
                     <button
-                      key={type}
-                      onClick={() => handleChange("courtType", type)}
-                      className={`flex-1 px-3 py-2 text-sm rounded-lg transition-all font-medium capitalize ${
-                        version.inputs.courtType === type
-                          ? "bg-card shadow-sm text-foreground"
-                          : "text-muted-foreground hover:text-foreground"
+                      key={cat.key}
+                      onClick={() => setActiveCategory(cat.key)}
+                      className={`w-full text-left px-3 py-2.5 rounded-xl text-sm transition-all flex items-center gap-3 group ${
+                        isActive
+                          ? "bg-primary text-primary-foreground font-medium shadow-md shadow-primary/20"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
                       }`}
                     >
-                      {type}
+                      <CatIcon className={`h-4 w-4 flex-shrink-0 ${isActive ? '' : 'text-muted-foreground group-hover:text-foreground'}`} />
+                      <span className="truncate">{cat.label}</span>
                     </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+                  );
+                })}
+              </nav>
+            </aside>
 
-          {/* Category-specific inputs */}
-          <div className="bg-card border rounded-2xl p-7">
-            <div className="flex items-center gap-3 mb-1">
-              <activeCat.icon className="h-5 w-5 text-primary" />
-              <h2 className="font-bold text-lg">{activeCat.label}</h2>
-            </div>
-            <p className="text-sm text-muted-foreground mb-6 ml-8">{activeCat.description}</p>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {CATEGORY_FIELDS[activeCategory].map(renderField)}
+            {/* Main */}
+            <div className="flex-1 min-w-0 space-y-8">
+              {/* Mobile category selector */}
+              <div className="lg:hidden">
+                <Select value={activeCategory} onValueChange={(v) => setActiveCategory(v as Category)}>
+                  <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map((cat) => (
+                      <SelectItem key={cat.key} value={cat.key}>{cat.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Category-specific inputs */}
+              <div className="bg-card border rounded-2xl p-7">
+                <div className="flex items-center gap-3 mb-1">
+                  <activeCat.icon className="h-5 w-5 text-primary" />
+                  <h2 className="font-bold text-lg">{activeCat.label}</h2>
+                </div>
+                <p className="text-sm text-muted-foreground mb-6 ml-8">{activeCat.description}</p>
+                {categoryFields.length > 0 ? (
+                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {categoryFields.map(renderField)}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">All inputs for this category are available in the Key Drivers panel →</p>
+                )}
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Right-side Key Drivers Panel */}
+        <KeyDriversPanel
+          inputs={version.inputs}
+          onChange={handleChange}
+          className="hidden lg:flex lg:flex-col sticky top-0 h-screen"
+        />
       </div>
     </div>
   );
