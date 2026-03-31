@@ -200,9 +200,10 @@ export default function Dashboard() {
         <div className="grid gap-5 md:grid-cols-3">
           <KPICard
             label="Annual Revenue"
-            value={formatCurrency(kpis.annualRevenue)}
+            value={formatCurrency(kpis.totalRevenueYear)}
             icon={TrendingUp}
             variant="accent"
+            subtitle={`${formatCurrency(kpis.totalRevenueMonth)}/month`}
           />
           <KPICard
             label="Return on Investment"
