@@ -333,10 +333,10 @@ export default function Dashboard() {
                   ) : <p className="text-xs text-muted-foreground">Set inputs</p>}
                 </div>
 
-                {/* Investment Verdict */}
+                {/* Investment Verdict — restructured */}
                 {verdict && (
                   <div className={cn("border rounded-2xl p-4 card-hover relative overflow-hidden", verdictColors[verdict.level])}>
-                    <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-start justify-between mb-3">
                       <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", verdictIconColors[verdict.level])}>
                         <Shield className="h-4 w-4" />
                       </div>
@@ -344,28 +344,66 @@ export default function Dashboard() {
                         {verdict.label}
                       </Badge>
                     </div>
-                    <p className="text-[11px] text-muted-foreground mb-1 font-medium">Verdict</p>
-                    <p className="text-xs leading-snug">{verdict.explanation}</p>
+                    <p className="text-[11px] text-muted-foreground mb-2 font-medium">Investment Attractiveness</p>
+                    <div className="space-y-1.5 mb-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-1"><Clock className="h-2.5 w-2.5" /> Payback</span>
+                        <span className="text-xs font-semibold tabular-nums">{verdict.metrics.payback}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-1"><TrendingUp className="h-2.5 w-2.5" /> Margin</span>
+                        <span className="text-xs font-semibold tabular-nums">{verdict.metrics.margin}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-1"><Target className="h-2.5 w-2.5" /> BE buffer</span>
+                        <span className="text-xs font-semibold tabular-nums">{verdict.metrics.buffer}</span>
+                      </div>
+                    </div>
+                    <p className="text-[10px] italic leading-snug text-muted-foreground">{verdict.interpretation}</p>
                   </div>
                 )}
               </div>
 
               {/* Insight + Sensitivity + Confidence row */}
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="bg-card border rounded-2xl p-5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Lightbulb className="h-4 w-4 text-warning" />
-                    <span className="text-xs font-semibold uppercase tracking-wide text-foreground">Key Insight</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{insight}</p>
-                </div>
+              <div className="grid gap-5 md:grid-cols-3">
 
-                <div className="bg-card border rounded-2xl p-5">
-                  <div className="flex items-center gap-2 mb-3">
+                {/* Key Insight — split into 3 blocks */}
+                {structuredInsight && (
+                  <div className="bg-card border rounded-2xl p-6 space-y-5">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Lightbulb className="h-4 w-4 text-warning" />
+                      <span className="text-xs font-semibold uppercase tracking-wide text-foreground">Key Insight</span>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1.5">
+                          <TrendingUp className="h-3 w-3" /> What drives profit
+                        </p>
+                        <p className="text-sm leading-relaxed text-foreground">{structuredInsight.profitDrivers}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-success mb-1 flex items-center gap-1.5">
+                          <Zap className="h-3 w-3" /> Best action
+                        </p>
+                        <p className="text-sm leading-relaxed text-foreground">{structuredInsight.bestAction}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-destructive mb-1 flex items-center gap-1.5">
+                          <AlertTriangle className="h-3 w-3" /> Main risk
+                        </p>
+                        <p className="text-sm leading-relaxed text-foreground">{structuredInsight.mainRisk}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Top Drivers */}
+                <div className="bg-card border rounded-2xl p-6">
+                  <div className="flex items-center gap-2 mb-4">
                     <Zap className="h-4 w-4 text-accent-foreground" />
                     <span className="text-xs font-semibold uppercase tracking-wide text-foreground">Top Drivers</span>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {sensitivity.map((s, i) => (
                       <div key={s.key} className="flex items-center gap-3">
                         <span className="text-xs font-bold text-muted-foreground w-5">{i + 1}.</span>
@@ -378,28 +416,31 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Model Confidence */}
+                {/* Model Confidence — actionable */}
                 {confidence && (
-                  <div className="bg-card border rounded-2xl p-5">
-                    <div className="flex items-center gap-2 mb-3">
+                  <div className="bg-card border rounded-2xl p-6">
+                    <div className="flex items-center gap-2 mb-4">
                       <Gauge className="h-4 w-4 text-muted-foreground" />
                       <span className="text-xs font-semibold uppercase tracking-wide text-foreground">Model Confidence</span>
                     </div>
-                    <div className="flex items-baseline gap-2 mb-2">
-                      <span className={cn("text-2xl font-bold capitalize", confColors[confidence.level])}>{confidence.level}</span>
-                      <span className="text-xs text-muted-foreground tabular-nums">{confidence.score}%</span>
-                    </div>
-                    <div className="relative h-1.5 bg-muted rounded-full overflow-hidden mb-3">
-                      <div className={cn("absolute inset-y-0 left-0 rounded-full", confidence.level === "high" ? "bg-success" : confidence.level === "medium" ? "bg-warning" : "bg-destructive")}
-                        style={{ width: `${confidence.score}%` }} />
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className={cn("h-3 w-3 rounded-full", confidence.level === "high" ? "bg-success" : confidence.level === "medium" ? "bg-warning" : "bg-destructive")} />
+                      <span className={cn("text-lg font-bold capitalize", confColors[confidence.level])}>{confidence.level}</span>
                     </div>
                     {confidence.reasons.length > 0 && (
-                      <div className="space-y-1">
+                      <div className="space-y-2 mb-4">
                         {confidence.reasons.map((r, i) => (
-                          <p key={i} className="text-[11px] text-muted-foreground">• {r}</p>
+                          <div key={i} className="flex items-start gap-2">
+                            <Info className="h-3 w-3 text-muted-foreground mt-0.5 flex-shrink-0" />
+                            <p className="text-xs text-muted-foreground leading-snug">{r}</p>
+                          </div>
                         ))}
                       </div>
                     )}
+                    <Button variant="outline" size="sm" className="w-full rounded-xl text-xs gap-1.5 mt-1"
+                      onClick={() => navigate(`/project/${project.id}/inputs`)}>
+                      <Settings className="h-3 w-3" /> Improve accuracy
+                    </Button>
                   </div>
                 )}
               </div>
