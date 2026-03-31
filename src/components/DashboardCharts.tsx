@@ -143,7 +143,7 @@ export function DashboardCharts({ monthlyData, kpis }: DashboardChartsProps) {
                 <Cell key={index} fill={entry.fill} />
               ))}
             </Bar>
-            <ReferenceLine x={kpis.breakEvenOccupancy} stroke="hsl(0 72% 51%)" strokeDasharray="4 4" strokeWidth={2} />
+            <ReferenceLine x={beVal} stroke="hsl(0 72% 51%)" strokeDasharray="4 4" strokeWidth={2} />
           </BarChart>
         </ResponsiveContainer>
       </div>
