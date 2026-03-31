@@ -188,11 +188,11 @@ export default function Dashboard() {
           />
           <KPICard
             label="Annual EBITDA"
-            value={formatCurrency(kpis.ebitda)}
+            value={formatCurrency(kpis.ebitdaYear)}
             icon={BarChart3}
             size="large"
-            variant={kpis.ebitda >= 0 ? "success" : "destructive"}
-            subtitle={kpis.ebitda >= 0 ? "Profitable" : "Loss-making"}
+            variant={kpis.ebitdaYear >= 0 ? "success" : "destructive"}
+            subtitle={`${(kpis.ebitdaMargin * 100).toFixed(0)}% margin · ${kpis.ebitdaYear >= 0 ? "Profitable" : "Loss-making"}`}
           />
         </div>
 
