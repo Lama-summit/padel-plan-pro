@@ -22,12 +22,24 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Plus, Settings, TrendingUp, DollarSign, PieChart, Target, Clock, BarChart3 } from "lucide-react";
+import {
+  ArrowLeft,
+  Plus,
+  Settings,
+  TrendingUp,
+  DollarSign,
+  PieChart,
+  Target,
+  Clock,
+  BarChart3,
+  ChevronDown,
+  GitBranch,
+} from "lucide-react";
 
-const SCENARIOS: { value: Scenario; label: string }[] = [
-  { value: "base", label: "Base" },
-  { value: "optimistic", label: "Optimistic" },
-  { value: "pessimistic", label: "Pessimistic" },
+const SCENARIOS: { value: Scenario; label: string; color: string }[] = [
+  { value: "base", label: "Base", color: "data-[active=true]:bg-primary data-[active=true]:text-primary-foreground" },
+  { value: "optimistic", label: "Optimistic", color: "data-[active=true]:bg-success data-[active=true]:text-success-foreground" },
+  { value: "pessimistic", label: "Pessimistic", color: "data-[active=true]:bg-warning data-[active=true]:text-warning-foreground" },
 ];
 
 export default function Dashboard() {
@@ -78,30 +90,53 @@ export default function Dashboard() {
       {/* Header */}
       <header className="border-b bg-card sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center gap-3 mb-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+          {/* Top row */}
+          <div className="flex items-center gap-4 mb-4">
+            <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => navigate("/")}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <div className="flex-1">
-              <h1 className="text-xl font-bold">{project.name}</h1>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl font-bold tracking-tight">{project.name}</h1>
               <p className="text-sm text-muted-foreground">{project.location}</p>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 rounded-xl"
+              onClick={() => navigate(`/project/${project.id}/inputs`)}
+            >
+              <Settings className="h-4 w-4" />
+              Edit Inputs
+            </Button>
           </div>
+
+          {/* Bottom row: version + scenario */}
           <div className="flex items-center gap-3 flex-wrap">
-            <Select value={activeVersion.id} onValueChange={(v) => setActiveVersion(project.id, v)}>
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {project.versions.map((v) => (
-                  <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Version selector */}
+            <div className="flex items-center gap-2 bg-muted/50 rounded-xl px-3 py-1.5">
+              <GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
+              <Select value={activeVersion.id} onValueChange={(v) => setActiveVersion(project.id, v)}>
+                <SelectTrigger className="border-0 bg-transparent h-auto p-0 shadow-none text-sm font-medium min-w-[120px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {project.versions.map((v) => (
+                    <SelectItem key={v.id} value={v.id}>
+                      <div className="flex flex-col">
+                        <span>{v.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(v.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1.5">
+                <Button size="sm" className="gap-1.5 rounded-xl">
                   <Plus className="h-3.5 w-3.5" /> New Version
                 </Button>
               </DialogTrigger>
@@ -110,27 +145,25 @@ export default function Dashboard() {
                 <div className="space-y-4 pt-2">
                   <div className="space-y-2">
                     <Label>Version Name</Label>
-                    <Input placeholder="e.g. V2 - Expanded" value={newVersionName} onChange={(e) => setNewVersionName(e.target.value)} />
+                    <Input
+                      placeholder="e.g. V2 - Expanded"
+                      value={newVersionName}
+                      onChange={(e) => setNewVersionName(e.target.value)}
+                    />
                   </div>
-                  <Button className="w-full" onClick={handleNewVersion}>Create</Button>
+                  <Button className="w-full rounded-xl" onClick={handleNewVersion}>Create</Button>
                 </div>
               </DialogContent>
             </Dialog>
 
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate(`/project/${project.id}/inputs`)}>
-              <Settings className="h-3.5 w-3.5" /> Edit Inputs
-            </Button>
-
-            <div className="ml-auto flex bg-muted rounded-lg p-0.5">
+            {/* Scenario switcher */}
+            <div className="ml-auto flex bg-muted rounded-xl p-1 gap-0.5">
               {SCENARIOS.map((s) => (
                 <button
                   key={s.value}
+                  data-active={scenario === s.value}
                   onClick={() => setScenario(s.value)}
-                  className={`px-3 py-1.5 text-sm rounded-md transition-all font-medium ${
-                    scenario === s.value
-                      ? "bg-card shadow-sm text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
+                  className={`px-4 py-1.5 text-sm rounded-lg transition-all font-medium text-muted-foreground hover:text-foreground ${s.color}`}
                 >
                   {s.label}
                 </button>
@@ -140,35 +173,85 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* KPIs */}
-      <main className="max-w-7xl mx-auto px-6 py-6 space-y-6 animate-fade-in">
-        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
-          <KPICard label="Total Investment" value={formatCurrency(kpis.totalInvestment)} icon={DollarSign} />
-          <KPICard label="Annual Revenue" value={formatCurrency(kpis.annualRevenue)} icon={TrendingUp} variant="accent" />
-          <KPICard label="Annual EBITDA" value={formatCurrency(kpis.ebitda)} icon={BarChart3} variant={kpis.ebitda >= 0 ? "accent" : "destructive"} />
-          <KPICard label="ROI" value={`${kpis.roi.toFixed(1)}%`} icon={PieChart} />
-          <KPICard label="Payback" value={kpis.paybackYears === Infinity ? "N/A" : `${kpis.paybackYears.toFixed(1)}y`} icon={Clock} />
+      {/* Main content */}
+      <main className="max-w-7xl mx-auto px-6 py-8 space-y-8 animate-fade-in">
+        {/* Section label */}
+        <p className="section-title">Key Performance Indicators</p>
+
+        {/* Primary KPIs - larger */}
+        <div className="grid gap-5 md:grid-cols-2">
+          <KPICard
+            label="Total Investment"
+            value={formatCurrency(kpis.totalInvestment)}
+            icon={DollarSign}
+            size="large"
+          />
+          <KPICard
+            label="Annual EBITDA"
+            value={formatCurrency(kpis.ebitda)}
+            icon={BarChart3}
+            size="large"
+            variant={kpis.ebitda >= 0 ? "success" : "destructive"}
+            subtitle={kpis.ebitda >= 0 ? "Profitable" : "Loss-making"}
+          />
+        </div>
+
+        {/* Secondary KPIs */}
+        <div className="grid gap-5 md:grid-cols-3">
+          <KPICard
+            label="Annual Revenue"
+            value={formatCurrency(kpis.annualRevenue)}
+            icon={TrendingUp}
+            variant="accent"
+          />
+          <KPICard
+            label="Return on Investment"
+            value={`${kpis.roi.toFixed(1)}%`}
+            icon={PieChart}
+            variant={kpis.roi >= 15 ? "success" : kpis.roi >= 0 ? "warning" : "destructive"}
+          />
+          <KPICard
+            label="Payback Period"
+            value={kpis.paybackYears === Infinity ? "N/A" : `${kpis.paybackYears.toFixed(1)} years`}
+            icon={Clock}
+            variant={kpis.paybackYears <= 5 ? "success" : kpis.paybackYears <= 8 ? "warning" : "destructive"}
+          />
         </div>
 
         {/* Break-even highlight */}
-        <div className="bg-card border rounded-xl p-5 flex items-center gap-6">
-          <div className="h-12 w-12 rounded-xl gradient-accent flex items-center justify-center flex-shrink-0">
-            <Target className="h-6 w-6 text-accent-foreground" />
+        <div className="bg-card border-2 border-accent/20 rounded-2xl p-7 flex items-center gap-8">
+          <div className="h-14 w-14 rounded-2xl gradient-accent flex items-center justify-center flex-shrink-0 shadow-lg shadow-accent/20">
+            <Target className="h-7 w-7 text-accent-foreground" />
           </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Break-even Occupancy</p>
-            <p className="text-2xl font-bold">{kpis.breakEvenOccupancy.toFixed(0)}%</p>
+          <div className="flex-1">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Break-even Occupancy</p>
+            <p className="text-4xl font-bold tracking-tight">{kpis.breakEvenOccupancy.toFixed(0)}%</p>
           </div>
-          <div className="ml-auto text-right">
-            <p className="text-sm text-muted-foreground">Current Avg. Occupancy</p>
-            <p className={`text-2xl font-bold ${kpis.weightedOccupancy >= kpis.breakEvenOccupancy ? "text-success" : "text-destructive"}`}>
+          <div className="hidden sm:block h-12 w-px bg-border" />
+          <div className="hidden sm:block text-right">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Current Avg. Occupancy</p>
+            <p className={`text-4xl font-bold tracking-tight ${
+              kpis.weightedOccupancy >= kpis.breakEvenOccupancy ? "text-success" : "text-destructive"
+            }`}>
               {kpis.weightedOccupancy.toFixed(0)}%
             </p>
+          </div>
+          <div className="hidden sm:block">
+            <div className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
+              kpis.weightedOccupancy >= kpis.breakEvenOccupancy
+                ? "bg-success/10 text-success"
+                : "bg-destructive/10 text-destructive"
+            }`}>
+              {kpis.weightedOccupancy >= kpis.breakEvenOccupancy ? "Above target" : "Below target"}
+            </div>
           </div>
         </div>
 
         {/* Charts */}
-        <DashboardCharts monthlyData={monthlyData} kpis={kpis} />
+        <div>
+          <p className="section-title mb-5">Financial Overview</p>
+          <DashboardCharts monthlyData={monthlyData} kpis={kpis} />
+        </div>
       </main>
     </div>
   );
