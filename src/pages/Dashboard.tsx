@@ -2,9 +2,10 @@ import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useStore } from "@/lib/store";
 import { calculateKPIs, getMonthlyEvolution, formatSafePct, formatSafeYears, isSafeValid } from "@/lib/calculations";
-import { Scenario } from "@/lib/types";
+import { Scenario, ProjectInputs } from "@/lib/types";
 import { KPICard } from "@/components/KPICard";
 import { DashboardCharts } from "@/components/DashboardCharts";
+import { KeyDriversPanel } from "@/components/KeyDriversPanel";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -32,7 +33,6 @@ import {
   Target,
   Clock,
   BarChart3,
-  ChevronDown,
   GitBranch,
 } from "lucide-react";
 
@@ -45,10 +45,11 @@ const SCENARIOS: { value: Scenario; label: string; color: string }[] = [
 export default function Dashboard() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-  const { getProject, setActiveVersion, createVersion: createVersionFn } = useStore();
+  const { getProject, setActiveVersion, createVersion: createVersionFn, updateVersionInputs } = useStore();
   const [scenario, setScenario] = useState<Scenario>("base");
   const [newVersionName, setNewVersionName] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [panelCollapsed, setPanelCollapsed] = useState(false);
 
   const project = getProject(projectId!);
   const activeVersion = useMemo(
@@ -79,6 +80,11 @@ export default function Dashboard() {
     setNewVersionName("");
   };
 
+  const handleDriverChange = (key: keyof ProjectInputs, value: string | number) => {
+    const numVal = key === "courtType" ? value as any : typeof value === "number" ? value : parseFloat(value) || 0;
+    updateVersionInputs(project.id, activeVersion.id, { [key]: numVal });
+  };
+
   const formatCurrency = (val: number) => {
     if (val >= 1_000_000) return `€${(val / 1_000_000).toFixed(1)}M`;
     if (val >= 1_000) return `€${(val / 1_000).toFixed(0)}K`;
@@ -86,10 +92,10 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="border-b bg-card sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="max-w-full mx-auto px-6 py-4">
           {/* Top row */}
           <div className="flex items-center gap-4 mb-4">
             <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => navigate("/")}>
@@ -106,7 +112,7 @@ export default function Dashboard() {
               onClick={() => navigate(`/project/${project.id}/inputs`)}
             >
               <Settings className="h-4 w-4" />
-              Edit Inputs
+              All Inputs
             </Button>
           </div>
 
@@ -173,100 +179,114 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Main content */}
-      <main className="max-w-7xl mx-auto px-6 py-8 space-y-8 animate-fade-in">
-        {/* Section label */}
-        <p className="section-title">Key Performance Indicators</p>
+      {/* Body: main + sidebar */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Main content */}
+        <main className="flex-1 overflow-y-auto px-6 py-8">
+          <div className="max-w-6xl mx-auto space-y-8 animate-fade-in">
+            {/* Section label */}
+            <p className="section-title">Key Performance Indicators</p>
 
-        {/* Primary KPIs - larger */}
-        <div className="grid gap-5 md:grid-cols-2">
-          <KPICard
-            label="Total Investment"
-            value={formatCurrency(kpis.totalInvestment)}
-            icon={DollarSign}
-            size="large"
-          />
-          <KPICard
-            label="Annual EBITDA"
-            value={formatCurrency(kpis.ebitdaYear)}
-            icon={BarChart3}
-            size="large"
-            variant={kpis.ebitdaYear >= 0 ? "success" : "destructive"}
-            subtitle={`${isSafeValid(kpis.ebitdaMargin) ? `${kpis.ebitdaMargin.value!.toFixed(0)}% margin · ` : ""}${kpis.ebitdaYear >= 0 ? "Profitable" : "Loss-making"}`}
-          />
-        </div>
-
-        {/* Secondary KPIs */}
-        <div className="grid gap-5 md:grid-cols-3">
-          <KPICard
-            label="Annual Revenue"
-            value={formatCurrency(kpis.totalRevenueYear)}
-            icon={TrendingUp}
-            variant="accent"
-            subtitle={`${formatCurrency(kpis.totalRevenueMonth)}/month`}
-          />
-          <KPICard
-            label="Return on Investment"
-            value={isSafeValid(kpis.roi) ? `${kpis.roi.value!.toFixed(1)}%` : "—"}
-            icon={PieChart}
-            variant={isSafeValid(kpis.roi) ? (kpis.roi.value! >= 15 ? "success" : kpis.roi.value! >= 0 ? "warning" : "destructive") : "default"}
-            subtitle={isSafeValid(kpis.roi) ? `Annual · ${kpis.roi.value! >= 15 ? "Strong" : kpis.roi.value! >= 0 ? "Moderate" : "Negative"}` : "Set investment to calculate"}
-          />
-          <KPICard
-            label="Payback Period"
-            value={formatSafeYears(kpis.paybackYears)}
-            icon={Clock}
-            variant={isSafeValid(kpis.paybackYears) ? (kpis.paybackYears.value! <= 5 ? "success" : kpis.paybackYears.value! <= 8 ? "warning" : "destructive") : "default"}
-            subtitle={!isSafeValid(kpis.paybackYears) ? "Not profitable" : `Net cashflow ${formatCurrency(kpis.netCashflowYear)}/yr`}
-          />
-        </div>
-
-        {/* Break-even highlight */}
-        {(() => {
-          const beValid = isSafeValid(kpis.breakEvenOccupancy);
-          const beVal = beValid ? kpis.breakEvenOccupancy.value! : 0;
-          const occAbove = beValid && kpis.weightedOccupancy >= beVal;
-          const occNear = beValid && !occAbove && kpis.weightedOccupancy >= beVal * 0.9;
-          const occColor = !beValid ? "text-muted-foreground" : occAbove ? "text-success" : occNear ? "text-warning" : "text-destructive";
-          const badgeClass = !beValid ? "bg-muted text-muted-foreground" : occAbove ? "bg-success/10 text-success" : occNear ? "bg-warning/10 text-warning" : "bg-destructive/10 text-destructive";
-          const badgeText = !beValid ? "Incomplete inputs" : occAbove ? "Above target" : occNear ? "Near target" : "Below target";
-
-          return (
-            <div className="bg-card border-2 border-accent/20 rounded-2xl p-7 flex items-center gap-8">
-              <div className="h-14 w-14 rounded-2xl gradient-accent flex items-center justify-center flex-shrink-0 shadow-lg shadow-accent/20">
-                <Target className="h-7 w-7 text-accent-foreground" />
-              </div>
-              <div className="flex-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Break-even Occupancy</p>
-                <p className="text-4xl font-bold tracking-tight">
-                  {beValid ? `${beVal.toFixed(0)}%` : "—"}
-                </p>
-                {!beValid && (
-                  <p className="text-xs text-muted-foreground mt-1">Complete pricing and capacity inputs</p>
-                )}
-              </div>
-              <div className="hidden sm:block h-12 w-px bg-border" />
-              <div className="hidden sm:block text-right">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Current Avg. Occupancy</p>
-                <p className={`text-4xl font-bold tracking-tight ${occColor}`}>
-                  {kpis.weightedOccupancy.toFixed(0)}%
-                </p>
-              </div>
-              <div className="hidden sm:block">
-                <div className={`px-3 py-1.5 rounded-full text-xs font-semibold ${badgeClass}`}>
-                  {badgeText}
-                </div>
-              </div>
+            {/* Primary KPIs */}
+            <div className="grid gap-5 md:grid-cols-2">
+              <KPICard
+                label="Total Investment"
+                value={formatCurrency(kpis.totalInvestment)}
+                icon={DollarSign}
+                size="large"
+              />
+              <KPICard
+                label="Annual EBITDA"
+                value={formatCurrency(kpis.ebitdaYear)}
+                icon={BarChart3}
+                size="large"
+                variant={kpis.ebitdaYear >= 0 ? "success" : "destructive"}
+                subtitle={`${isSafeValid(kpis.ebitdaMargin) ? `${kpis.ebitdaMargin.value!.toFixed(0)}% margin · ` : ""}${kpis.ebitdaYear >= 0 ? "Profitable" : "Loss-making"}`}
+              />
             </div>
-          );
-        })()}
 
-        {/* Charts */}
-        <div>
-          <p className="section-title mb-5">Financial Overview</p>
-          <DashboardCharts monthlyData={monthlyData} kpis={kpis} />
-        </div>
-      </main>
+            {/* Secondary KPIs */}
+            <div className="grid gap-5 md:grid-cols-3">
+              <KPICard
+                label="Annual Revenue"
+                value={formatCurrency(kpis.totalRevenueYear)}
+                icon={TrendingUp}
+                variant="accent"
+                subtitle={`${formatCurrency(kpis.totalRevenueMonth)}/month`}
+              />
+              <KPICard
+                label="Return on Investment"
+                value={isSafeValid(kpis.roi) ? `${kpis.roi.value!.toFixed(1)}%` : "—"}
+                icon={PieChart}
+                variant={isSafeValid(kpis.roi) ? (kpis.roi.value! >= 15 ? "success" : kpis.roi.value! >= 0 ? "warning" : "destructive") : "default"}
+                subtitle={isSafeValid(kpis.roi) ? `Annual · ${kpis.roi.value! >= 15 ? "Strong" : kpis.roi.value! >= 0 ? "Moderate" : "Negative"}` : "Set investment to calculate"}
+              />
+              <KPICard
+                label="Payback Period"
+                value={formatSafeYears(kpis.paybackYears)}
+                icon={Clock}
+                variant={isSafeValid(kpis.paybackYears) ? (kpis.paybackYears.value! <= 5 ? "success" : kpis.paybackYears.value! <= 8 ? "warning" : "destructive") : "default"}
+                subtitle={!isSafeValid(kpis.paybackYears) ? "Not profitable" : `Net cashflow ${formatCurrency(kpis.netCashflowYear)}/yr`}
+              />
+            </div>
+
+            {/* Break-even highlight */}
+            {(() => {
+              const beValid = isSafeValid(kpis.breakEvenOccupancy);
+              const beVal = beValid ? kpis.breakEvenOccupancy.value! : 0;
+              const occAbove = beValid && kpis.weightedOccupancy >= beVal;
+              const occNear = beValid && !occAbove && kpis.weightedOccupancy >= beVal * 0.9;
+              const occColor = !beValid ? "text-muted-foreground" : occAbove ? "text-success" : occNear ? "text-warning" : "text-destructive";
+              const badgeClass = !beValid ? "bg-muted text-muted-foreground" : occAbove ? "bg-success/10 text-success" : occNear ? "bg-warning/10 text-warning" : "bg-destructive/10 text-destructive";
+              const badgeText = !beValid ? "Incomplete inputs" : occAbove ? "Above target" : occNear ? "Near target" : "Below target";
+
+              return (
+                <div className="bg-card border-2 border-accent/20 rounded-2xl p-7 flex items-center gap-8">
+                  <div className="h-14 w-14 rounded-2xl gradient-accent flex items-center justify-center flex-shrink-0 shadow-lg shadow-accent/20">
+                    <Target className="h-7 w-7 text-accent-foreground" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Break-even Occupancy</p>
+                    <p className="text-4xl font-bold tracking-tight">
+                      {beValid ? `${beVal.toFixed(0)}%` : "—"}
+                    </p>
+                    {!beValid && (
+                      <p className="text-xs text-muted-foreground mt-1">Complete pricing and capacity inputs</p>
+                    )}
+                  </div>
+                  <div className="hidden sm:block h-12 w-px bg-border" />
+                  <div className="hidden sm:block text-right">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Current Avg. Occupancy</p>
+                    <p className={`text-4xl font-bold tracking-tight ${occColor}`}>
+                      {kpis.weightedOccupancy.toFixed(0)}%
+                    </p>
+                  </div>
+                  <div className="hidden sm:block">
+                    <div className={`px-3 py-1.5 rounded-full text-xs font-semibold ${badgeClass}`}>
+                      {badgeText}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Charts */}
+            <div>
+              <p className="section-title mb-5">Financial Overview</p>
+              <DashboardCharts monthlyData={monthlyData} kpis={kpis} />
+            </div>
+          </div>
+        </main>
+
+        {/* Right-side Key Drivers Panel */}
+        <KeyDriversPanel
+          inputs={activeVersion.inputs}
+          onChange={handleDriverChange}
+          collapsed={panelCollapsed}
+          onToggle={() => setPanelCollapsed((p) => !p)}
+          className="hidden lg:flex lg:flex-col sticky top-0 h-screen"
+        />
+      </div>
     </div>
   );
 }
