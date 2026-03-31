@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useStore } from "@/lib/store";
-import { ProjectInputs } from "@/lib/types";
+import { ProjectInputs, CostMode } from "@/lib/types";
 import { KeyDriversPanel } from "@/components/KeyDriversPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
