@@ -4,7 +4,7 @@ import { useStore } from "@/lib/store";
 import {
   calculateKPIs, getMonthlyEvolution, formatSafeYears, isSafeValid,
   calculateScenarioDelta, calculateScenarioComparison, calculateSensitivityRanking,
-  generateInsight, getValidationWarnings, getInvestmentVerdict, getModelConfidence,
+  generateInsight, generateStructuredInsight, getValidationWarnings, getInvestmentVerdict, getModelConfidence,
   calculateDriverDeltas, ExportData,
 } from "@/lib/calculations";
 import { Scenario, ProjectInputs, DEFAULT_INPUTS, CostMode, MARKET_PRESETS, MarketPreset } from "@/lib/types";
