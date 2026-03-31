@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useStore } from "@/lib/store";
-import { calculateKPIs, getMonthlyEvolution } from "@/lib/calculations";
+import { calculateKPIs, getMonthlyEvolution, formatSafePct, formatSafeYears, isSafeValid } from "@/lib/calculations";
 import { Scenario } from "@/lib/types";
 import { KPICard } from "@/components/KPICard";
 import { DashboardCharts } from "@/components/DashboardCharts";
