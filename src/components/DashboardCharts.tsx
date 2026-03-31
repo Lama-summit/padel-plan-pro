@@ -29,7 +29,7 @@ interface DashboardChartsProps {
     annualCourtRevenue: number;
     annualOtherRevenue: number;
     annualCosts: number;
-    breakEvenOccupancy: number;
+    breakEvenOccupancy: SafeMetric;
     weightedOccupancy: number;
   };
 }
