@@ -120,51 +120,68 @@ export function calculateSensitivityRanking(inputs: ProjectInputs, scenario: Sce
     .slice(0, 3);
 }
 
-// ─── Advanced comparative insights ───────────────────────────
-export function generateInsight(kpis: KPIResult, inputs: ProjectInputs, deltas?: Record<string, DriverDelta>): string {
-  const parts: string[] = [];
+// ─── Structured insights ─────────────────────────────────────
+export interface StructuredInsight {
+  profitDrivers: string;
+  bestAction: string;
+  mainRisk: string;
+}
+
+export function generateStructuredInsight(kpis: KPIResult, inputs: ProjectInputs, deltas?: Record<string, DriverDelta>): StructuredInsight {
   const marginVal = isSafeValid(kpis.ebitdaMargin) ? kpis.ebitdaMargin.value! : null;
 
-  // Comparative driver analysis
+  // Profit drivers
+  let profitDrivers = "Profitability is driven by court occupancy and pricing.";
+  if (deltas) {
+    const sorted = Object.values(deltas).sort((a, b) => Math.abs(b.ebitdaImpact) - Math.abs(a.ebitdaImpact));
+    if (sorted.length >= 2) {
+      profitDrivers = `${sorted[0].label} and ${sorted[1].label} are the strongest profit drivers.`;
+    } else if (sorted.length === 1) {
+      profitDrivers = `${sorted[0].label} is the dominant profit driver.`;
+    }
+  }
+
+  // Best action
+  let bestAction = "Adjust key drivers to explore improvement scenarios.";
   if (deltas) {
     const occDelta = deltas.peakOccupancy;
     const priceDelta = deltas.peakPrice;
-    if (occDelta && priceDelta && Math.abs(occDelta.ebitdaImpact) > 0 && Math.abs(priceDelta.ebitdaImpact) > 0) {
+    if (occDelta && priceDelta) {
       if (Math.abs(occDelta.ebitdaImpact) > Math.abs(priceDelta.ebitdaImpact) * 1.2) {
-        const occPayback = occDelta.paybackImpact !== null ? ` and shortens payback by ${Math.abs(occDelta.paybackImpact).toFixed(1)} years` : "";
-        parts.push(`Increasing occupancy by 5% improves EBITDA more than raising peak price by €2${occPayback}.`);
+        bestAction = `Focus on increasing occupancy — it improves EBITDA by €${Math.abs(occDelta.ebitdaImpact / 1000).toFixed(0)}K more than pricing.`;
       } else if (Math.abs(priceDelta.ebitdaImpact) > Math.abs(occDelta.ebitdaImpact) * 1.2) {
-        parts.push(`Raising peak pricing has a stronger EBITDA effect than increasing occupancy at current levels.`);
+        bestAction = `Raising peak pricing has a stronger EBITDA effect than filling more slots.`;
+      } else {
+        bestAction = `Both occupancy and pricing improvements yield similar returns — pursue both.`;
       }
     }
   }
 
+  // Main risk
+  let mainRisk = "No significant risks detected at current assumptions.";
   if (marginVal !== null && marginVal > 55) {
     if (inputs.costMode === "basic" && inputs.staffCosts < inputs.monthlyOperatingCosts * 0.4) {
-      parts.push("Your margin is unusually high due to low staffing assumptions relative to total costs.");
+      mainRisk = "Margins are unusually high due to low staffing assumptions.";
     } else {
-      parts.push("Current margins exceed typical market benchmarks — verify cost assumptions.");
+      mainRisk = "Margins exceed typical benchmarks — cost assumptions may be too optimistic.";
     }
   } else if (marginVal !== null && marginVal < 15) {
-    parts.push("Thin margins suggest costs may need optimisation or revenue needs to increase.");
+    mainRisk = "Thin margins leave little room for unexpected costs.";
+  } else if (isSafeValid(kpis.paybackYears) && kpis.paybackYears.value! < 1) {
+    mainRisk = "Sub-1-year payback is extremely aggressive — verify all inputs.";
+  } else if (kpis.totalRevenueYear > 0 && kpis.annualCourtRevenue / kpis.totalRevenueYear > 0.85) {
+    mainRisk = "Revenue is concentrated in court rental — consider diversifying.";
+  } else if (inputs.costMode === "basic") {
+    mainRisk = "Basic cost mode may underestimate real operating expenses.";
   }
 
-  if (isSafeValid(kpis.paybackYears) && kpis.paybackYears.value! < 1) {
-    parts.push("Payback under 1 year is extremely aggressive — double-check investment and cost inputs.");
-  }
+  return { profitDrivers, bestAction, mainRisk };
+}
 
-  if (kpis.totalRevenueYear > 0) {
-    const courtShare = kpis.annualCourtRevenue / kpis.totalRevenueYear;
-    if (courtShare > 0.85) {
-      parts.push("Revenue is heavily concentrated in court rental — consider diversifying with classes or F&B.");
-    }
-  }
-
-  if (inputs.costMode === "basic") {
-    parts.push("Switch to detailed cost mode for a more realistic breakdown.");
-  }
-
-  return parts.length > 0 ? parts.join(" ") : "Model looks balanced. Adjust key drivers to explore scenarios.";
+// Legacy string insight for export
+export function generateInsight(kpis: KPIResult, inputs: ProjectInputs, deltas?: Record<string, DriverDelta>): string {
+  const s = generateStructuredInsight(kpis, inputs, deltas);
+  return `${s.profitDrivers} ${s.bestAction} ${s.mainRisk}`;
 }
 
 // ─── Investment verdict ──────────────────────────────────────
@@ -176,21 +193,30 @@ export interface InvestmentVerdict {
   explanation: string;
 }
 
-export function getInvestmentVerdict(kpis: KPIResult): InvestmentVerdict {
+export function getInvestmentVerdict(kpis: KPIResult): InvestmentVerdict & { metrics: { payback: string; margin: string; buffer: string }; interpretation: string } {
   const marginVal = isSafeValid(kpis.ebitdaMargin) ? kpis.ebitdaMargin.value! : null;
   const paybackVal = isSafeValid(kpis.paybackYears) ? kpis.paybackYears.value! : null;
+  const beVal = isSafeValid(kpis.breakEvenOccupancy) ? kpis.breakEvenOccupancy.value! : null;
+  const buffer = beVal !== null ? Math.round(kpis.weightedOccupancy - beVal) : null;
+
+  const metrics = {
+    payback: paybackVal !== null ? `${paybackVal.toFixed(1)} years` : "—",
+    margin: marginVal !== null ? `${marginVal.toFixed(0)}%` : "—",
+    buffer: buffer !== null ? `${buffer >= 0 ? "+" : ""}${buffer} pts` : "—",
+  };
 
   if (paybackVal === null || marginVal === null) {
-    return { level: "incomplete", label: "Incomplete", explanation: "Complete inputs to assess investment attractiveness" };
+    return { level: "incomplete", label: "Incomplete", explanation: "Complete inputs to assess investment attractiveness", metrics, interpretation: "Add pricing and cost inputs to get a verdict." };
   }
 
   if (paybackVal <= 3 && marginVal > 25) {
-    return { level: "strong", label: "Strong", explanation: `Payback in ${paybackVal.toFixed(1)} years with ${marginVal.toFixed(0)}% margin` };
+    const interp = marginVal > 55 ? "Returns are very high — validate cost assumptions" : "Strong economics with healthy margins";
+    return { level: "strong", label: "Strong", explanation: `Payback in ${paybackVal.toFixed(1)} years with ${marginVal.toFixed(0)}% margin`, metrics, interpretation: interp };
   }
   if (paybackVal <= 5) {
-    return { level: "moderate", label: "Moderate", explanation: `Payback in ${paybackVal.toFixed(1)} years — solid but not exceptional` };
+    return { level: "moderate", label: "Moderate", explanation: `Payback in ${paybackVal.toFixed(1)} years — solid but not exceptional`, metrics, interpretation: "Viable investment with room for improvement" };
   }
-  return { level: "weak", label: "Weak", explanation: `${paybackVal.toFixed(1)}-year payback suggests challenging economics` };
+  return { level: "weak", label: "Weak", explanation: `${paybackVal.toFixed(1)}-year payback suggests challenging economics`, metrics, interpretation: "Consider reducing costs or increasing revenue levers" };
 }
 
 // ─── Model confidence ────────────────────────────────────────
