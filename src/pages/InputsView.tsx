@@ -44,6 +44,7 @@ type Category =
   | "classes"
   | "otherRevenue"
   | "operatingCosts"
+  | "detailedCosts"
   | "financing";
 
 const CATEGORIES: { key: Category; label: string; icon: LucideIcon; description: string }[] = [
