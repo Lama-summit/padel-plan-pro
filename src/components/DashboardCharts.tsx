@@ -1,3 +1,4 @@
+import { SafeMetric, isSafeValid } from "@/lib/calculations";
 import {
   BarChart,
   Bar,
@@ -28,7 +29,7 @@ interface DashboardChartsProps {
     annualCourtRevenue: number;
     annualOtherRevenue: number;
     annualCosts: number;
-    breakEvenOccupancy: number;
+    breakEvenOccupancy: SafeMetric;
     weightedOccupancy: number;
   };
 }
@@ -60,9 +61,10 @@ export function DashboardCharts({ monthlyData, kpis }: DashboardChartsProps) {
     { name: "Costs", value: Math.round(kpis.annualCosts), color: "hsl(0 72% 51%)" },
   ];
 
+  const beVal = isSafeValid(kpis.breakEvenOccupancy) ? kpis.breakEvenOccupancy.value! : 0;
   const occupancyData = [
-    { name: "Break-even", value: kpis.breakEvenOccupancy, fill: "hsl(220 13% 80%)" },
-    { name: "Current", value: kpis.weightedOccupancy, fill: kpis.weightedOccupancy >= kpis.breakEvenOccupancy ? "hsl(152 69% 41%)" : "hsl(0 72% 51%)" },
+    { name: "Break-even", value: beVal, fill: "hsl(220 13% 80%)" },
+    { name: "Current", value: kpis.weightedOccupancy, fill: kpis.weightedOccupancy >= beVal ? "hsl(152 69% 41%)" : "hsl(0 72% 51%)" },
   ];
 
   return (
@@ -141,7 +143,7 @@ export function DashboardCharts({ monthlyData, kpis }: DashboardChartsProps) {
                 <Cell key={index} fill={entry.fill} />
               ))}
             </Bar>
-            <ReferenceLine x={kpis.breakEvenOccupancy} stroke="hsl(0 72% 51%)" strokeDasharray="4 4" strokeWidth={2} />
+            <ReferenceLine x={beVal} stroke="hsl(0 72% 51%)" strokeDasharray="4 4" strokeWidth={2} />
           </BarChart>
         </ResponsiveContainer>
       </div>

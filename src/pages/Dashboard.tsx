@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useStore } from "@/lib/store";
-import { calculateKPIs, getMonthlyEvolution } from "@/lib/calculations";
+import { calculateKPIs, getMonthlyEvolution, formatSafePct, formatSafeYears, isSafeValid } from "@/lib/calculations";
 import { Scenario } from "@/lib/types";
 import { KPICard } from "@/components/KPICard";
 import { DashboardCharts } from "@/components/DashboardCharts";
@@ -192,7 +192,7 @@ export default function Dashboard() {
             icon={BarChart3}
             size="large"
             variant={kpis.ebitdaYear >= 0 ? "success" : "destructive"}
-            subtitle={`${(kpis.ebitdaMargin * 100).toFixed(0)}% margin · ${kpis.ebitdaYear >= 0 ? "Profitable" : "Loss-making"}`}
+            subtitle={`${isSafeValid(kpis.ebitdaMargin) ? `${kpis.ebitdaMargin.value!.toFixed(0)}% margin · ` : ""}${kpis.ebitdaYear >= 0 ? "Profitable" : "Loss-making"}`}
           />
         </div>
 
@@ -207,54 +207,59 @@ export default function Dashboard() {
           />
           <KPICard
             label="Return on Investment"
-            value={`${kpis.roi.toFixed(1)}%`}
+            value={isSafeValid(kpis.roi) ? `${kpis.roi.value!.toFixed(1)}%` : "—"}
             icon={PieChart}
-            variant={kpis.roi >= 15 ? "success" : kpis.roi >= 0 ? "warning" : "destructive"}
-            subtitle={`Annual · ${kpis.roi >= 15 ? "Strong" : kpis.roi >= 0 ? "Moderate" : "Negative"}`}
+            variant={isSafeValid(kpis.roi) ? (kpis.roi.value! >= 15 ? "success" : kpis.roi.value! >= 0 ? "warning" : "destructive") : "default"}
+            subtitle={isSafeValid(kpis.roi) ? `Annual · ${kpis.roi.value! >= 15 ? "Strong" : kpis.roi.value! >= 0 ? "Moderate" : "Negative"}` : "Set investment to calculate"}
           />
           <KPICard
             label="Payback Period"
-            value={kpis.paybackYears === Infinity ? "N/A" : `${kpis.paybackYears.toFixed(1)} years`}
+            value={formatSafeYears(kpis.paybackYears)}
             icon={Clock}
-            variant={kpis.paybackYears <= 5 ? "success" : kpis.paybackYears <= 8 ? "warning" : "destructive"}
-            subtitle={kpis.paybackYears === Infinity ? "Not profitable" : `Net cashflow ${formatCurrency(kpis.netCashflowYear)}/yr`}
+            variant={isSafeValid(kpis.paybackYears) ? (kpis.paybackYears.value! <= 5 ? "success" : kpis.paybackYears.value! <= 8 ? "warning" : "destructive") : "default"}
+            subtitle={!isSafeValid(kpis.paybackYears) ? "Not profitable" : `Net cashflow ${formatCurrency(kpis.netCashflowYear)}/yr`}
           />
         </div>
 
         {/* Break-even highlight */}
-        <div className="bg-card border-2 border-accent/20 rounded-2xl p-7 flex items-center gap-8">
-          <div className="h-14 w-14 rounded-2xl gradient-accent flex items-center justify-center flex-shrink-0 shadow-lg shadow-accent/20">
-            <Target className="h-7 w-7 text-accent-foreground" />
-          </div>
-          <div className="flex-1">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Break-even Occupancy</p>
-            <p className="text-4xl font-bold tracking-tight">{kpis.breakEvenOccupancy.toFixed(0)}%</p>
-          </div>
-          <div className="hidden sm:block h-12 w-px bg-border" />
-          <div className="hidden sm:block text-right">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Current Avg. Occupancy</p>
-            <p className={`text-4xl font-bold tracking-tight ${
-              kpis.weightedOccupancy >= kpis.breakEvenOccupancy ? "text-success"
-                : kpis.weightedOccupancy >= kpis.breakEvenOccupancy * 0.9 ? "text-warning"
-                : "text-destructive"
-            }`}>
-              {kpis.weightedOccupancy.toFixed(0)}%
-            </p>
-          </div>
-          <div className="hidden sm:block">
-            <div className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
-              kpis.weightedOccupancy >= kpis.breakEvenOccupancy
-                ? "bg-success/10 text-success"
-                : kpis.weightedOccupancy >= kpis.breakEvenOccupancy * 0.9
-                ? "bg-warning/10 text-warning"
-                : "bg-destructive/10 text-destructive"
-            }`}>
-              {kpis.weightedOccupancy >= kpis.breakEvenOccupancy ? "Above target"
-                : kpis.weightedOccupancy >= kpis.breakEvenOccupancy * 0.9 ? "Near target"
-                : "Below target"}
+        {(() => {
+          const beValid = isSafeValid(kpis.breakEvenOccupancy);
+          const beVal = beValid ? kpis.breakEvenOccupancy.value! : 0;
+          const occAbove = beValid && kpis.weightedOccupancy >= beVal;
+          const occNear = beValid && !occAbove && kpis.weightedOccupancy >= beVal * 0.9;
+          const occColor = !beValid ? "text-muted-foreground" : occAbove ? "text-success" : occNear ? "text-warning" : "text-destructive";
+          const badgeClass = !beValid ? "bg-muted text-muted-foreground" : occAbove ? "bg-success/10 text-success" : occNear ? "bg-warning/10 text-warning" : "bg-destructive/10 text-destructive";
+          const badgeText = !beValid ? "Incomplete inputs" : occAbove ? "Above target" : occNear ? "Near target" : "Below target";
+
+          return (
+            <div className="bg-card border-2 border-accent/20 rounded-2xl p-7 flex items-center gap-8">
+              <div className="h-14 w-14 rounded-2xl gradient-accent flex items-center justify-center flex-shrink-0 shadow-lg shadow-accent/20">
+                <Target className="h-7 w-7 text-accent-foreground" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Break-even Occupancy</p>
+                <p className="text-4xl font-bold tracking-tight">
+                  {beValid ? `${beVal.toFixed(0)}%` : "—"}
+                </p>
+                {!beValid && (
+                  <p className="text-xs text-muted-foreground mt-1">Complete pricing and capacity inputs</p>
+                )}
+              </div>
+              <div className="hidden sm:block h-12 w-px bg-border" />
+              <div className="hidden sm:block text-right">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Current Avg. Occupancy</p>
+                <p className={`text-4xl font-bold tracking-tight ${occColor}`}>
+                  {kpis.weightedOccupancy.toFixed(0)}%
+                </p>
+              </div>
+              <div className="hidden sm:block">
+                <div className={`px-3 py-1.5 rounded-full text-xs font-semibold ${badgeClass}`}>
+                  {badgeText}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          );
+        })()}
 
         {/* Charts */}
         <div>
