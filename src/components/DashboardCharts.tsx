@@ -1,11 +1,9 @@
 import { SafeMetric, isSafeValid } from "@/lib/calculations";
 import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
   AreaChart,
   Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -35,7 +33,6 @@ interface DashboardChartsProps {
 }
 
 const formatK = (v: number) => `€${(v / 1000).toFixed(0)}K`;
-
 const chartGridColor = "hsl(220 13% 91%)";
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -69,23 +66,19 @@ export function DashboardCharts({ monthlyData, kpis }: DashboardChartsProps) {
 
   return (
     <div className="grid gap-5 lg:grid-cols-2">
-      {/* Main chart - Revenue vs Costs (spans full width on top) */}
+      {/* Main chart — Profit highlighted, revenue/costs secondary */}
       <div className="bg-card border rounded-2xl p-6 lg:col-span-2">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h3 className="font-semibold text-base">Monthly Evolution</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">Revenue, costs, and profit trend over 12 months</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Profit trend highlighted · revenue and costs shown for context</p>
           </div>
         </div>
         <ResponsiveContainer width="100%" height={320}>
           <AreaChart data={monthlyData}>
             <defs>
-              <linearGradient id="gradRevenue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(168 76% 36%)" stopOpacity={0.15} />
-                <stop offset="95%" stopColor="hsl(168 76% 36%)" stopOpacity={0} />
-              </linearGradient>
               <linearGradient id="gradProfit" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(222 60% 32%)" stopOpacity={0.1} />
+                <stop offset="5%" stopColor="hsl(222 60% 32%)" stopOpacity={0.18} />
                 <stop offset="95%" stopColor="hsl(222 60% 32%)" stopOpacity={0} />
               </linearGradient>
             </defs>
@@ -93,14 +86,13 @@ export function DashboardCharts({ monthlyData, kpis }: DashboardChartsProps) {
             <XAxis dataKey="month" tick={{ fontSize: 12, fill: "hsl(220 9% 46%)" }} axisLine={false} tickLine={false} />
             <YAxis tickFormatter={formatK} tick={{ fontSize: 12, fill: "hsl(220 9% 46%)" }} axisLine={false} tickLine={false} />
             <Tooltip content={<CustomTooltip />} />
-            <Legend
-              iconType="circle"
-              iconSize={8}
-              wrapperStyle={{ paddingTop: 16, fontSize: 13 }}
-            />
-            <Area type="monotone" dataKey="revenue" name="Revenue" stroke="hsl(168 76% 36%)" strokeWidth={2.5} fill="url(#gradRevenue)" dot={false} />
-            <Area type="monotone" dataKey="costs" name="Costs" stroke="hsl(0 72% 51%)" strokeWidth={2} fill="none" dot={false} strokeDasharray="6 3" />
+            <Legend iconType="circle" iconSize={8} wrapperStyle={{ paddingTop: 16, fontSize: 13 }} />
+            {/* Revenue & costs — lighter / secondary */}
+            <Area type="monotone" dataKey="revenue" name="Revenue" stroke="hsl(168 76% 36%)" strokeWidth={1.5} strokeOpacity={0.45} fill="none" dot={false} />
+            <Area type="monotone" dataKey="costs" name="Costs" stroke="hsl(0 72% 51%)" strokeWidth={1.5} strokeOpacity={0.35} fill="none" dot={false} strokeDasharray="6 3" />
+            {/* Profit — primary */}
             <Area type="monotone" dataKey="profit" name="Profit" stroke="hsl(222 60% 32%)" strokeWidth={2.5} fill="url(#gradProfit)" dot={false} />
+            <ReferenceLine y={0} stroke="hsl(220 13% 80%)" strokeDasharray="4 4" strokeWidth={1.5} />
           </AreaChart>
         </ResponsiveContainer>
       </div>

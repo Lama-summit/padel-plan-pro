@@ -66,6 +66,61 @@ export interface KPIResult {
   annualCosts: number;
 }
 
+// ─── Delta impact (causal feedback) ──────────────────────────
+export interface DriverDelta {
+  key: string;
+  label: string;
+  annualRevenueImpact: number;
+  ebitdaImpact: number;
+}
+
+export function calculateDriverDeltas(inputs: ProjectInputs, scenario: Scenario): Record<string, DriverDelta> {
+  const base = calculateKPIs(inputs, scenario);
+  const deltas: Record<string, DriverDelta> = {};
+
+  const tests: { key: keyof ProjectInputs; label: string; delta: number }[] = [
+    { key: "peakOccupancy", label: "Peak Occupancy +5%", delta: 5 },
+    { key: "offPeakOccupancy", label: "Off-Peak Occupancy +5%", delta: 5 },
+    { key: "peakPrice", label: "Peak Price +€2", delta: 2 },
+    { key: "offPeakPrice", label: "Off-Peak Price +€2", delta: 2 },
+    { key: "numberOfCourts", label: "+1 Court", delta: 1 },
+    { key: "openingHoursPerDay", label: "+1 Hour/Day", delta: 1 },
+  ];
+
+  for (const t of tests) {
+    const tweaked = { ...inputs, [t.key]: (inputs[t.key] as number) + t.delta };
+    const alt = calculateKPIs(tweaked, scenario);
+    deltas[t.key] = {
+      key: t.key,
+      label: t.label,
+      annualRevenueImpact: alt.totalRevenueYear - base.totalRevenueYear,
+      ebitdaImpact: alt.ebitdaYear - base.ebitdaYear,
+    };
+  }
+  return deltas;
+}
+
+// ─── Scenario comparison ─────────────────────────────────────
+export interface ScenarioDelta {
+  ebitdaPctChange: number | null;
+  paybackDelta: number | null;
+  revenuePctChange: number | null;
+}
+
+export function calculateScenarioDelta(inputs: ProjectInputs, scenario: Scenario): ScenarioDelta | null {
+  if (scenario === "base") return null;
+  const base = calculateKPIs(inputs, "base");
+  const current = calculateKPIs(inputs, scenario);
+
+  const ebitdaPctChange = base.ebitdaYear !== 0 ? ((current.ebitdaYear - base.ebitdaYear) / Math.abs(base.ebitdaYear)) * 100 : null;
+  const paybackDelta = isSafeValid(current.paybackYears) && isSafeValid(base.paybackYears)
+    ? current.paybackYears.value! - base.paybackYears.value!
+    : null;
+  const revenuePctChange = base.totalRevenueYear !== 0 ? ((current.totalRevenueYear - base.totalRevenueYear) / Math.abs(base.totalRevenueYear)) * 100 : null;
+
+  return { ebitdaPctChange, paybackDelta, revenuePctChange };
+}
+
 // ─── Formatting helpers (safe for UI) ────────────────────────
 export function formatSafePct(m: SafeMetric, decimals = 0): string {
   if (m.status !== "valid" || m.value === null) return "—";
