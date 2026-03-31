@@ -50,12 +50,6 @@ export function KeyDriversPanel({
     );
   }
 
-  const formatImpact = (val: number) => {
-    const abs = Math.abs(val);
-    const str = abs >= 1000 ? `€${(abs / 1000).toFixed(0)}K` : `€${abs.toFixed(0)}`;
-    return val >= 0 ? `+${str}` : `-${str}`;
-  };
-
   return (
     <aside className={cn("w-[300px] flex-shrink-0 bg-card border-l overflow-y-auto transition-all duration-300", className)}>
       <div className="p-5 space-y-5">
@@ -148,14 +142,38 @@ export function KeyDriversPanel({
 
 /* ─── Sub-components ──────────────────────────────────────── */
 
-function DeltaIndicator({ delta, formatImpact }: { delta?: { annualRevenueImpact: number }; formatImpact: (v: number) => string }) {
-  if (!delta || delta.annualRevenueImpact === 0) return null;
-  const positive = delta.annualRevenueImpact > 0;
+function DeltaIndicator({ delta }: { delta?: { annualRevenueImpact: number; ebitdaImpact: number; paybackImpact: number | null } }) {
+  if (!delta) return null;
+  const hasRevenue = delta.annualRevenueImpact !== 0;
+  const hasEbitda = delta.ebitdaImpact !== 0;
+  const hasPayback = delta.paybackImpact !== null && delta.paybackImpact !== 0;
+  if (!hasRevenue && !hasEbitda && !hasPayback) return null;
+
+  const fmtK = (val: number) => {
+    const abs = Math.abs(val);
+    const str = abs >= 1000 ? `€${(abs / 1000).toFixed(0)}K` : `€${abs.toFixed(0)}`;
+    return val >= 0 ? `+${str}` : `-${str}`;
+  };
+
   return (
-    <span className={cn("inline-flex items-center gap-0.5 text-[10px] font-medium", positive ? "text-success" : "text-destructive")}>
-      {positive ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />}
-      {formatImpact(delta.annualRevenueImpact)}/yr
-    </span>
+    <div className="flex flex-wrap gap-x-2.5 gap-y-0.5 mt-0.5">
+      {hasRevenue && (
+        <span className={cn("inline-flex items-center gap-0.5 text-[10px] font-medium", delta.annualRevenueImpact > 0 ? "text-success" : "text-destructive")}>
+          {delta.annualRevenueImpact > 0 ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />}
+          {fmtK(delta.annualRevenueImpact)} rev
+        </span>
+      )}
+      {hasEbitda && (
+        <span className={cn("inline-flex items-center gap-0.5 text-[10px] font-medium", delta.ebitdaImpact > 0 ? "text-success" : "text-destructive")}>
+          {fmtK(delta.ebitdaImpact)} EBITDA
+        </span>
+      )}
+      {hasPayback && (
+        <span className={cn("inline-flex items-center gap-0.5 text-[10px] font-medium", delta.paybackImpact! < 0 ? "text-success" : "text-destructive")}>
+          {delta.paybackImpact! < 0 ? "" : "+"}{delta.paybackImpact!.toFixed(1)}yr
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -176,14 +194,8 @@ function DriverSection({ icon: Icon, label, hint, children }: {
 
 function CompactSlider({ label, value, min, max, step, suffix, onChange, delta }: {
   label: string; value: number; min: number; max: number; step: number; suffix?: string;
-  onChange: (v: number) => void; delta?: { annualRevenueImpact: number };
+  onChange: (v: number) => void; delta?: { annualRevenueImpact: number; ebitdaImpact: number; paybackImpact: number | null };
 }) {
-  const formatImpact = (val: number) => {
-    const abs = Math.abs(val);
-    const str = abs >= 1000 ? `€${(abs / 1000).toFixed(0)}K` : `€${abs.toFixed(0)}`;
-    return val >= 0 ? `+${str}` : `-${str}`;
-  };
-
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
@@ -194,21 +206,15 @@ function CompactSlider({ label, value, min, max, step, suffix, onChange, delta }
         </span>
       </div>
       <Slider value={[value]} min={min} max={max} step={step} onValueChange={([v]) => onChange(v)} className="py-0.5" />
-      <DeltaIndicator delta={delta} formatImpact={formatImpact} />
+      <DeltaIndicator delta={delta} />
     </div>
   );
 }
 
 function CompactNumber({ label, value, suffix, onChange, delta }: {
   label: string; value: number; suffix?: string; onChange: (v: string) => void;
-  delta?: { annualRevenueImpact: number };
+  delta?: { annualRevenueImpact: number; ebitdaImpact: number; paybackImpact: number | null };
 }) {
-  const formatImpact = (val: number) => {
-    const abs = Math.abs(val);
-    const str = abs >= 1000 ? `€${(abs / 1000).toFixed(0)}K` : `€${abs.toFixed(0)}`;
-    return val >= 0 ? `+${str}` : `-${str}`;
-  };
-
   return (
     <div className="space-y-1.5">
       <Label className="text-xs text-muted-foreground">{label}</Label>
@@ -219,7 +225,7 @@ function CompactNumber({ label, value, suffix, onChange, delta }: {
           <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-medium">{suffix}</span>
         )}
       </div>
-      <DeltaIndicator delta={delta} formatImpact={formatImpact} />
+      <DeltaIndicator delta={delta} />
     </div>
   );
 }

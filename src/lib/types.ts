@@ -1,5 +1,7 @@
 export type Scenario = "base" | "optimistic" | "pessimistic";
 
+export type CostMode = "basic" | "detailed";
+
 export interface ProjectInputs {
   // Courts & Capacity
   numberOfCourts: number;
@@ -24,7 +26,7 @@ export interface ProjectInputs {
   facilityBuildout: number;
   equipmentCost: number;
 
-  // Operating Costs
+  // Operating Costs (legacy / basic mode)
   monthlyOperatingCosts: number;
   staffCosts: number;
   utilitiesCosts: number;
@@ -32,6 +34,18 @@ export interface ProjectInputs {
   rentOrMortgage: number;
   marketingCosts: number;
   insuranceCosts: number;
+
+  // Cost mode
+  costMode: CostMode;
+
+  // Detailed cost model — fixed
+  staffCostPerCourtHour: number;   // €/court-hour for staffing
+  softwareManagementCost: number;  // €/month
+
+  // Detailed cost model — variable
+  energyCostPerHour: number;       // €/court-hour
+  maintenanceCostPerUsage: number; // €/booked-court-hour
+  cleaningCostPerDay: number;      // €/court/day
 
   // Classes / Coaching
   classesPerWeek: number;
@@ -46,8 +60,8 @@ export interface ProjectInputs {
   membershipFees: number;
 
   // Financing
-  debtPercentage: number; // 0-100, % of investment financed by debt
-  interestRate: number; // annual %
+  debtPercentage: number;
+  interestRate: number;
   loanTermYears: number;
 }
 
@@ -71,8 +85,8 @@ export interface Project {
 }
 
 export interface ScenarioMultipliers {
-  occupancyOffset: number;   // percentage points added to occupancy
-  pricingMultiplier: number; // multiplier on prices
+  occupancyOffset: number;
+  pricingMultiplier: number;
 }
 
 export const SCENARIO_MULTIPLIERS: Record<Scenario, ScenarioMultipliers> = {
@@ -102,6 +116,17 @@ export const DEFAULT_INPUTS: ProjectInputs = {
   rentOrMortgage: 5000,
   marketingCosts: 2000,
   insuranceCosts: 1000,
+
+  // Cost mode
+  costMode: "basic",
+
+  // Detailed costs
+  staffCostPerCourtHour: 4,
+  softwareManagementCost: 500,
+  energyCostPerHour: 3,
+  maintenanceCostPerUsage: 1.5,
+  cleaningCostPerDay: 15,
+
   classesPerWeek: 10,
   avgClassPrice: 15,
   avgClassSize: 8,
