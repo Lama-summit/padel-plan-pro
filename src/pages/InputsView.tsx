@@ -52,7 +52,8 @@ const CATEGORIES: { key: Category; label: string; icon: LucideIcon; description:
   { key: "hours", label: "Schedule & Peak", icon: Clock, description: "Operating schedule details" },
   { key: "classes", label: "Classes / Coaching", icon: GraduationCap, description: "Lessons and coaching revenue" },
   { key: "otherRevenue", label: "Other Revenue", icon: Store, description: "Pro shop, F&B, memberships" },
-  { key: "operatingCosts", label: "Operating Costs", icon: Wallet, description: "Monthly running expenses" },
+  { key: "operatingCosts", label: "Operating Costs", icon: Wallet, description: "Monthly running expenses (basic mode)" },
+  { key: "detailedCosts", label: "Detailed Costs", icon: Wallet, description: "Structured fixed & variable costs" },
   { key: "financing", label: "Financing", icon: Banknote, description: "Loans and interest" },
 ];
 
