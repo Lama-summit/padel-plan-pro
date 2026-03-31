@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useStore } from "@/lib/store";
-import { ProjectInputs } from "@/lib/types";
+import { ProjectInputs, CostMode } from "@/lib/types";
 import { KeyDriversPanel } from "@/components/KeyDriversPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +44,7 @@ type Category =
   | "classes"
   | "otherRevenue"
   | "operatingCosts"
+  | "detailedCosts"
   | "financing";
 
 const CATEGORIES: { key: Category; label: string; icon: LucideIcon; description: string }[] = [
@@ -51,7 +52,8 @@ const CATEGORIES: { key: Category; label: string; icon: LucideIcon; description:
   { key: "hours", label: "Schedule & Peak", icon: Clock, description: "Operating schedule details" },
   { key: "classes", label: "Classes / Coaching", icon: GraduationCap, description: "Lessons and coaching revenue" },
   { key: "otherRevenue", label: "Other Revenue", icon: Store, description: "Pro shop, F&B, memberships" },
-  { key: "operatingCosts", label: "Operating Costs", icon: Wallet, description: "Monthly running expenses" },
+  { key: "operatingCosts", label: "Operating Costs", icon: Wallet, description: "Monthly running expenses (basic mode)" },
+  { key: "detailedCosts", label: "Detailed Costs", icon: Wallet, description: "Structured fixed & variable costs" },
   { key: "financing", label: "Financing", icon: Banknote, description: "Loans and interest" },
 ];
 
@@ -94,6 +96,13 @@ const CATEGORY_FIELDS: Record<Category, FieldDef[]> = {
     { key: "rentOrMortgage", label: "Rent or Mortgage / Month", suffix: "€" },
     { key: "marketingCosts", label: "Marketing / Month", suffix: "€" },
     { key: "insuranceCosts", label: "Insurance / Month", suffix: "€" },
+  ],
+  detailedCosts: [
+    { key: "staffCostPerCourtHour", label: "Staff Cost / Court-Hour", suffix: "€", helper: "Scales with courts × hours" },
+    { key: "softwareManagementCost", label: "Software & Management", suffix: "€/mo" },
+    { key: "energyCostPerHour", label: "Energy / Court-Hour", suffix: "€", helper: "Scales with operating hours" },
+    { key: "maintenanceCostPerUsage", label: "Maintenance / Booked Hour", suffix: "€", helper: "Scales with usage" },
+    { key: "cleaningCostPerDay", label: "Cleaning / Court / Day", suffix: "€" },
   ],
   financing: [
     { key: "debtPercentage", label: "Debt Percentage", suffix: "%", slider: { min: 0, max: 100, step: 5 }, helper: "% of investment financed by loan" },

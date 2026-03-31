@@ -1,4 +1,4 @@
-import { SafeMetric, isSafeValid } from "@/lib/calculations";
+import { SafeMetric, isSafeValid, CostBreakdown } from "@/lib/calculations";
 import {
   AreaChart,
   Area,
@@ -29,6 +29,7 @@ interface DashboardChartsProps {
     annualCosts: number;
     breakEvenOccupancy: SafeMetric;
     weightedOccupancy: number;
+    costBreakdown: CostBreakdown;
   };
 }
 

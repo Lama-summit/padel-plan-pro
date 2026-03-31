@@ -1,8 +1,19 @@
 import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useStore } from "@/lib/store";
-import { calculateKPIs, getMonthlyEvolution, formatSafePct, formatSafeYears, isSafeValid, calculateScenarioDelta } from "@/lib/calculations";
-import { Scenario, ProjectInputs, DEFAULT_INPUTS } from "@/lib/types";
+import {
+  calculateKPIs,
+  getMonthlyEvolution,
+  formatSafePct,
+  formatSafeYears,
+  isSafeValid,
+  calculateScenarioDelta,
+  calculateScenarioComparison,
+  calculateSensitivityRanking,
+  generateInsight,
+  getValidationWarnings,
+} from "@/lib/calculations";
+import { Scenario, ProjectInputs, DEFAULT_INPUTS, CostMode } from "@/lib/types";
 import { KPICard } from "@/components/KPICard";
 import { DashboardCharts } from "@/components/DashboardCharts";
 import { KeyDriversPanel } from "@/components/KeyDriversPanel";
@@ -35,6 +46,7 @@ import {
   Plus,
   Settings,
   TrendingUp,
+  TrendingDown,
   DollarSign,
   PieChart,
   Target,
@@ -43,15 +55,17 @@ import {
   GitBranch,
   AlertTriangle,
   Info,
+  Lightbulb,
+  Zap,
+  Columns,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const SCENARIOS: { value: Scenario; label: string; color: string }[] = [
   { value: "base", label: "Base", color: "data-[active=true]:bg-primary data-[active=true]:text-primary-foreground" },
   { value: "optimistic", label: "Optimistic", color: "data-[active=true]:bg-success data-[active=true]:text-success-foreground" },
   { value: "pessimistic", label: "Pessimistic", color: "data-[active=true]:bg-warning data-[active=true]:text-warning-foreground" },
 ];
-
-const EBITDA_MARGIN_WARNING = 55; // %
 
 export default function Dashboard() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -61,6 +75,7 @@ export default function Dashboard() {
   const [newVersionName, setNewVersionName] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
+  const [compareMode, setCompareMode] = useState(false);
 
   const project = getProject(projectId!);
   const activeVersion = useMemo(
@@ -79,6 +94,22 @@ export default function Dashboard() {
     () => activeVersion ? calculateScenarioDelta(activeVersion.inputs, scenario) : null,
     [activeVersion, scenario]
   );
+  const comparison = useMemo(
+    () => activeVersion && compareMode && scenario !== "base" ? calculateScenarioComparison(activeVersion.inputs, scenario) : null,
+    [activeVersion, scenario, compareMode]
+  );
+  const sensitivity = useMemo(
+    () => activeVersion ? calculateSensitivityRanking(activeVersion.inputs, scenario) : [],
+    [activeVersion, scenario]
+  );
+  const insight = useMemo(
+    () => kpis && activeVersion ? generateInsight(kpis, activeVersion.inputs) : "",
+    [kpis, activeVersion]
+  );
+  const warnings = useMemo(
+    () => kpis ? getValidationWarnings(kpis) : [],
+    [kpis]
+  );
 
   if (!project || !activeVersion || !kpis) {
     return (
@@ -96,7 +127,7 @@ export default function Dashboard() {
   };
 
   const handleDriverChange = (key: keyof ProjectInputs, value: string | number) => {
-    const numVal = key === "courtType" ? value as any : typeof value === "number" ? value : parseFloat(value) || 0;
+    const numVal = key === "courtType" || key === "costMode" ? value as any : typeof value === "number" ? value : parseFloat(value) || 0;
     updateVersionInputs(project.id, activeVersion.id, { [key]: numVal });
   };
 
@@ -119,7 +150,6 @@ export default function Dashboard() {
   };
 
   const marginVal = isSafeValid(kpis.ebitdaMargin) ? kpis.ebitdaMargin.value! : null;
-  const marginWarning = marginVal !== null && marginVal > EBITDA_MARGIN_WARNING;
 
   // Break-even combined card
   const beValid = isSafeValid(kpis.breakEvenOccupancy);
@@ -133,6 +163,8 @@ export default function Dashboard() {
     const sign = v >= 0 ? "+" : "";
     return `${sign}${v.toFixed(1)}${suffix}`;
   };
+
+  const costMode = activeVersion.inputs.costMode || "basic";
 
   return (
     <TooltipProvider>
@@ -191,9 +223,35 @@ export default function Dashboard() {
                 </DialogContent>
               </Dialog>
 
-              {/* Scenario switcher + sticky badge */}
+              {/* Cost mode toggle */}
+              <div className="flex bg-muted rounded-xl p-0.5 gap-0.5">
+                {(["basic", "detailed"] as CostMode[]).map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => handleDriverChange("costMode", mode)}
+                    className={cn(
+                      "px-3 py-1 text-xs rounded-lg transition-all font-medium capitalize",
+                      costMode === mode ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {mode === "basic" ? "Basic Costs" : "Detailed Costs"}
+                  </button>
+                ))}
+              </div>
+
+              {/* Scenario switcher + compare toggle */}
               <div className="ml-auto flex items-center gap-3">
-                {scenario !== "base" && scenarioDelta && (
+                {scenario !== "base" && (
+                  <Button
+                    variant={compareMode ? "default" : "outline"}
+                    size="sm"
+                    className="gap-1.5 rounded-xl text-xs h-8"
+                    onClick={() => setCompareMode(!compareMode)}
+                  >
+                    <Columns className="h-3.5 w-3.5" /> {compareMode ? "Comparing" : "Compare vs Base"}
+                  </Button>
+                )}
+                {scenario !== "base" && scenarioDelta && !compareMode && (
                   <Badge variant="outline" className="text-xs gap-1 py-1">
                     vs Base: EBITDA {fmtDelta(scenarioDelta.ebitdaPctChange)}
                     {scenarioDelta.paybackDelta !== null && ` · Payback ${fmtDelta(scenarioDelta.paybackDelta, "yr")}`}
@@ -204,7 +262,7 @@ export default function Dashboard() {
                     <button
                       key={s.value}
                       data-active={scenario === s.value}
-                      onClick={() => setScenario(s.value)}
+                      onClick={() => { setScenario(s.value); if (s.value === "base") setCompareMode(false); }}
                       className={`px-4 py-1.5 text-sm rounded-lg transition-all font-medium text-muted-foreground hover:text-foreground ${s.color}`}
                     >
                       {s.label}
@@ -221,36 +279,53 @@ export default function Dashboard() {
           <main className="flex-1 overflow-y-auto px-6 py-8">
             <div className="max-w-6xl mx-auto space-y-8 animate-fade-in">
 
+              {/* Validation warnings */}
+              {warnings.length > 0 && (
+                <div className="space-y-2">
+                  {warnings.map((w) => (
+                    <div key={w.id} className={cn(
+                      "flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-sm font-medium",
+                      w.severity === "error" ? "bg-destructive/5 border-destructive/20 text-destructive" : "bg-warning/5 border-warning/20 text-warning"
+                    )}>
+                      <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                      {w.message}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Scenario comparison mode */}
+              {compareMode && comparison && (
+                <div className="bg-card border rounded-2xl p-6">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-4">Scenario Comparison — {scenario} vs Base</p>
+                  <div className="grid gap-4 sm:grid-cols-4">
+                    <ComparisonKPI label="Revenue" base={formatCurrency(comparison.base.totalRevenueYear)} current={formatCurrency(comparison.current.totalRevenueYear)} delta={comparison.revenueDelta} formatDelta={formatCurrency} />
+                    <ComparisonKPI label="EBITDA" base={formatCurrency(comparison.base.ebitdaYear)} current={formatCurrency(comparison.current.ebitdaYear)} delta={comparison.ebitdaDelta} formatDelta={formatCurrency} />
+                    <ComparisonKPI label="Payback" base={formatSafeYears(comparison.base.paybackYears)} current={formatSafeYears(comparison.current.paybackYears)} delta={comparison.paybackDelta} formatDelta={(v) => `${v > 0 ? "+" : ""}${v.toFixed(1)}yr`} invertColor />
+                    <ComparisonKPI label="ROI" base={isSafeValid(comparison.base.roi) ? `${comparison.base.roi.value!.toFixed(1)}%` : "—"} current={isSafeValid(comparison.current.roi) ? `${comparison.current.roi.value!.toFixed(1)}%` : "—"} delta={comparison.roiDelta} formatDelta={(v) => `${v > 0 ? "+" : ""}${v.toFixed(1)}%`} />
+                  </div>
+                </div>
+              )}
+
               {/* PRIMARY KPIs */}
-              <p className="section-title">Primary Metrics</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Primary Metrics</p>
               <div className="grid gap-5 md:grid-cols-2">
-                {/* Annual EBITDA — primary */}
+                {/* Annual EBITDA */}
                 <div className="bg-card border rounded-2xl p-7 card-hover relative overflow-hidden">
                   <div className="flex items-start justify-between mb-4">
                     <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${kpis.ebitdaYear >= 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
                       <BarChart3 className="h-6 w-6" />
                     </div>
                     <div className="flex items-center gap-1.5">
-                      {marginWarning && (
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <Badge variant="outline" className="gap-1 text-warning border-warning/30 text-[10px] py-0.5">
-                              <AlertTriangle className="h-3 w-3" /> Check cost assumptions
-                            </Badge>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="text-xs max-w-[200px]">EBITDA margin exceeds {EBITDA_MARGIN_WARNING}%. Verify that operating costs are realistic.</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      )}
                       <Tooltip>
                         <TooltipTrigger><Info className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
                         <TooltipContent>
-                          <div className="text-xs space-y-1 max-w-[220px]">
-                            <p className="font-medium">EBITDA = Revenue − Operating Costs</p>
+                          <div className="text-xs space-y-1 max-w-[240px]">
+                            <p className="font-medium">EBITDA = Revenue − Fixed Costs − Variable Costs</p>
                             <p>Monthly revenue: {formatCurrency(kpis.totalRevenueMonth)}</p>
-                            <p>Monthly costs: {formatCurrency(kpis.totalRevenueMonth - kpis.ebitdaMonth)}</p>
-                            <p>Does not include debt service</p>
+                            <p>Fixed costs: {formatCurrency(kpis.costBreakdown.fixedCosts)}/mo</p>
+                            <p>Variable costs: {formatCurrency(kpis.costBreakdown.variableCosts)}/mo</p>
+                            <p className="text-muted-foreground">Mode: {costMode}</p>
                           </div>
                         </TooltipContent>
                       </Tooltip>
@@ -272,7 +347,7 @@ export default function Dashboard() {
                   )}
                 </div>
 
-                {/* Payback Period — primary */}
+                {/* Payback Period */}
                 <div className="bg-card border rounded-2xl p-7 card-hover relative overflow-hidden">
                   <div className="flex items-start justify-between mb-4">
                     <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${
@@ -304,9 +379,9 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* SECONDARY KPIs */}
-              <p className="section-title">Secondary Metrics</p>
-              <div className="grid gap-5 md:grid-cols-3">
+              {/* SECONDARY KPIs — smaller */}
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Secondary Metrics</p>
+              <div className="grid gap-4 md:grid-cols-3">
                 <KPICard
                   label="Annual Revenue"
                   value={kpis.totalRevenueMonth === 0 ? "Set pricing" : formatCurrency(kpis.totalRevenueYear)}
@@ -323,12 +398,12 @@ export default function Dashboard() {
                 />
 
                 {/* Operational Efficiency — combined card */}
-                <div className="bg-card border rounded-2xl p-6 card-hover relative overflow-hidden">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${
+                <div className="bg-card border rounded-2xl p-5 card-hover relative overflow-hidden">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className={`h-9 w-9 rounded-xl flex items-center justify-center ${
                       !beValid ? "bg-muted text-muted-foreground" : occAbove ? "bg-success/10 text-success" : occNear ? "bg-warning/10 text-warning" : "bg-destructive/10 text-destructive"
                     }`}>
-                      <Target className="h-5 w-5" />
+                      <Target className="h-4 w-4" />
                     </div>
                     <Badge
                       variant="outline"
@@ -339,21 +414,20 @@ export default function Dashboard() {
                       {!beValid ? "Incomplete" : occAbove ? "Above threshold" : occNear ? "Near threshold" : "Below threshold"}
                     </Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground mb-1.5 font-medium">Operational Efficiency</p>
+                  <p className="text-xs text-muted-foreground mb-1 font-medium">Operational Efficiency</p>
                   {beValid ? (
-                    <div className="space-y-1.5">
+                    <div className="space-y-1">
                       <div className="flex items-baseline justify-between">
-                        <span className="text-xs text-muted-foreground">Break-even</span>
-                        <span className="text-lg font-bold tabular-nums">{beVal.toFixed(0)}%</span>
+                        <span className="text-[11px] text-muted-foreground">Break-even</span>
+                        <span className="text-base font-bold tabular-nums">{beVal.toFixed(0)}%</span>
                       </div>
                       <div className="flex items-baseline justify-between">
-                        <span className="text-xs text-muted-foreground">Current</span>
-                        <span className={`text-lg font-bold tabular-nums ${occAbove ? "text-success" : occNear ? "text-warning" : "text-destructive"}`}>
+                        <span className="text-[11px] text-muted-foreground">Current</span>
+                        <span className={`text-base font-bold tabular-nums ${occAbove ? "text-success" : occNear ? "text-warning" : "text-destructive"}`}>
                           {kpis.weightedOccupancy.toFixed(0)}%
                         </span>
                       </div>
-                      {/* Visual bar */}
-                      <div className="relative h-2 bg-muted rounded-full mt-2 overflow-hidden">
+                      <div className="relative h-1.5 bg-muted rounded-full mt-1.5 overflow-hidden">
                         <div className="absolute inset-y-0 left-0 bg-accent/30 rounded-full" style={{ width: `${Math.min(100, beVal)}%` }} />
                         <div
                           className={`absolute inset-y-0 left-0 rounded-full ${occAbove ? "bg-success" : occNear ? "bg-warning" : "bg-destructive"}`}
@@ -367,9 +441,40 @@ export default function Dashboard() {
                 </div>
               </div>
 
+              {/* Insight + Sensitivity row */}
+              <div className="grid gap-4 md:grid-cols-2">
+                {/* Decision Insight */}
+                <div className="bg-card border rounded-2xl p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Lightbulb className="h-4 w-4 text-warning" />
+                    <span className="text-xs font-semibold uppercase tracking-wide text-foreground">Key Insight</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{insight}</p>
+                </div>
+
+                {/* Sensitivity Ranking */}
+                <div className="bg-card border rounded-2xl p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Zap className="h-4 w-4 text-accent-foreground" />
+                    <span className="text-xs font-semibold uppercase tracking-wide text-foreground">Top Drivers by Impact</span>
+                  </div>
+                  <div className="space-y-2">
+                    {sensitivity.map((s, i) => (
+                      <div key={s.key} className="flex items-center gap-3">
+                        <span className="text-xs font-bold text-muted-foreground w-5">{i + 1}.</span>
+                        <span className="text-sm text-foreground flex-1">{s.label}</span>
+                        <span className={cn("text-xs font-semibold tabular-nums", s.ebitdaImpact > 0 ? "text-success" : "text-muted-foreground")}>
+                          {s.ebitdaImpact >= 1000 ? `€${(s.ebitdaImpact / 1000).toFixed(0)}K` : `€${s.ebitdaImpact.toFixed(0)}`}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
               {/* Charts */}
               <div>
-                <p className="section-title mb-5">Financial Overview</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-5">Financial Overview</p>
                 <DashboardCharts monthlyData={monthlyData} kpis={kpis} />
               </div>
             </div>
@@ -388,5 +493,32 @@ export default function Dashboard() {
         </div>
       </div>
     </TooltipProvider>
+  );
+}
+
+/* ─── Comparison KPI sub-component ────────────────────────── */
+function ComparisonKPI({ label, base, current, delta, formatDelta, invertColor }: {
+  label: string; base: string; current: string; delta: number | null;
+  formatDelta: (v: number) => string; invertColor?: boolean;
+}) {
+  const positive = delta !== null && (invertColor ? delta < 0 : delta > 0);
+  const negative = delta !== null && (invertColor ? delta > 0 : delta < 0);
+
+  return (
+    <div className="space-y-1">
+      <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
+      <div className="flex items-baseline gap-2">
+        <span className="text-xs text-muted-foreground line-through">{base}</span>
+        <span className="text-sm font-bold">{current}</span>
+      </div>
+      {delta !== null && (
+        <span className={cn("text-[10px] font-semibold inline-flex items-center gap-0.5",
+          positive ? "text-success" : negative ? "text-destructive" : "text-muted-foreground"
+        )}>
+          {positive ? <TrendingUp className="h-2.5 w-2.5" /> : negative ? <TrendingDown className="h-2.5 w-2.5" /> : null}
+          {formatDelta(delta)}
+        </span>
+      )}
+    </div>
   );
 }
