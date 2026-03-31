@@ -4,26 +4,26 @@ export interface ProjectInputs {
   // Courts & Capacity
   numberOfCourts: number;
   courtType: "indoor" | "outdoor" | "mixed";
-  
+
   // Opening Hours
   openingHoursPerDay: number;
   operatingDaysPerYear: number;
   peakHoursPerDay: number;
-  
+
   // Pricing
   offPeakPrice: number;
   peakPrice: number;
-  
+
   // Occupancy
   offPeakOccupancy: number; // 0-100
   peakOccupancy: number; // 0-100
-  
+
   // Investment
   initialInvestment: number;
   courtConstructionCost: number;
   facilityBuildout: number;
   equipmentCost: number;
-  
+
   // Operating Costs
   monthlyOperatingCosts: number;
   staffCosts: number;
@@ -32,22 +32,22 @@ export interface ProjectInputs {
   rentOrMortgage: number;
   marketingCosts: number;
   insuranceCosts: number;
-  
+
   // Classes / Coaching
   classesPerWeek: number;
   avgClassPrice: number;
   avgClassSize: number;
   coachingCostPerHour: number;
-  
+
   // Other Revenue
   otherMonthlyRevenue: number;
   proshopRevenue: number;
   fAndBRevenue: number;
   membershipFees: number;
-  
+
   // Financing
-  loanAmount: number;
-  interestRate: number;
+  debtPercentage: number; // 0-100, % of investment financed by debt
+  interestRate: number; // annual %
   loanTermYears: number;
 }
 
@@ -71,15 +71,14 @@ export interface Project {
 }
 
 export interface ScenarioMultipliers {
-  revenueMultiplier: number;
-  costMultiplier: number;
-  occupancyOffset: number; // percentage points
+  occupancyOffset: number;   // percentage points added to occupancy
+  pricingMultiplier: number; // multiplier on prices
 }
 
 export const SCENARIO_MULTIPLIERS: Record<Scenario, ScenarioMultipliers> = {
-  base: { revenueMultiplier: 1, costMultiplier: 1, occupancyOffset: 0 },
-  optimistic: { revenueMultiplier: 1.15, costMultiplier: 0.95, occupancyOffset: 10 },
-  pessimistic: { revenueMultiplier: 0.85, costMultiplier: 1.1, occupancyOffset: -10 },
+  base: { occupancyOffset: 0, pricingMultiplier: 1.0 },
+  optimistic: { occupancyOffset: 10, pricingMultiplier: 1.05 },
+  pessimistic: { occupancyOffset: -10, pricingMultiplier: 0.95 },
 };
 
 export const DEFAULT_INPUTS: ProjectInputs = {
@@ -111,7 +110,7 @@ export const DEFAULT_INPUTS: ProjectInputs = {
   proshopRevenue: 1500,
   fAndBRevenue: 2000,
   membershipFees: 500,
-  loanAmount: 300000,
+  debtPercentage: 60,
   interestRate: 5,
   loanTermYears: 10,
 };
