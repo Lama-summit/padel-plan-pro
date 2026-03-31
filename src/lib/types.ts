@@ -2,6 +2,8 @@ export type Scenario = "base" | "optimistic" | "pessimistic";
 
 export type CostMode = "basic" | "detailed";
 
+export type MarketPreset = "premium" | "standard" | "lowcost" | "custom";
+
 export interface ProjectInputs {
   // Courts & Capacity
   numberOfCourts: number;
@@ -17,8 +19,8 @@ export interface ProjectInputs {
   peakPrice: number;
 
   // Occupancy
-  offPeakOccupancy: number; // 0-100
-  peakOccupancy: number; // 0-100
+  offPeakOccupancy: number;
+  peakOccupancy: number;
 
   // Investment
   initialInvestment: number;
@@ -39,13 +41,13 @@ export interface ProjectInputs {
   costMode: CostMode;
 
   // Detailed cost model — fixed
-  staffCostPerCourtHour: number;   // €/court-hour for staffing
-  softwareManagementCost: number;  // €/month
+  staffCostPerCourtHour: number;
+  softwareManagementCost: number;
 
   // Detailed cost model — variable
-  energyCostPerHour: number;       // €/court-hour
-  maintenanceCostPerUsage: number; // €/booked-court-hour
-  cleaningCostPerDay: number;      // €/court/day
+  energyCostPerHour: number;
+  maintenanceCostPerUsage: number;
+  cleaningCostPerDay: number;
 
   // Classes / Coaching
   classesPerWeek: number;
@@ -116,17 +118,12 @@ export const DEFAULT_INPUTS: ProjectInputs = {
   rentOrMortgage: 5000,
   marketingCosts: 2000,
   insuranceCosts: 1000,
-
-  // Cost mode
   costMode: "basic",
-
-  // Detailed costs
   staffCostPerCourtHour: 4,
   softwareManagementCost: 500,
   energyCostPerHour: 3,
   maintenanceCostPerUsage: 1.5,
   cleaningCostPerDay: 15,
-
   classesPerWeek: 10,
   avgClassPrice: 15,
   avgClassSize: 8,
@@ -138,4 +135,62 @@ export const DEFAULT_INPUTS: ProjectInputs = {
   debtPercentage: 60,
   interestRate: 5,
   loanTermYears: 10,
+};
+
+// ─── Market Presets ──────────────────────────────────────────
+export interface MarketPresetConfig {
+  label: string;
+  description: string;
+  overrides: Partial<ProjectInputs>;
+}
+
+export const MARKET_PRESETS: Record<Exclude<MarketPreset, "custom">, MarketPresetConfig> = {
+  premium: {
+    label: "Premium Urban Club",
+    description: "High-end urban location with premium pricing",
+    overrides: {
+      offPeakPrice: 45,
+      peakPrice: 75,
+      offPeakOccupancy: 50,
+      peakOccupancy: 80,
+      monthlyOperatingCosts: 38000,
+      staffCosts: 18000,
+      rentOrMortgage: 10000,
+      utilitiesCosts: 4500,
+      initialInvestment: 800000,
+      courtType: "indoor",
+    },
+  },
+  standard: {
+    label: "Standard Club",
+    description: "Typical padel club with balanced pricing",
+    overrides: {
+      offPeakPrice: 30,
+      peakPrice: 50,
+      offPeakOccupancy: 45,
+      peakOccupancy: 70,
+      monthlyOperatingCosts: 25000,
+      staffCosts: 12000,
+      rentOrMortgage: 5000,
+      utilitiesCosts: 3000,
+      initialInvestment: 500000,
+      courtType: "indoor",
+    },
+  },
+  lowcost: {
+    label: "Low-cost Club",
+    description: "Budget-friendly outdoor facility",
+    overrides: {
+      offPeakPrice: 18,
+      peakPrice: 30,
+      offPeakOccupancy: 55,
+      peakOccupancy: 85,
+      monthlyOperatingCosts: 15000,
+      staffCosts: 8000,
+      rentOrMortgage: 3000,
+      utilitiesCosts: 1500,
+      initialInvestment: 250000,
+      courtType: "outdoor",
+    },
+  },
 };
