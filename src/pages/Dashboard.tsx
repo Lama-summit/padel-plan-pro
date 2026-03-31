@@ -234,7 +234,9 @@ export default function Dashboard() {
           <div className="hidden sm:block text-right">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Current Avg. Occupancy</p>
             <p className={`text-4xl font-bold tracking-tight ${
-              kpis.weightedOccupancy >= kpis.breakEvenOccupancy ? "text-success" : "text-destructive"
+              kpis.weightedOccupancy >= kpis.breakEvenOccupancy ? "text-success"
+                : kpis.weightedOccupancy >= kpis.breakEvenOccupancy * 0.9 ? "text-warning"
+                : "text-destructive"
             }`}>
               {kpis.weightedOccupancy.toFixed(0)}%
             </p>
@@ -243,9 +245,13 @@ export default function Dashboard() {
             <div className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
               kpis.weightedOccupancy >= kpis.breakEvenOccupancy
                 ? "bg-success/10 text-success"
+                : kpis.weightedOccupancy >= kpis.breakEvenOccupancy * 0.9
+                ? "bg-warning/10 text-warning"
                 : "bg-destructive/10 text-destructive"
             }`}>
-              {kpis.weightedOccupancy >= kpis.breakEvenOccupancy ? "Above target" : "Below target"}
+              {kpis.weightedOccupancy >= kpis.breakEvenOccupancy ? "Above target"
+                : kpis.weightedOccupancy >= kpis.breakEvenOccupancy * 0.9 ? "Near target"
+                : "Below target"}
             </div>
           </div>
         </div>
