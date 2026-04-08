@@ -23,7 +23,7 @@ import {
 import { CURRENCY_OPTIONS, CURRENCIES, CurrencyCode } from "@/lib/currency";
 
 export default function ProjectsHome() {
-  const { projects, createProject } = useStore();
+  const { projects, createProject, deleteProject } = useStore();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
