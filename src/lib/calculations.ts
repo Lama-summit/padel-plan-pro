@@ -80,7 +80,15 @@ export interface RevenueBreakdown {
   tournamentCost: number;
   tournamentNet: number;
   otherRevenue: number;
+  otherCost: number;
+  otherNet: number;
   totalRevenue: number;
+  totalEbitda: number;
+  addOnEbitda: number;
+  addOnPct: number;
+  bookingHoursPct: number;
+  coachingHoursPct: number;
+  capacityWarning: boolean;
 }
 
 export interface KPIResult {
