@@ -290,30 +290,35 @@ export default function Dashboard() {
 
                   {/* ── SECTION 1: 6 KPIs ── */}
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                    <div className="bg-card border rounded-xl p-4">
+                    {/* Primary KPIs — dominant */}
+                    <div className="bg-card border-2 border-foreground/10 rounded-xl p-5">
                       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Total CAPEX</p>
-                      <p className="text-lg font-bold tabular-nums">{formatCurrency(kpis.totalInvestment)}</p>
-                      {scenarioDelta && <p className="text-[10px] text-muted-foreground mt-1">Debt: {formatCurrency(kpis.loanAmount)}</p>}
+                      <p className="text-2xl font-extrabold tabular-nums">{formatCurrency(kpis.totalInvestment)}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">Debt: {formatCurrency(kpis.loanAmount)}</p>
                     </div>
-                    <div className="bg-card border rounded-xl p-4">
+                    <div className="bg-card border-2 border-foreground/10 rounded-xl p-5">
                       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Year 1 EBITDA</p>
-                      <p className={cn("text-lg font-bold tabular-nums", kpis.ebitdaYear >= 0 ? "text-success" : "text-destructive")}>{formatCurrency(kpis.ebitdaYear)}</p>
+                      <p className={cn("text-2xl font-extrabold tabular-nums", kpis.ebitdaYear >= 0 ? "text-success" : "text-destructive")}>{formatCurrency(kpis.ebitdaYear)}</p>
                       <p className="text-[10px] text-muted-foreground mt-1">{marginVal !== null ? `${marginVal.toFixed(0)}% margin` : "—"}</p>
                     </div>
-                    <div className="bg-card border rounded-xl p-4">
-                      <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Year 1 Revenue</p>
-                      <p className="text-lg font-bold tabular-nums">{formatCurrency(kpis.totalRevenueYear)}</p>
-                      <p className="text-[10px] text-muted-foreground mt-1">{formatCurrency(kpis.totalRevenueMonth)}/mo avg</p>
-                    </div>
-                    <div className="bg-card border rounded-xl p-4">
+                    <div className="bg-card border-2 border-foreground/10 rounded-xl p-5">
                       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Payback</p>
-                      <p className={cn("text-lg font-bold tabular-nums",
+                      <p className={cn("text-2xl font-extrabold tabular-nums",
                         cumulativePayback !== null && cumulativePayback <= 3 ? "text-success" :
                         cumulativePayback !== null && cumulativePayback <= 5 ? "text-warning" : "text-foreground"
                       )}>
-                        {cumulativePayback !== null ? `${cumulativePayback.toFixed(1)} yrs` : ">5 yrs"}
+                        {cumulativePayback !== null
+                          ? cumulativePayback < 1 ? "<1 year" : `${(Math.round(cumulativePayback * 2) / 2).toFixed(1)} yrs`
+                          : ">5 yrs"}
                       </p>
                       <p className="text-[10px] text-muted-foreground mt-1">Cumulative cash flow</p>
+                    </div>
+
+                    {/* Secondary KPIs — lighter */}
+                    <div className="bg-card border rounded-xl p-4">
+                      <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Year 1 Revenue</p>
+                      <p className="text-lg font-bold tabular-nums text-muted-foreground">{formatCurrency(kpis.totalRevenueYear)}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">{formatCurrency(kpis.totalRevenueMonth)}/mo avg</p>
                     </div>
                     <div className="bg-card border rounded-xl p-4">
                       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Break-even Occ.</p>
@@ -325,7 +330,7 @@ export default function Dashboard() {
                     <div className="bg-card border rounded-xl p-4">
                       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">ROI</p>
                       <div className="flex items-baseline gap-2">
-                        <p className={cn("text-lg font-bold tabular-nums", isSafeValid(kpis.roi) && kpis.roi.value! >= 15 ? "text-success" : "text-foreground")}>
+                        <p className={cn("text-lg font-bold tabular-nums", isSafeValid(kpis.roi) && kpis.roi.value! >= 15 ? "text-success" : "text-muted-foreground")}>
                           {isSafeValid(kpis.roi) ? `${kpis.roi.value!.toFixed(0)}%` : "—"}
                         </p>
                         <span className="text-[10px] text-muted-foreground">yr 1</span>
