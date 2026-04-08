@@ -34,7 +34,7 @@ const SAMPLE_PROJECTS: Project[] = [
         id: "v1-2",
         name: "Revised Budget",
         createdAt: "2025-02-10T10:00:00Z",
-        inputs: { ...DEFAULT_INPUTS, numberOfCourts: 6, initialInvestment: 750000 },
+        inputs: { ...DEFAULT_INPUTS, numberOfCourts: 6, initialInvestment: 80000 * 6 + 120000 + 20000 },
       },
     ],
     activeVersionId: "v1-2",
