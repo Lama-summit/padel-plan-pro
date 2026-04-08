@@ -159,7 +159,22 @@ export default function ProjectsHome() {
                   <span className="text-xs text-muted-foreground">
                     {project.versions.length} version{project.versions.length !== 1 ? "s" : ""} · {CURRENCIES[project.currency as CurrencyCode]?.symbol ?? "€"} {project.currency}
                   </span>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      role="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`¿Eliminar el proyecto "${project.name}"? Esta acción no se puede deshacer.`)) {
+                          deleteProject(project.id);
+                        }
+                      }}
+                      className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
+                      title="Eliminar proyecto"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </span>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                  </div>
                 </div>
               </button>
             ))}
