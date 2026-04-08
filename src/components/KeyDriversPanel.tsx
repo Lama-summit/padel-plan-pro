@@ -40,6 +40,9 @@ export function KeyDriversPanel({
   className,
   readOnly = false,
 }: KeyDriversPanelProps) {
+  const offset = SCENARIO_MULTIPLIERS[scenario].occupancyOffset;
+  const derivedOffPeak = Math.min(100, Math.max(0, inputs.offPeakOccupancy + offset));
+  const derivedPeak = Math.min(100, Math.max(0, inputs.peakOccupancy + offset));
   const deltas = useMemo(() => calculateDriverDeltas(inputs, scenario), [inputs, scenario]);
 
   if (collapsed) {
