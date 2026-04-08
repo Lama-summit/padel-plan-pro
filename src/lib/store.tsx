@@ -52,7 +52,7 @@ const SAMPLE_PROJECTS: Project[] = [
         id: "v2-1",
         name: "V1",
         createdAt: "2025-02-01T10:00:00Z",
-        inputs: { ...DEFAULT_INPUTS, numberOfCourts: 3, courtType: "outdoor", initialInvestment: 300000 },
+        inputs: { ...DEFAULT_INPUTS, numberOfCourts: 3, courtType: "outdoor", initialInvestment: 80000 * 3 + 120000 + 20000 },
       },
     ],
     activeVersionId: "v2-1",
