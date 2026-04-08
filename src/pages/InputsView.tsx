@@ -24,6 +24,7 @@ import {
   Store,
   Wallet,
   Banknote,
+  Lock,
 } from "lucide-react";
 import { LucideIcon } from "lucide-react";
 
@@ -184,12 +185,15 @@ export default function InputsView() {
           </div>
         ) : (
           <div className="relative">
+            {field.readonly && (
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            )}
             <Input
               type="number"
               value={currentVal}
               onChange={(e) => handleChange(field.key, e.target.value)}
               disabled={field.readonly}
-              className={`pr-12 rounded-xl h-11 text-base font-medium ${field.readonly ? 'bg-muted/50 text-foreground font-semibold' : ''}`}
+              className={`pr-12 rounded-xl h-11 text-base font-medium ${field.readonly ? 'pl-9 bg-muted border-dashed cursor-not-allowed text-foreground font-bold' : ''}`}
             />
             {field.suffix && (
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">
