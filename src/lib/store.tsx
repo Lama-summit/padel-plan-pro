@@ -131,6 +131,23 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     );
   }, []);
 
+  const createVersionFromCurrentFn = useCallback((projectId: string, name: string) => {
+    setProjects((prev) =>
+      prev.map((p) => {
+        if (p.id !== projectId) return p;
+        const current = p.versions.find((v) => v.id === p.activeVersionId) || p.versions[0];
+        if (!current) return p;
+        const dup: ProjectVersion = {
+          id: generateId(),
+          name,
+          createdAt: new Date().toISOString(),
+          inputs: { ...current.inputs },
+        };
+        return { ...p, versions: [...p.versions, dup], activeVersionId: dup.id, updatedAt: new Date().toISOString() };
+      })
+    );
+  }, []);
+
   const duplicateVersionFn = useCallback((projectId: string, versionId: string) => {
     setProjects((prev) =>
       prev.map((p) => {
@@ -145,6 +162,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         };
         return { ...p, versions: [...p.versions, dup], activeVersionId: dup.id, updatedAt: new Date().toISOString() };
       })
+    );
+  }, []);
+
+  const saveVersionFn = useCallback((projectId: string, versionId: string) => {
+    // "Save" just updates the timestamp to signal the snapshot is saved
+    setProjects((prev) =>
+      prev.map((p) => (p.id === projectId ? { ...p, updatedAt: new Date().toISOString() } : p))
     );
   }, []);
 
