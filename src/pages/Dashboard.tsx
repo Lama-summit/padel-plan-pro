@@ -477,48 +477,6 @@ export default function Dashboard() {
                       </div>
                     </div>
 
-                    {/* Risk & Reliability */}
-                    {confidence && (
-                      <div className="bg-card border rounded-2xl p-5">
-                        <div className="flex items-center gap-2 mb-4">
-                          <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-xs font-semibold uppercase tracking-wide">Risk & Reliability</span>
-                        </div>
-
-                        {/* Business Risks */}
-                        {structuredInsight && (
-                          <div className="mb-4">
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Business Risks</p>
-                            <div className="flex items-start gap-2">
-                              <div className="h-1.5 w-1.5 rounded-full bg-destructive mt-1.5 flex-shrink-0" />
-                              <p className="text-xs leading-relaxed">{structuredInsight.mainRisk}</p>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Model Reliability */}
-                        <div>
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Model Reliability</p>
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className={cn("h-2.5 w-2.5 rounded-full", confidence.level === "high" ? "bg-success" : confidence.level === "medium" ? "bg-warning" : "bg-destructive")} />
-                            <span className={cn("text-xs font-bold capitalize", confColors[confidence.level])}>{confidence.level}</span>
-                          </div>
-                          {confidence.reasons.length > 0 && (
-                            <div className="space-y-1 mb-3">
-                              {confidence.reasons.map((r, i) => (
-                                <p key={i} className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-                                  <Info className="h-2.5 w-2.5 flex-shrink-0" />{r}
-                                </p>
-                              ))}
-                            </div>
-                          )}
-                          <Button variant="outline" size="sm" className="w-full rounded-xl text-xs gap-1.5"
-                            onClick={() => navigate(`/project/${project.id}/inputs`)}>
-                            <Settings className="h-3 w-3" /> Improve accuracy
-                          </Button>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </TabsContent>
 
