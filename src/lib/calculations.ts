@@ -454,12 +454,47 @@ export function calculateKPIs(inputs: ProjectInputs, scenario: Scenario): KPIRes
   const paybackRaw = ebitdaYear > 0 ? safeDiv(investment, ebitdaYear) : null;
   const paybackYears = makeSafeMetric(paybackRaw, ebitdaYear > 0);
 
-  const courtRevenueAt100 = (peakHoursMonth * peakPrice) + (offPeakHoursMonth * offPeakPrice);
-  const requiredRevenue = monthlyCosts + safe(loanPaymentMonth);
-  const hasCapacity = courtRevenueAt100 > 0 && finite(courtRevenueAt100);
-  const breakEvenRaw = hasCapacity ? ((requiredRevenue - otherRevenueMonth) / courtRevenueAt100) * 100 : null;
-  const breakEvenClamped = breakEvenRaw !== null && finite(breakEvenRaw) ? Math.max(0, Math.min(100, breakEvenRaw)) : null;
-  const breakEvenOccupancy = makeSafeMetric(breakEvenClamped, hasCapacity);
+  // Break-even occupancy: solve for occ where Revenue(occ) - OPEX(occ) = CAPEX + OPEX_year1
+  // Using binary search since costs may have variable components
+  const breakEvenOccupancy = (() => {
+    if (courts <= 0 || hoursPerDay <= 0) return makeSafeMetric(null, false);
+    const capex = investment;
+    const opexYear1 = monthlyCosts * MONTHS_PER_YEAR;
+    const target = capex + opexYear1; // what annual EBITDA must cover
+
+    // Helper: compute annual EBITDA at a given uniform occupancy %
+    const ebitdaAtOcc = (occPct: number): number => {
+      const occ = occPct / 100;
+      const courtRevMonth = (peakHoursMonth * occ * peakPrice) + (offPeakHoursMonth * occ * offPeakPrice);
+      const totalRevMonth = courtRevMonth + otherRevenueMonth;
+      // Recalculate costs at this occupancy (variable costs scale with booked hours)
+      const bookedHrs = (peakHoursMonth * occ) + (offPeakHoursMonth * occ);
+      const cb = calculateCostBreakdown(inputs, totalHoursMonth, bookedHrs);
+      const monthlyEbitda = totalRevMonth - cb.totalCosts;
+      return monthlyEbitda * MONTHS_PER_YEAR;
+    };
+
+    // Binary search between 0% and 100%
+    let lo = 0, hi = 100;
+    const ebitdaAt0 = ebitdaAtOcc(0);
+    const ebitdaAt100 = ebitdaAtOcc(100);
+
+    // If even at 100% we can't reach target, break-even is not achievable
+    if (ebitdaAt100 < target) return makeSafeMetric(100, true);
+    // If at 0% we already exceed target (due to other revenue), return 0
+    if (ebitdaAt0 >= target) return makeSafeMetric(0, true);
+
+    for (let i = 0; i < 50; i++) {
+      const mid = (lo + hi) / 2;
+      if (ebitdaAtOcc(mid) >= target) {
+        hi = mid;
+      } else {
+        lo = mid;
+      }
+    }
+    const result = Math.round((lo + hi) / 2 * 10) / 10;
+    return makeSafeMetric(Math.max(0, Math.min(100, result)), true);
+  })();
 
   const weightedOccupancy = Math.min(100, Math.max(0, (peakOccInput * PEAK_RATIO + offPeakOccInput * OFFPEAK_RATIO) + m.occupancyOffset));
 

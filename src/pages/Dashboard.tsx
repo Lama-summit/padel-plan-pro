@@ -4,7 +4,7 @@ import { useStore } from "@/lib/store";
 import {
   calculateKPIs, getMonthlyEvolution, formatSafeYears, isSafeValid,
   calculateScenarioDelta, calculateScenarioComparison, calculateSensitivityRanking,
-  generateInsight, generateStructuredInsight, getValidationWarnings, getInvestmentVerdict, getModelConfidence,
+  generateInsight, generateStructuredInsight, getInvestmentVerdict, getModelConfidence,
   calculateDriverDeltas, getConsolidatedDrivers, generateRecommendedActions,
   calculate5YearProjection, calculatePaybackCumulative, calculateCumulativeROI, generateHighlights,
   ExportData,
@@ -67,7 +67,7 @@ export default function Dashboard() {
   const sensitivity = useMemo(() => activeVersion ? calculateSensitivityRanking(activeVersion.inputs, scenario) : [], [activeVersion, scenario]);
   const insight = useMemo(() => kpis && activeVersion ? generateInsight(kpis, activeVersion.inputs, driverDeltas) : "", [kpis, activeVersion, driverDeltas]);
   const structuredInsight = useMemo(() => kpis && activeVersion ? generateStructuredInsight(kpis, activeVersion.inputs, driverDeltas) : null, [kpis, activeVersion, driverDeltas]);
-  const warnings = useMemo(() => kpis ? getValidationWarnings(kpis) : [], [kpis]);
+  
   const verdict = useMemo(() => kpis ? getInvestmentVerdict(kpis) : null, [kpis]);
   const confidence = useMemo(() => activeVersion ? getModelConfidence(activeVersion.inputs) : null, [activeVersion]);
   const consolidatedDrivers = useMemo(() => getConsolidatedDrivers(driverDeltas), [driverDeltas]);
@@ -284,47 +284,41 @@ export default function Dashboard() {
               </div>
 
               <div className="px-8 py-6 max-w-6xl mx-auto w-full">
-                {/* Validation warnings - show on all tabs */}
-                {warnings.length > 0 && (
-                  <div className="space-y-2 mb-6">
-                    {warnings.map((w) => (
-                      <div key={w.id} className={cn("flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-xs font-medium",
-                        w.severity === "error" ? "bg-destructive/5 border-destructive/20 text-destructive" : "bg-warning/5 border-warning/20 text-warning")}>
-                        <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />{w.message}
-                      </div>
-                    ))}
-                  </div>
-                )}
 
                 {/* ═══ EXECUTIVE SUMMARY TAB ═══ */}
                 <TabsContent value="summary" className="mt-0 space-y-6 animate-fade-in">
 
                   {/* ── SECTION 1: 6 KPIs ── */}
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                    <div className="bg-card border rounded-xl p-4">
+                    {/* Primary KPIs — dominant */}
+                    <div className="bg-card border-2 border-foreground/10 rounded-xl p-5">
                       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Total CAPEX</p>
-                      <p className="text-lg font-bold tabular-nums">{formatCurrency(kpis.totalInvestment)}</p>
-                      {scenarioDelta && <p className="text-[10px] text-muted-foreground mt-1">Debt: {formatCurrency(kpis.loanAmount)}</p>}
+                      <p className="text-2xl font-extrabold tabular-nums">{formatCurrency(kpis.totalInvestment)}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">Debt: {formatCurrency(kpis.loanAmount)}</p>
                     </div>
-                    <div className="bg-card border rounded-xl p-4">
+                    <div className="bg-card border-2 border-foreground/10 rounded-xl p-5">
                       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Year 1 EBITDA</p>
-                      <p className={cn("text-lg font-bold tabular-nums", kpis.ebitdaYear >= 0 ? "text-success" : "text-destructive")}>{formatCurrency(kpis.ebitdaYear)}</p>
+                      <p className={cn("text-2xl font-extrabold tabular-nums", kpis.ebitdaYear >= 0 ? "text-success" : "text-destructive")}>{formatCurrency(kpis.ebitdaYear)}</p>
                       <p className="text-[10px] text-muted-foreground mt-1">{marginVal !== null ? `${marginVal.toFixed(0)}% margin` : "—"}</p>
                     </div>
-                    <div className="bg-card border rounded-xl p-4">
-                      <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Year 1 Revenue</p>
-                      <p className="text-lg font-bold tabular-nums">{formatCurrency(kpis.totalRevenueYear)}</p>
-                      <p className="text-[10px] text-muted-foreground mt-1">{formatCurrency(kpis.totalRevenueMonth)}/mo avg</p>
-                    </div>
-                    <div className="bg-card border rounded-xl p-4">
+                    <div className="bg-card border-2 border-foreground/10 rounded-xl p-5">
                       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Payback</p>
-                      <p className={cn("text-lg font-bold tabular-nums",
+                      <p className={cn("text-2xl font-extrabold tabular-nums",
                         cumulativePayback !== null && cumulativePayback <= 3 ? "text-success" :
                         cumulativePayback !== null && cumulativePayback <= 5 ? "text-warning" : "text-foreground"
                       )}>
-                        {cumulativePayback !== null ? `${cumulativePayback.toFixed(1)} yrs` : ">5 yrs"}
+                        {cumulativePayback !== null
+                          ? cumulativePayback < 1 ? "<1 year" : `${(Math.round(cumulativePayback * 2) / 2).toFixed(1)} yrs`
+                          : ">5 yrs"}
                       </p>
                       <p className="text-[10px] text-muted-foreground mt-1">Cumulative cash flow</p>
+                    </div>
+
+                    {/* Secondary KPIs — lighter */}
+                    <div className="bg-card border rounded-xl p-4">
+                      <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Year 1 Revenue</p>
+                      <p className="text-lg font-bold tabular-nums text-muted-foreground">{formatCurrency(kpis.totalRevenueYear)}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">{formatCurrency(kpis.totalRevenueMonth)}/mo avg</p>
                     </div>
                     <div className="bg-card border rounded-xl p-4">
                       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Break-even Occ.</p>
@@ -336,7 +330,7 @@ export default function Dashboard() {
                     <div className="bg-card border rounded-xl p-4">
                       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">ROI</p>
                       <div className="flex items-baseline gap-2">
-                        <p className={cn("text-lg font-bold tabular-nums", isSafeValid(kpis.roi) && kpis.roi.value! >= 15 ? "text-success" : "text-foreground")}>
+                        <p className={cn("text-lg font-bold tabular-nums", isSafeValid(kpis.roi) && kpis.roi.value! >= 15 ? "text-success" : "text-muted-foreground")}>
                           {isSafeValid(kpis.roi) ? `${kpis.roi.value!.toFixed(0)}%` : "—"}
                         </p>
                         <span className="text-[10px] text-muted-foreground">yr 1</span>
@@ -446,7 +440,7 @@ export default function Dashboard() {
                   )}
 
                   {/* ── SECTION 5-7: Drivers | Actions | Risk ── */}
-                  <div className="grid gap-5 md:grid-cols-3">
+                  <div className="grid gap-5 md:grid-cols-2">
                     {/* What Drives This Business */}
                     <div className="bg-card border rounded-2xl p-5">
                       <div className="flex items-center gap-2 mb-4">
@@ -488,48 +482,6 @@ export default function Dashboard() {
                       </div>
                     </div>
 
-                    {/* Risk & Reliability */}
-                    {confidence && (
-                      <div className="bg-card border rounded-2xl p-5">
-                        <div className="flex items-center gap-2 mb-4">
-                          <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-xs font-semibold uppercase tracking-wide">Risk & Reliability</span>
-                        </div>
-
-                        {/* Business Risks */}
-                        {structuredInsight && (
-                          <div className="mb-4">
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Business Risks</p>
-                            <div className="flex items-start gap-2">
-                              <div className="h-1.5 w-1.5 rounded-full bg-destructive mt-1.5 flex-shrink-0" />
-                              <p className="text-xs leading-relaxed">{structuredInsight.mainRisk}</p>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Model Reliability */}
-                        <div>
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Model Reliability</p>
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className={cn("h-2.5 w-2.5 rounded-full", confidence.level === "high" ? "bg-success" : confidence.level === "medium" ? "bg-warning" : "bg-destructive")} />
-                            <span className={cn("text-xs font-bold capitalize", confColors[confidence.level])}>{confidence.level}</span>
-                          </div>
-                          {confidence.reasons.length > 0 && (
-                            <div className="space-y-1 mb-3">
-                              {confidence.reasons.map((r, i) => (
-                                <p key={i} className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-                                  <Info className="h-2.5 w-2.5 flex-shrink-0" />{r}
-                                </p>
-                              ))}
-                            </div>
-                          )}
-                          <Button variant="outline" size="sm" className="w-full rounded-xl text-xs gap-1.5"
-                            onClick={() => navigate(`/project/${project.id}/inputs`)}>
-                            <Settings className="h-3 w-3" /> Improve accuracy
-                          </Button>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </TabsContent>
 
