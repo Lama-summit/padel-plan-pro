@@ -265,16 +265,15 @@ export interface InvestmentVerdict {
   explanation: string;
 }
 
-export function getInvestmentVerdict(kpis: KPIResult): InvestmentVerdict & { metrics: { payback: string; margin: string; buffer: string }; interpretation: string } {
+export function getInvestmentVerdict(kpis: KPIResult): InvestmentVerdict & { metrics: { payback: string; margin: string; roi: string }; interpretation: string } {
   const marginVal = isSafeValid(kpis.ebitdaMargin) ? kpis.ebitdaMargin.value! : null;
   const paybackVal = isSafeValid(kpis.paybackYears) ? kpis.paybackYears.value! : null;
-  const beVal = isSafeValid(kpis.breakEvenOccupancy) ? kpis.breakEvenOccupancy.value! : null;
-  const buffer = beVal !== null ? Math.round(kpis.weightedOccupancy - beVal) : null;
+  const roiVal = isSafeValid(kpis.roi) ? kpis.roi.value! : null;
 
   const metrics = {
-    payback: paybackVal !== null ? `${paybackVal.toFixed(1)} years` : "—",
+    payback: paybackVal !== null ? `${paybackVal.toFixed(1)} yrs` : "—",
     margin: marginVal !== null ? `${marginVal.toFixed(0)}%` : "—",
-    buffer: buffer !== null ? `${buffer >= 0 ? "+" : ""}${buffer} pts` : "—",
+    roi: roiVal !== null ? `${roiVal.toFixed(0)}%` : "—",
   };
 
   if (paybackVal === null || marginVal === null) {
@@ -282,13 +281,15 @@ export function getInvestmentVerdict(kpis: KPIResult): InvestmentVerdict & { met
   }
 
   if (paybackVal <= 3 && marginVal > 25) {
-    const interp = marginVal > 55 ? "Returns are very high — validate cost assumptions" : "Strong economics with healthy margins";
-    return { level: "strong", label: "Strong", explanation: `Payback in ${paybackVal.toFixed(1)} years with ${marginVal.toFixed(0)}% margin`, metrics, interpretation: interp };
+    const interp = marginVal > 55
+      ? "Strong profitability with fast capital recovery, but margins may be optimistic."
+      : "Strong economics with healthy margins and fast payback.";
+    return { level: "strong", label: "Strong Investment", explanation: `Payback in ${paybackVal.toFixed(1)} years with ${marginVal.toFixed(0)}% margin`, metrics, interpretation: interp };
   }
   if (paybackVal <= 5) {
-    return { level: "moderate", label: "Moderate", explanation: `Payback in ${paybackVal.toFixed(1)} years — solid but not exceptional`, metrics, interpretation: "Viable investment with room for improvement" };
+    return { level: "moderate", label: "Moderate", explanation: `Payback in ${paybackVal.toFixed(1)} years — solid but not exceptional`, metrics, interpretation: "Viable investment with room to optimize key drivers." };
   }
-  return { level: "weak", label: "Weak", explanation: `${paybackVal.toFixed(1)}-year payback suggests challenging economics`, metrics, interpretation: "Consider reducing costs or increasing revenue levers" };
+  return { level: "weak", label: "High Risk", explanation: `${paybackVal.toFixed(1)}-year payback suggests challenging economics`, metrics, interpretation: "Economics are stretched — reduce costs or boost revenue levers." };
 }
 
 // ─── Model confidence ────────────────────────────────────────
