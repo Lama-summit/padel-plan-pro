@@ -139,7 +139,7 @@ export function KeyDriversPanel({
         <DriverSection icon={BarChart3} label="Demand" hint="Main revenue driver">
           <CompactSlider
             label="Off-Peak Occupancy"
-            value={inputs.offPeakOccupancy}
+            value={readOnly ? derivedOffPeak : inputs.offPeakOccupancy}
             min={0} max={100} step={5} suffix="%"
             onChange={(v) => onChange("offPeakOccupancy", v)}
             delta={deltas.offPeakOccupancy}
@@ -147,12 +147,17 @@ export function KeyDriversPanel({
           />
           <CompactSlider
             label="Peak Occupancy"
-            value={inputs.peakOccupancy}
+            value={readOnly ? derivedPeak : inputs.peakOccupancy}
             min={0} max={100} step={5} suffix="%"
             onChange={(v) => onChange("peakOccupancy", v)}
             delta={deltas.peakOccupancy}
             disabled={readOnly}
           />
+          {readOnly && offset !== 0 && (
+            <p className="text-[10px] text-muted-foreground italic pl-1">
+              Base {offset > 0 ? "+" : ""}{offset} pp
+            </p>
+          )}
         </DriverSection>
       </div>
     </aside>
