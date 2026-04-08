@@ -64,7 +64,7 @@ export function KeyDriversPanel({
             <h3 className="font-semibold text-sm">Key Drivers</h3>
           </div>
           <div className="flex items-center gap-1">
-            {onReset && (
+            {onReset && !readOnly && (
               <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={onReset} title="Reset to defaults">
                 <RotateCcw className="h-3.5 w-3.5" />
               </Button>
@@ -77,6 +77,13 @@ export function KeyDriversPanel({
           </div>
         </div>
 
+        {readOnly && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/60 border border-border">
+            <Info className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+            <p className="text-[11px] text-muted-foreground leading-snug">Derived from Base scenario</p>
+          </div>
+        )}
+
         {/* Capacity */}
         <DriverSection icon={LayoutGrid} label="Capacity" hint="Defines capacity">
           <CompactSlider
@@ -85,6 +92,7 @@ export function KeyDriversPanel({
             min={1} max={16} step={1}
             onChange={(v) => onChange("numberOfCourts", v)}
             delta={deltas.numberOfCourts}
+            disabled={readOnly}
           />
           <CompactSlider
             label="Hours / Day"
@@ -92,6 +100,7 @@ export function KeyDriversPanel({
             min={6} max={20} step={1} suffix="hrs"
             onChange={(v) => onChange("openingHoursPerDay", v)}
             delta={deltas.openingHoursPerDay}
+            disabled={readOnly}
           />
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Court Type</Label>
@@ -99,10 +108,12 @@ export function KeyDriversPanel({
               {(["indoor", "outdoor", "mixed"] as const).map((type) => (
                 <button
                   key={type}
-                  onClick={() => onChange("courtType", type)}
+                  onClick={() => !readOnly && onChange("courtType", type)}
+                  disabled={readOnly}
                   className={cn(
                     "flex-1 px-2 py-1.5 text-xs rounded-md transition-all font-medium capitalize",
-                    inputs.courtType === type ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                    inputs.courtType === type ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground",
+                    readOnly && "opacity-60 cursor-not-allowed"
                   )}
                 >
                   {type}
@@ -115,9 +126,9 @@ export function KeyDriversPanel({
         {/* Pricing */}
         <DriverSection icon={Tag} label="Pricing" hint="Impacts margin">
           <CompactNumber label="Off-Peak Price" value={inputs.offPeakPrice} suffix="€/hr"
-            onChange={(v) => onChange("offPeakPrice", v)} delta={deltas.offPeakPrice} />
+            onChange={(v) => onChange("offPeakPrice", v)} delta={deltas.offPeakPrice} disabled={readOnly} />
           <CompactNumber label="Peak Price" value={inputs.peakPrice} suffix="€/hr"
-            onChange={(v) => onChange("peakPrice", v)} delta={deltas.peakPrice} />
+            onChange={(v) => onChange("peakPrice", v)} delta={deltas.peakPrice} disabled={readOnly} />
         </DriverSection>
 
         {/* Demand */}
@@ -128,6 +139,7 @@ export function KeyDriversPanel({
             min={0} max={100} step={5} suffix="%"
             onChange={(v) => onChange("offPeakOccupancy", v)}
             delta={deltas.offPeakOccupancy}
+            disabled={readOnly}
           />
           <CompactSlider
             label="Peak Occupancy"
@@ -135,6 +147,7 @@ export function KeyDriversPanel({
             min={0} max={100} step={5} suffix="%"
             onChange={(v) => onChange("peakOccupancy", v)}
             delta={deltas.peakOccupancy}
+            disabled={readOnly}
           />
         </DriverSection>
       </div>
