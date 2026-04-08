@@ -571,7 +571,7 @@ function SliderField({ label, value, min, max, step, suffix, onChange, disabled,
 
 function SummaryRow({ label, revenue, costs, ebitda, total, currency, highlight }: { label: string; revenue: number; costs: number; ebitda: number; total: number; currency: string; highlight?: boolean }) {
   const fmt = (val: number) => formatCurrency(val, currency);
-  const pct = total > 0 ? ((revenue / total) * 100).toFixed(0) : "0";
+  const pct = total > 0 ? ((revenue / total) * 100).toFixed(1) : "0.0";
   return (
     <tr className={highlight ? "bg-muted/20" : ""}>
       <td className="py-2.5 text-xs font-medium">{label}</td>
