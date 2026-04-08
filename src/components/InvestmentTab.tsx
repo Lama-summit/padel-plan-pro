@@ -1,12 +1,12 @@
 import { useState, useMemo, useCallback } from "react";
 import { ProjectInputs } from "@/lib/types";
-import { KPIResult, formatSafeYears } from "@/lib/calculations";
+import { KPIResult } from "@/lib/calculations";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   AlertTriangle, Plus, Trash2, Info, BarChart3,
-  Users, Calendar,
+  Users, Calendar, CheckCircle2, Wand2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -66,25 +66,25 @@ const FOUNDERS_PCT = 25;
 const INVESTORS_PCT = 75;
 
 // ─── Component ───────────────────────────────────────────────
-export function InvestmentTab({ inputs, kpis, allScenarioKPIs, onInputChange, readOnly }: InvestmentTabProps) {
+export function InvestmentTab({ inputs, kpis, onInputChange, readOnly }: InvestmentTabProps) {
   const totalCapex = kpis.totalInvestment;
 
-  // ── Investors state — Investor 1 defaults to full CAPEX ──
+  // ── Investors state ──
   const [investors, setInvestors] = useState<Investor[]>(() => [
-    { id: uid(), name: "Investor 1", investment: 0 },
+    { id: uid(), name: "Lead Investor", investment: 0 },
   ]);
 
-  // Recompute Investor 1's investment so all investors always sum to totalCapex
+  // Lead Investor (index 0) auto-absorbs remainder
   const investorsWithAdjusted = useMemo(() => {
     const othersTotal = investors.slice(1).reduce((s, inv) => s + inv.investment, 0);
-    const investor1Amount = Math.max(0, totalCapex - othersTotal);
+    const leadAmount = Math.max(0, totalCapex - othersTotal);
     return investors.map((inv, i) =>
-      i === 0 ? { ...inv, investment: investor1Amount } : inv
+      i === 0 ? { ...inv, investment: leadAmount } : inv
     );
   }, [investors, totalCapex]);
 
   const totalInvestorContribution = investorsWithAdjusted.reduce((s, inv) => s + inv.investment, 0);
-  const contributionMismatch = Math.abs(totalInvestorContribution - totalCapex) > 1;
+  const contributionMatches = Math.abs(totalInvestorContribution - totalCapex) < 1;
 
   // ── Timeline state ──
   const [phases, setPhases] = useState<TimelinePhase[]>([
@@ -93,7 +93,8 @@ export function InvestmentTab({ inputs, kpis, allScenarioKPIs, onInputChange, re
     { id: uid(), phase: "Equipment & Setup", monthRange: "7-8", description: "Equipment, furnishing, testing", amount: 0 },
   ]);
   const timelineTotal = phases.reduce((s, p) => s + p.amount, 0);
-  const timelineMismatch = Math.abs(timelineTotal - totalCapex) > 1 && timelineTotal > 0;
+  const timelineMatches = Math.abs(timelineTotal - totalCapex) < 1;
+  const timelineHasValues = timelineTotal > 0;
 
   // ── CAPEX items ──
   const capexItems = useMemo(() => {
@@ -118,13 +119,12 @@ export function InvestmentTab({ inputs, kpis, allScenarioKPIs, onInputChange, re
   }, []);
 
   const addInvestor = useCallback(() => {
-    setInvestors(prev => [...prev, { id: uid(), name: `Investor ${prev.length + 1}`, investment: 0 }]);
+    setInvestors(prev => [...prev, { id: uid(), name: `Investor ${prev.length}`, investment: 0 }]);
   }, []);
 
   const removeInvestor = useCallback((id: string) => {
     setInvestors(prev => {
       if (prev.length <= 1) return prev;
-      // Don't allow removing Investor 1 (index 0)
       const idx = prev.findIndex(inv => inv.id === id);
       if (idx === 0) return prev;
       return prev.filter(inv => inv.id !== id);
@@ -144,6 +144,32 @@ export function InvestmentTab({ inputs, kpis, allScenarioKPIs, onInputChange, re
   const removePhase = useCallback((id: string) => {
     setPhases(prev => prev.length > 1 ? prev.filter(p => p.id !== id) : prev);
   }, []);
+
+  const autoFillTimeline = useCallback(() => {
+    setPhases(prev => {
+      const count = prev.length;
+      if (count === 0) return prev;
+      const base = Math.floor(totalCapex / count);
+      const remainder = totalCapex - base * count;
+      return prev.map((p, i) => ({
+        ...p,
+        amount: base + (i === 0 ? remainder : 0),
+      }));
+    });
+  }, [totalCapex]);
+
+  // ── Validation badge helper ──
+  const MatchBadge = ({ matches, label }: { matches: boolean; label?: string }) => (
+    <span className={cn(
+      "inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full",
+      matches
+        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+        : "bg-warning/10 text-warning"
+    )}>
+      {matches ? <CheckCircle2 className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
+      {label ?? (matches ? "Matches CAPEX" : "Mismatch")}
+    </span>
+  );
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -242,7 +268,7 @@ export function InvestmentTab({ inputs, kpis, allScenarioKPIs, onInputChange, re
                 <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-[260px] text-[11px] leading-snug">
-                Founders hold a fixed {FOUNDERS_PCT}% equity with no cash contribution. Investors fund the full CAPEX and share the remaining {INVESTORS_PCT}% proportionally.
+                Founders hold a fixed {FOUNDERS_PCT}% equity with no cash contribution. Investors fund 100% of CAPEX and share the remaining {INVESTORS_PCT}% proportionally.
               </TooltipContent>
             </Tooltip>
           </div>
@@ -251,9 +277,12 @@ export function InvestmentTab({ inputs, kpis, allScenarioKPIs, onInputChange, re
           </Button>
         </div>
 
-        <div className="mb-4 flex items-center gap-3">
-          <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Total CAPEX to fund:</span>
-          <span className="text-sm font-bold tabular-nums">{fmt(totalCapex)}</span>
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Total CAPEX to fund:</span>
+            <span className="text-sm font-bold tabular-nums">{fmt(totalCapex)}</span>
+          </div>
+          <MatchBadge matches={contributionMatches} label={contributionMatches ? "Fully funded" : "Investment mismatch"} />
         </div>
 
         <table className="w-full text-sm">
@@ -266,11 +295,11 @@ export function InvestmentTab({ inputs, kpis, allScenarioKPIs, onInputChange, re
             </tr>
           </thead>
           <tbody className="divide-y">
-            {/* Founders row — fixed */}
+            {/* Founders — locked row */}
             <tr className="bg-muted/20">
               <td className="py-2.5 text-xs font-medium text-muted-foreground pl-1">
                 Founders
-                <span className="ml-2 text-[10px] text-muted-foreground/70 italic">fixed — no cash contribution</span>
+                <span className="ml-2 text-[10px] text-muted-foreground/70 italic">no cash contribution</span>
               </td>
               <td className="py-2.5 text-xs text-right tabular-nums text-muted-foreground">€0</td>
               <td className="py-2.5 text-xs text-right tabular-nums font-semibold">{FOUNDERS_PCT.toFixed(1)}%</td>
@@ -282,7 +311,7 @@ export function InvestmentTab({ inputs, kpis, allScenarioKPIs, onInputChange, re
               const equityPctVal = totalCapex > 0
                 ? (inv.investment / totalCapex) * INVESTORS_PCT
                 : 0;
-              const isFirst = i === 0;
+              const isLead = i === 0;
               return (
                 <tr key={inv.id}>
                   <td className="py-2">
@@ -294,7 +323,7 @@ export function InvestmentTab({ inputs, kpis, allScenarioKPIs, onInputChange, re
                     />
                   </td>
                   <td className="py-2">
-                    {isFirst ? (
+                    {isLead ? (
                       <div className="flex items-center justify-end gap-1.5">
                         <span className="text-xs tabular-nums font-semibold">{fmt(inv.investment)}</span>
                         <Tooltip>
@@ -321,7 +350,7 @@ export function InvestmentTab({ inputs, kpis, allScenarioKPIs, onInputChange, re
                     {equityPctVal.toFixed(1)}%
                   </td>
                   <td className="py-2 text-center">
-                    {!isFirst && (
+                    {!isLead && (
                       <button onClick={() => removeInvestor(inv.id)} disabled={readOnly}
                         className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-30">
                         <Trash2 className="h-3.5 w-3.5" />
@@ -342,19 +371,19 @@ export function InvestmentTab({ inputs, kpis, allScenarioKPIs, onInputChange, re
           </tfoot>
         </table>
 
-        {contributionMismatch && (
+        {!contributionMatches && (
           <div className="flex items-center gap-2 text-warning bg-warning/5 border border-warning/20 rounded-lg px-3 py-2 mt-3">
             <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
             <span className="text-xs">
-              Investor contributions ({fmt(totalInvestorContribution)}) don't match Total CAPEX ({fmt(totalCapex)}) — difference: {fmt(Math.abs(totalInvestorContribution - totalCapex))}
+              Total investment ({fmt(totalInvestorContribution)}) must match CAPEX ({fmt(totalCapex)}) — difference: {fmt(Math.abs(totalInvestorContribution - totalCapex))}
             </span>
           </div>
         )}
 
-        <div className="flex items-center gap-2 mt-3 text-[10px] text-muted-foreground">
-          <Info className="h-3 w-3" />
-          <span>Founders ({FOUNDERS_PCT}%) + Investors ({INVESTORS_PCT}%) = 100% equity. Investor equity is proportional to their share of the total CAPEX.</span>
-        </div>
+        <p className="text-[11px] text-muted-foreground mt-4 leading-relaxed">
+          Investors fund 100% of CAPEX ({fmt(totalCapex)}) and receive {INVESTORS_PCT}% equity.
+          Founders retain {FOUNDERS_PCT}% equity without cash contribution.
+        </p>
       </div>
 
       {/* ═══ SECTION 3: INVESTMENT TIMELINE ═══ */}
@@ -364,9 +393,14 @@ export function InvestmentTab({ inputs, kpis, allScenarioKPIs, onInputChange, re
             <Calendar className="h-4 w-4 text-primary" />
             <h3 className="text-sm font-semibold">Investment Timeline</h3>
           </div>
-          <Button variant="outline" size="sm" className="gap-1.5 rounded-xl text-xs h-8" onClick={addPhase} disabled={readOnly}>
-            <Plus className="h-3.5 w-3.5" /> Add Phase
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" className="gap-1.5 text-xs h-8" onClick={autoFillTimeline} disabled={readOnly}>
+              <Wand2 className="h-3.5 w-3.5" /> Auto-fill from CAPEX
+            </Button>
+            <Button variant="outline" size="sm" className="gap-1.5 rounded-xl text-xs h-8" onClick={addPhase} disabled={readOnly}>
+              <Plus className="h-3.5 w-3.5" /> Add Phase
+            </Button>
+          </div>
         </div>
 
         <table className="w-full text-sm">
@@ -421,54 +455,23 @@ export function InvestmentTab({ inputs, kpis, allScenarioKPIs, onInputChange, re
           </tfoot>
         </table>
 
-        {timelineMismatch && (
-          <div className="flex items-center gap-2 text-warning bg-warning/5 border border-warning/20 rounded-lg px-3 py-2 mt-3">
+        <div className="flex items-center justify-between mt-3">
+          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+            <Info className="h-3 w-3" />
+            <span>Timeline should match Total CAPEX ({fmt(totalCapex)})</span>
+          </div>
+          {timelineHasValues && <MatchBadge matches={timelineMatches} />}
+        </div>
+
+        {timelineHasValues && !timelineMatches && (
+          <div className="flex items-center gap-2 text-warning bg-warning/5 border border-warning/20 rounded-lg px-3 py-2 mt-2">
             <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
             <span className="text-xs">
-              Timeline total ({fmt(timelineTotal)}) doesn't match CAPEX ({fmt(totalCapex)}) — difference: {fmt(Math.abs(timelineTotal - totalCapex))}
+              Timeline total ({fmt(timelineTotal)}) does not match Total CAPEX ({fmt(totalCapex)}) — difference: {fmt(Math.abs(timelineTotal - totalCapex))}
             </span>
           </div>
         )}
       </div>
-
-      {/* ═══ SECTION 4: SCENARIO COMPARISON ═══ */}
-      {allScenarioKPIs && (
-        <div className="bg-card border rounded-2xl p-6">
-          <h3 className="text-sm font-semibold mb-4">Investment Returns by Scenario</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-2 text-xs text-muted-foreground font-medium">Metric</th>
-                  <th className="text-right py-2 text-xs text-muted-foreground font-medium">Pessimistic</th>
-                  <th className="text-right py-2 text-xs font-semibold">Base</th>
-                  <th className="text-right py-2 text-xs text-muted-foreground font-medium">Optimistic</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                <tr>
-                  <td className="py-2 text-xs text-muted-foreground">Annual EBITDA</td>
-                  <td className="py-2 text-xs text-right tabular-nums">{fmt(allScenarioKPIs.pessimistic.ebitdaYear)}</td>
-                  <td className="py-2 text-xs text-right tabular-nums font-semibold">{fmt(allScenarioKPIs.base.ebitdaYear)}</td>
-                  <td className="py-2 text-xs text-right tabular-nums">{fmt(allScenarioKPIs.optimistic.ebitdaYear)}</td>
-                </tr>
-                <tr>
-                  <td className="py-2 text-xs text-muted-foreground">Payback</td>
-                  <td className="py-2 text-xs text-right tabular-nums">{formatSafeYears(allScenarioKPIs.pessimistic.paybackYears)}</td>
-                  <td className="py-2 text-xs text-right tabular-nums font-semibold">{formatSafeYears(allScenarioKPIs.base.paybackYears)}</td>
-                  <td className="py-2 text-xs text-right tabular-nums">{formatSafeYears(allScenarioKPIs.optimistic.paybackYears)}</td>
-                </tr>
-                <tr>
-                  <td className="py-2 text-xs text-muted-foreground">Net Cashflow/yr</td>
-                  <td className="py-2 text-xs text-right tabular-nums">{fmt(allScenarioKPIs.pessimistic.netCashflowYear)}</td>
-                  <td className="py-2 text-xs text-right tabular-nums font-semibold">{fmt(allScenarioKPIs.base.netCashflowYear)}</td>
-                  <td className="py-2 text-xs text-right tabular-nums">{fmt(allScenarioKPIs.optimistic.netCashflowYear)}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
