@@ -99,12 +99,15 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors }: ROIAnalysi
   const payback = useMemo(() => calcPayback(cashFlow), [cashFlow]);
   const totalCapex = kpis.totalInvestment;
 
-  const roiYear1 = totalCapex > 0 ? (cashFlow[0]?.netCashFlow / totalCapex) * 100 : null;
   const cumCashFlow5Y = cashFlow.length === 5 ? cashFlow[4].cumulative : 0;
-  const roi5Y = totalCapex > 0 ? (cumCashFlow5Y / totalCapex) * 100 : null;
+
+  // Investor-standard metrics
+  const totalReturn5Y = totalCapex > 0 ? (cumCashFlow5Y / totalCapex - 1) * 100 : null;
+  const returnMultiple = totalCapex > 0 ? cumCashFlow5Y / totalCapex : null;
   const avgAnnualCashFlow = cashFlow.length > 0
     ? cashFlow.reduce((s, r) => s + r.netCashFlow, 0) / cashFlow.length
     : 0;
+  const annualCashYield = totalCapex > 0 ? (avgAnnualCashFlow / totalCapex) * 100 : null;
 
   // Default investors if none provided
   const displayInvestors: Investor[] = investors && investors.length > 0
@@ -113,6 +116,8 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors }: ROIAnalysi
       { name: "Founders", investment: 0, equityPct: 25 },
       { name: "Lead Investor", investment: totalCapex, equityPct: 75 },
     ];
+
+  const fmtMultiple = (v: number) => `${v.toFixed(2)}x`;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -123,25 +128,25 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors }: ROIAnalysi
           icon={Clock} label="Payback"
           value={payback !== null ? (payback < 1 ? "<1 year" : `${(Math.round(payback * 2) / 2).toFixed(1)} yrs`) : ">5 yrs"}
           color={payback !== null && payback <= 3 ? "success" : payback !== null && payback <= 5 ? "warning" : "muted"}
-          subtitle="Time to recover CAPEX"
+          subtitle="Time to recover investment"
         />
         <KPIMetric
-          icon={TrendingUp} label="ROI Year 1"
-          value={roiYear1 !== null ? `${roiYear1.toFixed(0)}%` : "—"}
-          color={roiYear1 !== null && roiYear1 > 0 ? "success" : "destructive"}
-          subtitle="Net Cash Flow / CAPEX"
+          icon={TrendingUp} label="Total Return (5Y)"
+          value={totalReturn5Y !== null ? `${totalReturn5Y >= 0 ? "+" : ""}${totalReturn5Y.toFixed(0)}%` : "—"}
+          color={totalReturn5Y !== null && totalReturn5Y > 0 ? "success" : "destructive"}
+          subtitle="(Cum. Cash Flow / CAPEX) − 1"
         />
         <KPIMetric
-          icon={BarChart3} label="ROI 5Y (Cumulative)"
-          value={roi5Y !== null ? `${roi5Y.toFixed(0)}%` : "—"}
-          color={roi5Y !== null && roi5Y > 0 ? "success" : "destructive"}
+          icon={Repeat} label="Return Multiple"
+          value={returnMultiple !== null ? fmtMultiple(returnMultiple) : "—"}
+          color={returnMultiple !== null && returnMultiple >= 1 ? "success" : "destructive"}
           subtitle="Cum. Cash Flow / CAPEX"
         />
         <KPIMetric
-          icon={DollarSign} label="Avg Annual Cash Flow"
-          value={fmt(avgAnnualCashFlow)}
-          color={avgAnnualCashFlow >= 0 ? "success" : "destructive"}
-          subtitle="5-year average"
+          icon={DollarSign} label="Annual Cash Yield"
+          value={annualCashYield !== null ? `${annualCashYield.toFixed(1)}%` : "—"}
+          color={annualCashYield !== null && annualCashYield > 0 ? "success" : "destructive"}
+          subtitle="Avg. Annual Cash Flow / CAPEX"
         />
       </div>
 
@@ -193,15 +198,18 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors }: ROIAnalysi
 
       {/* ═══ SECTION 3: CASH FLOW TABLE ═══ */}
       <div className="bg-card border rounded-2xl p-6">
-        <div className="flex items-center gap-2 mb-5">
-          <BarChart3 className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-semibold">Cash Flow Detail</h3>
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-semibold">Cash Flow Detail</h3>
+          </div>
+          <span className="text-[10px] text-muted-foreground">Returns are based on operating cash flow over 5 years</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b">
-                {["Year", "Revenue", "OPEX", "EBITDA", "CAPEX", "Net Cash Flow", "Cumulative"].map(h => (
+                {["Year", "Revenue", "OPEX", "EBITDA", "Initial Investment", "Net Cash Flow", "Cumulative"].map(h => (
                   <th key={h} className={cn(
                     "py-2 text-xs text-muted-foreground font-medium",
                     h === "Year" ? "text-left" : "text-right"
@@ -232,9 +240,12 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors }: ROIAnalysi
 
       {/* ═══ SECTION 4: INVESTOR RETURNS ═══ */}
       <div className="bg-card border rounded-2xl p-6">
-        <div className="flex items-center gap-2 mb-5">
-          <Users className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-semibold">Investor Returns (5-Year)</h3>
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-semibold">Investor Returns (5-Year)</h3>
+          </div>
+          <span className="text-[10px] text-muted-foreground">Returns distributed proportionally to equity ownership</span>
         </div>
 
         <table className="w-full text-sm">
@@ -244,13 +255,15 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors }: ROIAnalysi
               <th className="text-right py-2 text-xs text-muted-foreground font-medium">Investment (€)</th>
               <th className="text-right py-2 text-xs text-muted-foreground font-medium">Equity (%)</th>
               <th className="text-right py-2 text-xs text-muted-foreground font-medium">Cash Received (5Y)</th>
-              <th className="text-right py-2 text-xs text-muted-foreground font-medium">ROI</th>
+              <th className="text-right py-2 text-xs text-muted-foreground font-medium">Return Multiple</th>
+              <th className="text-right py-2 text-xs text-muted-foreground font-medium">Total Return (%)</th>
             </tr>
           </thead>
           <tbody className="divide-y">
             {displayInvestors.map((inv, i) => {
               const cashReceived = cumCashFlow5Y > 0 ? cumCashFlow5Y * (inv.equityPct / 100) : 0;
-              const investorROI = inv.investment > 0 ? (cashReceived / inv.investment) * 100 : null;
+              const multiple = inv.investment > 0 ? cashReceived / inv.investment : null;
+              const totalReturnPct = inv.investment > 0 ? (cashReceived / inv.investment - 1) * 100 : null;
               const isFounder = inv.investment === 0 && inv.equityPct === 25;
 
               return (
@@ -269,9 +282,14 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors }: ROIAnalysi
                     {fmt(cashReceived)}
                   </td>
                   <td className={cn("py-2.5 text-xs text-right tabular-nums font-semibold",
-                    investorROI !== null && investorROI >= 0 ? "text-success" : investorROI !== null ? "text-destructive" : "text-muted-foreground"
+                    multiple !== null && multiple >= 1 ? "text-success" : multiple !== null ? "text-destructive" : "text-muted-foreground"
                   )}>
-                    {investorROI !== null ? `${investorROI.toFixed(0)}%` : "∞"}
+                    {multiple !== null ? fmtMultiple(multiple) : "—"}
+                  </td>
+                  <td className={cn("py-2.5 text-xs text-right tabular-nums font-semibold",
+                    totalReturnPct !== null && totalReturnPct >= 0 ? "text-success" : totalReturnPct !== null ? "text-destructive" : "text-muted-foreground"
+                  )}>
+                    {totalReturnPct !== null ? `${totalReturnPct >= 0 ? "+" : ""}${totalReturnPct.toFixed(0)}%` : "∞"}
                   </td>
                 </tr>
               );
@@ -290,7 +308,10 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors }: ROIAnalysi
                 {fmt(cumCashFlow5Y > 0 ? cumCashFlow5Y : 0)}
               </td>
               <td className="py-2.5 text-xs text-right tabular-nums font-bold">
-                {roi5Y !== null ? `${roi5Y.toFixed(0)}%` : "—"}
+                {returnMultiple !== null ? fmtMultiple(returnMultiple) : "—"}
+              </td>
+              <td className="py-2.5 text-xs text-right tabular-nums font-bold">
+                {totalReturn5Y !== null ? `${totalReturn5Y >= 0 ? "+" : ""}${totalReturn5Y.toFixed(0)}%` : "—"}
               </td>
             </tr>
           </tfoot>
