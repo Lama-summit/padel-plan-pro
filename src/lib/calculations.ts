@@ -462,7 +462,7 @@ export function calculateKPIs(inputs: ProjectInputs, scenario: Scenario): KPIRes
   const peakHoursMonth = totalHoursMonth * PEAK_RATIO;
   const offPeakHoursMonth = totalHoursMonth * OFFPEAK_RATIO;
 
-  const courtRevenueMonth = safe(peakHoursMonth * peakOcc * peakPrice) + safe(offPeakHoursMonth * offPeakOcc * offPeakPrice);
+  
 
    // ── Modular Revenue Calculation ──
   // Total available court hours (not just booked)
