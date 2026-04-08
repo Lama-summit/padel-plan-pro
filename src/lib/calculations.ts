@@ -82,20 +82,20 @@ export interface KPIResult {
 
 // ─── Driver deltas ───────────────────────────────────────────
 export interface DriverDelta {
-  key: string; label: string;
+  key: string; label: string; unit: string;
   annualRevenueImpact: number; ebitdaImpact: number; paybackImpact: number | null;
 }
 
 export function calculateDriverDeltas(inputs: ProjectInputs, scenario: Scenario): Record<string, DriverDelta> {
   const base = calculateKPIs(inputs, scenario);
   const deltas: Record<string, DriverDelta> = {};
-  const tests: { key: keyof ProjectInputs; label: string; delta: number }[] = [
-    { key: "peakOccupancy", label: "Peak Occupancy +5%", delta: 5 },
-    { key: "offPeakOccupancy", label: "Off-Peak Occupancy +5%", delta: 5 },
-    { key: "peakPrice", label: "Peak Price +€2", delta: 2 },
-    { key: "offPeakPrice", label: "Off-Peak Price +€2", delta: 2 },
-    { key: "numberOfCourts", label: "+1 Court", delta: 1 },
-    { key: "openingHoursPerDay", label: "+1 Hour/Day", delta: 1 },
+  const tests: { key: keyof ProjectInputs; label: string; unit: string; delta: number }[] = [
+    { key: "peakOccupancy", label: "Peak Occupancy", unit: "+5 pp", delta: 5 },
+    { key: "offPeakOccupancy", label: "Off-Peak Occupancy", unit: "+5 pp", delta: 5 },
+    { key: "peakPrice", label: "Peak Price", unit: "+€5/h", delta: 5 },
+    { key: "offPeakPrice", label: "Off-Peak Price", unit: "+€5/h", delta: 5 },
+    { key: "numberOfCourts", label: "Courts", unit: "+1 court", delta: 1 },
+    { key: "openingHoursPerDay", label: "Hours/Day", unit: "+1 hour/day", delta: 1 },
   ];
   for (const t of tests) {
     const tweaked = { ...inputs, [t.key]: (inputs[t.key] as number) + t.delta };
@@ -104,9 +104,81 @@ export function calculateDriverDeltas(inputs: ProjectInputs, scenario: Scenario)
     if (isSafeValid(base.paybackYears) && isSafeValid(alt.paybackYears)) {
       paybackImpact = alt.paybackYears.value! - base.paybackYears.value!;
     }
-    deltas[t.key] = { key: t.key, label: t.label, annualRevenueImpact: alt.totalRevenueYear - base.totalRevenueYear, ebitdaImpact: alt.ebitdaYear - base.ebitdaYear, paybackImpact };
+    deltas[t.key] = { key: t.key, label: t.label, unit: t.unit, annualRevenueImpact: alt.totalRevenueYear - base.totalRevenueYear, ebitdaImpact: alt.ebitdaYear - base.ebitdaYear, paybackImpact };
   }
   return deltas;
+}
+
+// ─── Consolidated drivers (merge peak/off-peak) ─────────────
+export interface ConsolidatedDriver {
+  label: string; unit: string; ebitdaImpact: number;
+}
+
+export function getConsolidatedDrivers(deltas: Record<string, DriverDelta>): ConsolidatedDriver[] {
+  const consolidated: ConsolidatedDriver[] = [];
+  // Merge occupancy (average peak + off-peak impact)
+  const peakOcc = deltas.peakOccupancy;
+  const offPeakOcc = deltas.offPeakOccupancy;
+  if (peakOcc && offPeakOcc) {
+    consolidated.push({ label: "Occupancy", unit: "+5 pp", ebitdaImpact: (peakOcc.ebitdaImpact + offPeakOcc.ebitdaImpact) / 2 });
+  }
+  // Merge price
+  const peakPrice = deltas.peakPrice;
+  const offPeakPrice = deltas.offPeakPrice;
+  if (peakPrice && offPeakPrice) {
+    consolidated.push({ label: "Price", unit: "+€5/h", ebitdaImpact: (peakPrice.ebitdaImpact + offPeakPrice.ebitdaImpact) / 2 });
+  }
+  // Courts
+  if (deltas.numberOfCourts) {
+    consolidated.push({ label: "Courts", unit: "+1 court", ebitdaImpact: deltas.numberOfCourts.ebitdaImpact });
+  }
+  // Hours
+  if (deltas.openingHoursPerDay) {
+    consolidated.push({ label: "Hours/Day", unit: "+1 hour/day", ebitdaImpact: deltas.openingHoursPerDay.ebitdaImpact });
+  }
+  return consolidated.sort((a, b) => Math.abs(b.ebitdaImpact) - Math.abs(a.ebitdaImpact)).slice(0, 3);
+}
+
+// ─── Recommended actions ─────────────────────────────────────
+export function generateRecommendedActions(
+  kpis: KPIResult, inputs: ProjectInputs,
+  deltas: Record<string, DriverDelta>, confidence: ModelConfidence
+): string[] {
+  const actions: string[] = [];
+  const marginVal = isSafeValid(kpis.ebitdaMargin) ? kpis.ebitdaMargin.value! : null;
+
+  // Compare occupancy vs price impact
+  const occImpact = ((deltas.peakOccupancy?.ebitdaImpact || 0) + (deltas.offPeakOccupancy?.ebitdaImpact || 0)) / 2;
+  const priceImpact = ((deltas.peakPrice?.ebitdaImpact || 0) + (deltas.offPeakPrice?.ebitdaImpact || 0)) / 2;
+
+  if (Math.abs(occImpact) > Math.abs(priceImpact) * 1.2) {
+    actions.push(`Increase occupancy before raising prices — it has the largest EBITDA impact (+€${Math.abs(occImpact / 1000).toFixed(0)}K per +5 pp)`);
+  } else if (Math.abs(priceImpact) > Math.abs(occImpact) * 1.2) {
+    actions.push(`Raise pricing before filling more slots — price changes drive more EBITDA (+€${Math.abs(priceImpact / 1000).toFixed(0)}K per +€5/h)`);
+  } else {
+    actions.push("Pursue both occupancy and pricing improvements — they yield similar EBITDA returns");
+  }
+
+  if (marginVal !== null && marginVal > 55) {
+    actions.push("Validate cost assumptions — margins exceed industry benchmarks (>55%)");
+  } else if (marginVal !== null && marginVal < 15) {
+    actions.push("Reduce operating costs — thin margins leave no buffer for unexpected expenses");
+  }
+
+  if (confidence.level === "low") {
+    actions.push("Refine inputs to improve model reliability — most values are still at defaults");
+  } else if (confidence.level === "medium") {
+    actions.push("Switch to detailed cost mode for higher accuracy on cost projections");
+  }
+
+  if (isSafeValid(kpis.breakEvenOccupancy)) {
+    const buffer = kpis.weightedOccupancy - kpis.breakEvenOccupancy.value!;
+    if (buffer < 5) {
+      actions.push("Build more break-even margin — current occupancy is dangerously close to break-even");
+    }
+  }
+
+  return actions.slice(0, 3);
 }
 
 // ─── Sensitivity ranking ─────────────────────────────────────
