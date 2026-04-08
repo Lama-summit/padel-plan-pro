@@ -14,6 +14,7 @@ import {
   RotateCcw,
   TrendingUp,
   TrendingDown,
+  Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,7 @@ interface KeyDriversPanelProps {
   collapsed?: boolean;
   onToggle?: () => void;
   className?: string;
+  readOnly?: boolean;
 }
 
 export function KeyDriversPanel({
@@ -36,6 +38,7 @@ export function KeyDriversPanel({
   collapsed = false,
   onToggle,
   className,
+  readOnly = false,
 }: KeyDriversPanelProps) {
   const deltas = useMemo(() => calculateDriverDeltas(inputs, scenario), [inputs, scenario]);
 
@@ -62,7 +65,7 @@ export function KeyDriversPanel({
             <h3 className="font-semibold text-sm">Key Drivers</h3>
           </div>
           <div className="flex items-center gap-1">
-            {onReset && (
+            {onReset && !readOnly && (
               <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={onReset} title="Reset to defaults">
                 <RotateCcw className="h-3.5 w-3.5" />
               </Button>
@@ -75,6 +78,13 @@ export function KeyDriversPanel({
           </div>
         </div>
 
+        {readOnly && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/60 border border-border">
+            <Info className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+            <p className="text-[11px] text-muted-foreground leading-snug">Derived from Base scenario</p>
+          </div>
+        )}
+
         {/* Capacity */}
         <DriverSection icon={LayoutGrid} label="Capacity" hint="Defines capacity">
           <CompactSlider
@@ -83,6 +93,7 @@ export function KeyDriversPanel({
             min={1} max={16} step={1}
             onChange={(v) => onChange("numberOfCourts", v)}
             delta={deltas.numberOfCourts}
+            disabled={readOnly}
           />
           <CompactSlider
             label="Hours / Day"
@@ -90,6 +101,7 @@ export function KeyDriversPanel({
             min={6} max={20} step={1} suffix="hrs"
             onChange={(v) => onChange("openingHoursPerDay", v)}
             delta={deltas.openingHoursPerDay}
+            disabled={readOnly}
           />
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Court Type</Label>
@@ -97,10 +109,12 @@ export function KeyDriversPanel({
               {(["indoor", "outdoor", "mixed"] as const).map((type) => (
                 <button
                   key={type}
-                  onClick={() => onChange("courtType", type)}
+                  onClick={() => !readOnly && onChange("courtType", type)}
+                  disabled={readOnly}
                   className={cn(
                     "flex-1 px-2 py-1.5 text-xs rounded-md transition-all font-medium capitalize",
-                    inputs.courtType === type ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                    inputs.courtType === type ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground",
+                    readOnly && "opacity-60 cursor-not-allowed"
                   )}
                 >
                   {type}
@@ -113,9 +127,9 @@ export function KeyDriversPanel({
         {/* Pricing */}
         <DriverSection icon={Tag} label="Pricing" hint="Impacts margin">
           <CompactNumber label="Off-Peak Price" value={inputs.offPeakPrice} suffix="€/hr"
-            onChange={(v) => onChange("offPeakPrice", v)} delta={deltas.offPeakPrice} />
+            onChange={(v) => onChange("offPeakPrice", v)} delta={deltas.offPeakPrice} disabled={readOnly} />
           <CompactNumber label="Peak Price" value={inputs.peakPrice} suffix="€/hr"
-            onChange={(v) => onChange("peakPrice", v)} delta={deltas.peakPrice} />
+            onChange={(v) => onChange("peakPrice", v)} delta={deltas.peakPrice} disabled={readOnly} />
         </DriverSection>
 
         {/* Demand */}
@@ -126,6 +140,7 @@ export function KeyDriversPanel({
             min={0} max={100} step={5} suffix="%"
             onChange={(v) => onChange("offPeakOccupancy", v)}
             delta={deltas.offPeakOccupancy}
+            disabled={readOnly}
           />
           <CompactSlider
             label="Peak Occupancy"
@@ -133,6 +148,7 @@ export function KeyDriversPanel({
             min={0} max={100} step={5} suffix="%"
             onChange={(v) => onChange("peakOccupancy", v)}
             delta={deltas.peakOccupancy}
+            disabled={readOnly}
           />
         </DriverSection>
       </div>
@@ -192,12 +208,13 @@ function DriverSection({ icon: Icon, label, hint, children }: {
   );
 }
 
-function CompactSlider({ label, value, min, max, step, suffix, onChange, delta }: {
+function CompactSlider({ label, value, min, max, step, suffix, onChange, delta, disabled }: {
   label: string; value: number; min: number; max: number; step: number; suffix?: string;
   onChange: (v: number) => void; delta?: { annualRevenueImpact: number; ebitdaImpact: number; paybackImpact: number | null };
+  disabled?: boolean;
 }) {
   return (
-    <div className="space-y-1.5">
+    <div className={cn("space-y-1.5", disabled && "opacity-60")}>
       <div className="flex items-center justify-between">
         <Label className="text-xs text-muted-foreground">{label}</Label>
         <span className="text-sm font-bold tabular-nums">
@@ -205,27 +222,28 @@ function CompactSlider({ label, value, min, max, step, suffix, onChange, delta }
           {suffix && <span className="text-[10px] text-muted-foreground ml-0.5 font-medium">{suffix}</span>}
         </span>
       </div>
-      <Slider value={[value]} min={min} max={max} step={step} onValueChange={([v]) => onChange(v)} className="py-0.5" />
-      <DeltaIndicator delta={delta} />
+      <Slider value={[value]} min={min} max={max} step={step} onValueChange={([v]) => !disabled && onChange(v)} disabled={disabled} className="py-0.5" />
+      {!disabled && <DeltaIndicator delta={delta} />}
     </div>
   );
 }
 
-function CompactNumber({ label, value, suffix, onChange, delta }: {
+function CompactNumber({ label, value, suffix, onChange, delta, disabled }: {
   label: string; value: number; suffix?: string; onChange: (v: string) => void;
   delta?: { annualRevenueImpact: number; ebitdaImpact: number; paybackImpact: number | null };
+  disabled?: boolean;
 }) {
   return (
-    <div className="space-y-1.5">
+    <div className={cn("space-y-1.5", disabled && "opacity-60")}>
       <Label className="text-xs text-muted-foreground">{label}</Label>
       <div className="relative">
-        <Input type="number" value={value} onChange={(e) => onChange(e.target.value)}
-          className="h-8 text-sm font-medium rounded-lg pr-10" />
+        <Input type="number" value={value} onChange={(e) => !disabled && onChange(e.target.value)}
+          className="h-8 text-sm font-medium rounded-lg pr-10" disabled={disabled} />
         {suffix && (
           <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-medium">{suffix}</span>
         )}
       </div>
-      <DeltaIndicator delta={delta} />
+      {!disabled && <DeltaIndicator delta={delta} />}
     </div>
   );
 }

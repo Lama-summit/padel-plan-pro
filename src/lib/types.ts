@@ -93,8 +93,8 @@ export interface ScenarioMultipliers {
 
 export const SCENARIO_MULTIPLIERS: Record<Scenario, ScenarioMultipliers> = {
   base: { occupancyOffset: 0, pricingMultiplier: 1.0 },
-  optimistic: { occupancyOffset: 10, pricingMultiplier: 1.05 },
-  pessimistic: { occupancyOffset: -10, pricingMultiplier: 0.95 },
+  optimistic: { occupancyOffset: 10, pricingMultiplier: 1.0 },
+  pessimistic: { occupancyOffset: -10, pricingMultiplier: 1.0 },
 };
 
 export const DEFAULT_INPUTS: ProjectInputs = {
