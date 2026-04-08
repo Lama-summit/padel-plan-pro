@@ -95,12 +95,14 @@ export function RevenueModelTab({
   }, [rb, inputs]);
 
   const pct = (val: number) =>
-    rb.totalRevenue > 0 ? ((val / rb.totalRevenue) * 100).toFixed(0) : "0";
+    rb.totalRevenue > 0 ? ((val / rb.totalRevenue) * 100).toFixed(1) : "0.0";
+
+  const ebitdaMargin = rb.totalRevenue > 0 ? (rb.totalEbitda / rb.totalRevenue) * 100 : 0;
 
   return (
     <div className="space-y-6 animate-fade-in">
       {/* ── KPI Strip ── */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <div className="bg-card border-2 border-foreground/10 rounded-xl p-5">
           <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">
             Total Annual Revenue
@@ -124,9 +126,15 @@ export function RevenueModelTab({
           </p>
         </div>
         <SummaryCard
+          label="EBITDA Margin"
+          value={`${ebitdaMargin.toFixed(1)}%`}
+          pct={ebitdaMargin >= 20 ? "Healthy" : ebitdaMargin >= 0 ? "Low margin" : "Negative"}
+          color={ebitdaMargin >= 20 ? "text-success" : ebitdaMargin >= 0 ? "text-warning" : "text-destructive"}
+        />
+        <SummaryCard
           label="Add-on EBITDA"
           value={fmt(rb.addOnEbitda)}
-          pct={`${rb.addOnPct.toFixed(0)}% of total`}
+          pct={`${rb.addOnPct.toFixed(1)}% of total`}
           color="text-success"
         />
         <SummaryCard
@@ -136,6 +144,20 @@ export function RevenueModelTab({
           color="text-[hsl(217_91%_60%)]"
         />
       </div>
+
+      {/* ── Profitability Warning ── */}
+      {rb.totalEbitda < 0 && (
+        <div className="flex items-center gap-3 bg-destructive/10 border border-destructive/30 rounded-xl px-5 py-3">
+          <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-destructive">Not Profitable</p>
+            <p className="text-xs text-destructive/80">
+              Business model not profitable under current assumptions. EBITDA margin is {ebitdaMargin.toFixed(1)}%.
+              Review cost structure or increase revenue sources.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ── Capacity Warning ── */}
       {rb.capacityWarning && (
