@@ -106,7 +106,13 @@ export default function Dashboard() {
 
   const handleDriverChange = (key: keyof ProjectInputs, value: string | number) => {
     if (isReadOnly) return;
-    const numVal = key === "courtType" || key === "costMode" ? value as any : typeof value === "number" ? value : parseFloat(value) || 0;
+    let numVal = key === "courtType" || key === "costMode" ? value as any : typeof value === "number" ? value : parseFloat(value) || 0;
+
+    // Clamp base occupancy so derived scenarios (±10 pp) stay within 0–100%
+    if (key === "offPeakOccupancy" || key === "peakOccupancy") {
+      numVal = Math.min(90, Math.max(10, numVal as number));
+    }
+
     const patch: Partial<ProjectInputs> = { [key]: numVal };
 
     // Auto-compute Total Initial Investment when relevant fields change

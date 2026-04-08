@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { ProjectInputs, Scenario, DEFAULT_INPUTS } from "@/lib/types";
+import { ProjectInputs, Scenario, SCENARIO_MULTIPLIERS, DEFAULT_INPUTS } from "@/lib/types";
 import { calculateDriverDeltas } from "@/lib/calculations";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
@@ -40,6 +40,9 @@ export function KeyDriversPanel({
   className,
   readOnly = false,
 }: KeyDriversPanelProps) {
+  const offset = SCENARIO_MULTIPLIERS[scenario].occupancyOffset;
+  const derivedOffPeak = Math.min(100, Math.max(0, inputs.offPeakOccupancy + offset));
+  const derivedPeak = Math.min(100, Math.max(0, inputs.peakOccupancy + offset));
   const deltas = useMemo(() => calculateDriverDeltas(inputs, scenario), [inputs, scenario]);
 
   if (collapsed) {
@@ -136,7 +139,7 @@ export function KeyDriversPanel({
         <DriverSection icon={BarChart3} label="Demand" hint="Main revenue driver">
           <CompactSlider
             label="Off-Peak Occupancy"
-            value={inputs.offPeakOccupancy}
+            value={readOnly ? derivedOffPeak : inputs.offPeakOccupancy}
             min={0} max={100} step={5} suffix="%"
             onChange={(v) => onChange("offPeakOccupancy", v)}
             delta={deltas.offPeakOccupancy}
@@ -144,12 +147,17 @@ export function KeyDriversPanel({
           />
           <CompactSlider
             label="Peak Occupancy"
-            value={inputs.peakOccupancy}
+            value={readOnly ? derivedPeak : inputs.peakOccupancy}
             min={0} max={100} step={5} suffix="%"
             onChange={(v) => onChange("peakOccupancy", v)}
             delta={deltas.peakOccupancy}
             disabled={readOnly}
           />
+          {readOnly && offset !== 0 && (
+            <p className="text-[10px] text-muted-foreground italic pl-1">
+              Base {offset > 0 ? "+" : ""}{offset} pp
+            </p>
+          )}
         </DriverSection>
       </div>
     </aside>

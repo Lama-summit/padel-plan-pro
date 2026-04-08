@@ -131,7 +131,12 @@ export default function InputsView() {
   const version = project.versions.find((v) => v.id === project.activeVersionId) || project.versions[0];
 
   const handleChange = (key: keyof ProjectInputs, value: string | number) => {
-    const numVal = key === "courtType" ? value as any : typeof value === "number" ? value : parseFloat(value) || 0;
+    let numVal = key === "courtType" ? value as any : typeof value === "number" ? value : parseFloat(value) || 0;
+
+    // Clamp base occupancy so derived scenarios (±10 pp) stay within 0–100%
+    if (key === "offPeakOccupancy" || key === "peakOccupancy") {
+      numVal = Math.min(90, Math.max(10, numVal as number));
+    }
     const patch: Partial<ProjectInputs> = { [key]: numVal };
 
     // Auto-compute Total Initial Investment from components
