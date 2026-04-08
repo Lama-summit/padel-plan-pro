@@ -68,6 +68,10 @@ export default function Dashboard() {
   const confidence = useMemo(() => activeVersion ? getModelConfidence(activeVersion.inputs) : null, [activeVersion]);
   const consolidatedDrivers = useMemo(() => getConsolidatedDrivers(driverDeltas), [driverDeltas]);
   const recommendedActions = useMemo(() => kpis && activeVersion && confidence ? generateRecommendedActions(kpis, activeVersion.inputs, driverDeltas, confidence) : [], [kpis, activeVersion, driverDeltas, confidence]);
+  const fiveYearProjection = useMemo(() => activeVersion ? calculate5YearProjection(activeVersion.inputs, scenario) : [], [activeVersion, scenario]);
+  const cumulativePayback = useMemo(() => activeVersion ? calculatePaybackCumulative(activeVersion.inputs, scenario) : null, [activeVersion, scenario]);
+  const cumulativeROI = useMemo(() => activeVersion ? calculateCumulativeROI(activeVersion.inputs, scenario, 5) : null, [activeVersion, scenario]);
+  const highlights = useMemo(() => kpis && activeVersion ? generateHighlights(kpis, activeVersion.inputs) : [], [kpis, activeVersion]);
 
   // Compute all 3 scenarios for comparison display
   const allScenarioKPIs = useMemo(() => {
