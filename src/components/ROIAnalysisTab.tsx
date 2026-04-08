@@ -126,7 +126,11 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors }: ROIAnalysi
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <KPIMetric
           icon={Clock} label="Payback"
-          value={payback !== null ? (payback < 1 ? "<1 year" : `${(Math.round(payback * 2) / 2).toFixed(1)} yrs`) : ">5 yrs"}
+          value={payback !== null
+            ? (payback < 1
+              ? `${Math.round(payback * 12)} months`
+              : `${payback.toFixed(1)} yrs`)
+            : ">5 yrs"}
           color={payback !== null && payback <= 3 ? "success" : payback !== null && payback <= 5 ? "warning" : "muted"}
           subtitle="Time to recover investment"
         />
@@ -146,7 +150,7 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors }: ROIAnalysi
           icon={DollarSign} label="Annual Cash Yield"
           value={annualCashYield !== null ? `${annualCashYield.toFixed(1)}%` : "—"}
           color={annualCashYield !== null && annualCashYield > 0 ? "success" : "destructive"}
-          subtitle="Avg. Annual Cash Flow / CAPEX"
+          subtitle="Based on average annual operating cash flow"
         />
       </div>
 
@@ -261,10 +265,10 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors }: ROIAnalysi
           </thead>
           <tbody className="divide-y">
             {displayInvestors.map((inv, i) => {
-              const cashReceived = cumCashFlow5Y > 0 ? cumCashFlow5Y * (inv.equityPct / 100) : 0;
-              const multiple = inv.investment > 0 ? cashReceived / inv.investment : null;
-              const totalReturnPct = inv.investment > 0 ? (cashReceived / inv.investment - 1) * 100 : null;
-              const isFounder = inv.investment === 0 && inv.equityPct === 25;
+              const cashReceived = cumCashFlow5Y * (inv.equityPct / 100);
+              const isFounder = inv.investment === 0;
+              const multiple = !isFounder && inv.investment > 0 ? cashReceived / inv.investment : null;
+              const totalReturnPct = !isFounder && inv.investment > 0 ? (cashReceived / inv.investment - 1) * 100 : null;
 
               return (
                 <tr key={i} className={isFounder ? "bg-muted/20" : ""}>
@@ -289,7 +293,7 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors }: ROIAnalysi
                   <td className={cn("py-2.5 text-xs text-right tabular-nums font-semibold",
                     totalReturnPct !== null && totalReturnPct >= 0 ? "text-success" : totalReturnPct !== null ? "text-destructive" : "text-muted-foreground"
                   )}>
-                    {totalReturnPct !== null ? `${totalReturnPct >= 0 ? "+" : ""}${totalReturnPct.toFixed(0)}%` : "∞"}
+                    {totalReturnPct !== null ? `${totalReturnPct >= 0 ? "+" : ""}${totalReturnPct.toFixed(0)}%` : "—"}
                   </td>
                 </tr>
               );
