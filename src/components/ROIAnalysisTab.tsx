@@ -3,7 +3,7 @@ import { ProjectInputs, Scenario } from "@/lib/types";
 import { KPIResult, isSafeValid, calculate5YearProjection } from "@/lib/calculations";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
-  ResponsiveContainer, Legend, Line, ComposedChart,
+  ResponsiveContainer, Legend, Line, ComposedChart, Cell,
 } from "recharts";
 import {
   Clock, TrendingUp, BarChart3, DollarSign, Users, AlertTriangle,
@@ -178,10 +178,14 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors }: ROIAnalysi
               }}
             />
             <Legend iconType="circle" iconSize={8} wrapperStyle={{ paddingTop: 12, fontSize: 12 }} />
-            <Bar dataKey="netCashFlow" name="Net Cash Flow" fill="hsl(217 91% 60%)" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="netCashFlow" name="Net Cash Flow" radius={[4, 4, 0, 0]}>
+              {cashFlow.map((entry, i) => (
+                <Cell key={i} fill={entry.netCashFlow >= 0 ? "hsl(152 69% 41%)" : "hsl(0 72% 51%)"} />
+              ))}
+            </Bar>
             <Line
               dataKey="cumulative" name="Cumulative" type="monotone"
-              stroke="hsl(152 69% 41%)" strokeWidth={2.5} dot={{ r: 4, fill: "hsl(152 69% 41%)" }}
+              stroke="hsl(217 91% 60%)" strokeWidth={2.5} dot={{ r: 4, fill: "hsl(217 91% 60%)" }}
             />
           </ComposedChart>
         </ResponsiveContainer>
