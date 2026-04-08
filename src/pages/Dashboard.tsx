@@ -291,11 +291,10 @@ export default function Dashboard() {
 
         {/* ─── DERIVED SCENARIO BANNER ─── */}
         {isReadOnly && derivedInfo && (
-          <div className="bg-muted/40 border-b px-8 py-2 flex items-center gap-2 text-xs text-muted-foreground flex-shrink-0">
+          <div className="bg-muted/40 border-b px-8 py-2 flex items-center gap-3 text-xs text-muted-foreground flex-shrink-0">
             <Info className="h-3.5 w-3.5 flex-shrink-0" />
             <span>
-              Derived from Base scenario — Occupancy adjusted by {scenario === "optimistic" ? "+10" : "−10"} pts
-              (Peak: {derivedInfo.peakOcc}%, Off-Peak: {derivedInfo.offPeakOcc}%)
+              Derived from Base — Occupancy {scenario === "optimistic" ? "+10" : "−10"} pp · Pricing {scenario === "optimistic" ? "+5" : "−5"}% · OPEX {scenario === "optimistic" ? "−5" : "+5"}% · CAPEX {scenario === "optimistic" ? "−5" : "+10"}%
             </span>
             {scenarioDelta && scenarioDelta.ebitdaPctChange !== null && (
               <Badge variant="outline" className="ml-auto text-[10px] py-0">
