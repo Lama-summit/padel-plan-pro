@@ -619,17 +619,14 @@ export default function Dashboard() {
                 </TabsContent>
 
                 {/* ═══ REVENUE MODEL TAB ═══ */}
-                <TabsContent value="revenue" className="mt-0 space-y-6 animate-fade-in">
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <KPICard label="Annual Revenue" value={fmt(kpis.totalRevenueYear)} icon={TrendingUp} variant="accent" />
-                    <KPICard label="Court Revenue" value={fmt(kpis.annualCourtRevenue)} icon={BarChart3} variant="default"
-                      subtitle={`${kpis.totalRevenueYear > 0 ? Math.round(kpis.annualCourtRevenue / kpis.totalRevenueYear * 100) : 0}% of total`} />
-                    <KPICard label="Other Revenue" value={fmt(kpis.annualOtherRevenue)} icon={PieChart} variant="default" />
-                    <KPICard label="Wtd. Occupancy" value={`${kpis.weightedOccupancy.toFixed(0)}%`} icon={Target}
-                      variant={occAbove ? "success" : "warning"}
-                      subtitle={beValid ? `Break-even: ${beVal.toFixed(0)}%` : undefined} />
-                  </div>
-                  <DashboardCharts monthlyData={monthlyData} kpis={kpis} currency={currency} />
+                <TabsContent value="revenue" className="mt-0">
+                  <RevenueModelTab
+                    inputs={activeVersion.inputs}
+                    kpis={kpis}
+                    onInputChange={handleDriverChange}
+                    readOnly={isReadOnly}
+                    currency={currency}
+                  />
                 </TabsContent>
 
                 {/* ═══ ROI ANALYSIS TAB ═══ */}
