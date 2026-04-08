@@ -74,7 +74,10 @@ export interface ProjectInputs {
 
   // Module C: Other Revenue
   otherRevenueEnabled: boolean;
+  otherRevenueMode: "fixed" | "pctOfBookings" | "perBooking";
   otherMonthlyRevenue: number;
+  otherRevenuePctOfBookings: number;
+  otherRevenuePerBooking: number;
   proshopRevenue: number;
   fAndBRevenue: number;
   membershipFees: number;
@@ -166,7 +169,10 @@ export const DEFAULT_INPUTS: ProjectInputs = {
 
   // Other revenue module
   otherRevenueEnabled: true,
+  otherRevenueMode: "fixed",
   otherMonthlyRevenue: 4000,
+  otherRevenuePctOfBookings: 10,
+  otherRevenuePerBooking: 5,
   proshopRevenue: 1500,
   fAndBRevenue: 2000,
   membershipFees: 500,

@@ -80,7 +80,15 @@ export interface RevenueBreakdown {
   tournamentCost: number;
   tournamentNet: number;
   otherRevenue: number;
+  otherCost: number;
+  otherNet: number;
   totalRevenue: number;
+  totalEbitda: number;
+  addOnEbitda: number;
+  addOnPct: number;
+  bookingHoursPct: number;
+  coachingHoursPct: number;
+  capacityWarning: boolean;
 }
 
 export interface KPIResult {
@@ -454,14 +462,31 @@ export function calculateKPIs(inputs: ProjectInputs, scenario: Scenario): KPIRes
   const peakHoursMonth = totalHoursMonth * PEAK_RATIO;
   const offPeakHoursMonth = totalHoursMonth * OFFPEAK_RATIO;
 
-  const courtRevenueMonth = safe(peakHoursMonth * peakOcc * peakPrice) + safe(offPeakHoursMonth * offPeakOcc * offPeakPrice);
+  
 
-  // ── Modular Revenue Calculation ──
-  const bookedHoursMonth = (peakHoursMonth * peakOcc) + (offPeakHoursMonth * offPeakOcc);
+   // ── Modular Revenue Calculation ──
+  // Total available court hours (not just booked)
+  const totalAvailableHoursMonth = totalHoursMonth;
+  const coachingPct = inputs.coachingEnabled ? safe(inputs.coachingPctOfHours) : 0;
+  const bookingPct = 100 - coachingPct;
+  const capacityWarning = coachingPct > 100;
 
-  // A. Coaching / Classes
+  // Coaching uses a % of total court capacity
+  const coachingHoursMonth = inputs.coachingEnabled
+    ? totalAvailableHoursMonth * (coachingPct / 100)
+    : 0;
+
+  // Booking hours = remaining capacity × occupancy
+  const bookingAvailableHoursMonth = totalAvailableHoursMonth * (bookingPct / 100);
+  const peakBookingHours = bookingAvailableHoursMonth * PEAK_RATIO;
+  const offPeakBookingHours = bookingAvailableHoursMonth * OFFPEAK_RATIO;
+
+  const courtRevenueMonth = safe(peakBookingHours * peakOcc * peakPrice) + safe(offPeakBookingHours * offPeakOcc * offPeakPrice);
+  const bookedHoursMonth = (peakBookingHours * peakOcc) + (offPeakBookingHours * offPeakOcc);
+
+  // A. Coaching / Classes — revenue from coaching hours
   const coachingRevenueMonth = inputs.coachingEnabled
-    ? bookedHoursMonth * (safe(inputs.coachingPctOfHours) / 100) * safe(inputs.coachingPricePerHour)
+    ? coachingHoursMonth * safe(inputs.coachingPricePerHour)
     : 0;
   const coachingCostMonth = coachingRevenueMonth * (safe(inputs.coachingCostShare) / 100);
   const coachingNetMonth = coachingRevenueMonth - coachingCostMonth;
@@ -475,13 +500,26 @@ export function calculateKPIs(inputs: ProjectInputs, scenario: Scenario): KPIRes
     : 0;
   const tournamentNetMonth = tournamentRevenueMonth - tournamentCostMonth;
 
-  // C. Other Revenue
-  const otherRevenueMonth = inputs.otherRevenueEnabled
-    ? safe(inputs.proshopRevenue) + safe(inputs.fAndBRevenue) + safe(inputs.membershipFees)
-    : 0;
+  // C. Other Revenue — supports 3 modes
+  let otherRevenueMonth = 0;
+  if (inputs.otherRevenueEnabled) {
+    if (inputs.otherRevenueMode === "pctOfBookings") {
+      otherRevenueMonth = courtRevenueMonth * (safe(inputs.otherRevenuePctOfBookings) / 100);
+    } else if (inputs.otherRevenueMode === "perBooking") {
+      // Approximate bookings as booked hours (each hour = 1 booking)
+      otherRevenueMonth = bookedHoursMonth * safe(inputs.otherRevenuePerBooking);
+    } else {
+      // fixed mode
+      otherRevenueMonth = safe(inputs.proshopRevenue) + safe(inputs.fAndBRevenue) + safe(inputs.membershipFees);
+    }
+  }
 
   const totalRevenueMonth = courtRevenueMonth + coachingRevenueMonth + tournamentRevenueMonth + otherRevenueMonth;
   const totalRevenueYear = totalRevenueMonth * MONTHS_PER_YEAR;
+
+  // Add-on EBITDA = coaching net + tournament net + other (other has no cost in this model)
+  const addOnEbitdaMonth = coachingNetMonth + tournamentNetMonth + otherRevenueMonth;
+  const coreEbitdaMonth = courtRevenueMonth; // before opex
 
   const revenueBreakdown: RevenueBreakdown = {
     courtRevenue: courtRevenueMonth * MONTHS_PER_YEAR,
@@ -492,7 +530,15 @@ export function calculateKPIs(inputs: ProjectInputs, scenario: Scenario): KPIRes
     tournamentCost: tournamentCostMonth * MONTHS_PER_YEAR,
     tournamentNet: tournamentNetMonth * MONTHS_PER_YEAR,
     otherRevenue: otherRevenueMonth * MONTHS_PER_YEAR,
+    otherCost: 0,
+    otherNet: otherRevenueMonth * MONTHS_PER_YEAR,
     totalRevenue: totalRevenueYear,
+    totalEbitda: 0, // will be set after costs
+    addOnEbitda: addOnEbitdaMonth * MONTHS_PER_YEAR,
+    addOnPct: 0, // will be set after EBITDA calc
+    bookingHoursPct: bookingPct,
+    coachingHoursPct: coachingPct,
+    capacityWarning,
   };
 
   // Total costs to deduct includes coaching and tournament costs
@@ -505,6 +551,12 @@ export function calculateKPIs(inputs: ProjectInputs, scenario: Scenario): KPIRes
   const ebitdaYear = ebitdaMonth * MONTHS_PER_YEAR;
   const ebitdaMarginRaw = safeDiv(ebitdaMonth, totalRevenueMonth);
   const ebitdaMargin = makeSafeMetric(ebitdaMarginRaw !== null ? ebitdaMarginRaw * 100 : null, totalRevenueMonth > 0);
+
+  // Update revenue breakdown with final EBITDA figures
+  revenueBreakdown.totalEbitda = ebitdaYear;
+  revenueBreakdown.addOnPct = ebitdaYear !== 0
+    ? (revenueBreakdown.addOnEbitda / Math.abs(ebitdaYear)) * 100
+    : 0;
 
   const loanAmount = investment * (debtPct / 100);
   const loanPaymentMonth = calcMonthlyLoanPayment(loanAmount, intRate, loanTerm);
