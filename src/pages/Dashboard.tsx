@@ -5,7 +5,7 @@ import {
   calculateKPIs, getMonthlyEvolution, formatSafeYears, isSafeValid,
   calculateScenarioDelta, calculateScenarioComparison, calculateSensitivityRanking,
   generateInsight, generateStructuredInsight, getInvestmentVerdict, getModelConfidence,
-  calculateDriverDeltas, getConsolidatedDrivers, generateRecommendedActions,
+  calculateDriverDeltas, getConsolidatedDrivers, generateRecommendedActions, calculateSensitivityMatrix,
   calculate5YearProjection, calculatePaybackCumulative, calculateCumulativeROI, generateHighlights,
   ExportData,
 } from "@/lib/calculations";
@@ -17,6 +17,7 @@ import { KeyDriversPanel } from "@/components/KeyDriversPanel";
 import { InvestmentTab } from "@/components/InvestmentTab";
 import { ROIAnalysisTab } from "@/components/ROIAnalysisTab";
 import { RevenueModelTab } from "@/components/RevenueModelTab";
+import { SensitivityMatrix } from "@/components/SensitivityMatrix";
 import { downloadExport } from "@/lib/export";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -691,6 +692,14 @@ export default function Dashboard() {
                       </div>
                     </div>
                   </div>
+
+                  {activeVersion && (
+                    <SensitivityMatrix
+                      inputs={activeVersion.inputs}
+                      scenario={scenario}
+                      currency={currency}
+                    />
+                  )}
                 </TabsContent>
               </div>
             </Tabs>
