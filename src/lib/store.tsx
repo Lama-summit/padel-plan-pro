@@ -205,7 +205,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         deleteProject: deleteProjectFn,
         getProject: getProjectFn,
         createVersion: createVersionFn,
+        createVersionFromCurrent: createVersionFromCurrentFn,
         duplicateVersion: duplicateVersionFn,
+        saveVersion: saveVersionFn,
         updateVersionInputs: updateVersionInputsFn,
         setActiveVersion: setActiveVersionFn,
       }}
