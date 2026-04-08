@@ -3,7 +3,7 @@ import { ProjectInputs, Scenario } from "@/lib/types";
 import { KPIResult, isSafeValid, calculate5YearProjection } from "@/lib/calculations";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
-  ResponsiveContainer, Legend, Line, ComposedChart,
+  ResponsiveContainer, Legend, Line, ComposedChart, Cell,
 } from "recharts";
 import {
   Clock, TrendingUp, BarChart3, DollarSign, Users, AlertTriangle,
