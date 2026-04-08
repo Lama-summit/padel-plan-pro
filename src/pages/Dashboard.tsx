@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 const SCENARIOS: { value: Scenario; label: string; color: string }[] = [
-  { value: "base", label: "Base (Realistic)", color: "data-[active=true]:bg-primary data-[active=true]:text-primary-foreground" },
+  { value: "base", label: "Base", color: "data-[active=true]:bg-primary data-[active=true]:text-primary-foreground" },
   { value: "optimistic", label: "Optimistic", color: "data-[active=true]:bg-success data-[active=true]:text-success-foreground" },
   { value: "pessimistic", label: "Pessimistic", color: "data-[active=true]:bg-warning data-[active=true]:text-warning-foreground" },
 ];
