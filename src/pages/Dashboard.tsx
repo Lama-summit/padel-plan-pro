@@ -64,6 +64,8 @@ export default function Dashboard() {
   const warnings = useMemo(() => kpis ? getValidationWarnings(kpis) : [], [kpis]);
   const verdict = useMemo(() => kpis ? getInvestmentVerdict(kpis) : null, [kpis]);
   const confidence = useMemo(() => activeVersion ? getModelConfidence(activeVersion.inputs) : null, [activeVersion]);
+  const consolidatedDrivers = useMemo(() => getConsolidatedDrivers(driverDeltas), [driverDeltas]);
+  const recommendedActions = useMemo(() => kpis && activeVersion && confidence ? generateRecommendedActions(kpis, activeVersion.inputs, driverDeltas, confidence) : [], [kpis, activeVersion, driverDeltas, confidence]);
 
   // Compute all 3 scenarios for comparison display
   const allScenarioKPIs = useMemo(() => {
