@@ -424,6 +424,7 @@ export function calculateKPIs(inputs: ProjectInputs, scenario: Scenario): KPIRes
   const peakPriceInput = safe(inputs.peakPrice);
   const offPeakPriceInput = safe(inputs.offPeakPrice);
   const investment = safe(inputs.initialInvestment) * m.capexMultiplier;
+  const debtPct = safe(inputs.debtPercentage);
   const intRate = safe(inputs.interestRate);
   const loanTerm = safe(inputs.loanTermYears);
 
