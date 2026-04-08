@@ -4,7 +4,7 @@ import { useStore } from "@/lib/store";
 import {
   calculateKPIs, getMonthlyEvolution, formatSafeYears, isSafeValid,
   calculateScenarioDelta, calculateScenarioComparison, calculateSensitivityRanking,
-  generateInsight, generateStructuredInsight, getValidationWarnings, getInvestmentVerdict, getModelConfidence,
+  generateInsight, generateStructuredInsight, getInvestmentVerdict, getModelConfidence,
   calculateDriverDeltas, getConsolidatedDrivers, generateRecommendedActions,
   calculate5YearProjection, calculatePaybackCumulative, calculateCumulativeROI, generateHighlights,
   ExportData,
