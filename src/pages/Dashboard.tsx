@@ -242,7 +242,7 @@ export default function Dashboard() {
           <main className="flex-1 overflow-y-auto">
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as DashboardTab)} className="flex flex-col flex-1">
               {/* Tab bar */}
-              <div className="border-b bg-card/50 px-6">
+              <div className="border-b bg-card/50 px-8">
                 <TabsList className="bg-transparent h-auto p-0 gap-0 rounded-none">
                   {([
                     { value: "summary", label: "Executive Summary" },
