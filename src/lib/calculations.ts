@@ -71,6 +71,18 @@ function calculateCostBreakdown(inputs: ProjectInputs, totalHoursMonth: number, 
 }
 
 // ─── KPI result ──────────────────────────────────────────────
+export interface RevenueBreakdown {
+  courtRevenue: number;
+  coachingRevenue: number;
+  coachingCost: number;
+  coachingNet: number;
+  tournamentRevenue: number;
+  tournamentCost: number;
+  tournamentNet: number;
+  otherRevenue: number;
+  totalRevenue: number;
+}
+
 export interface KPIResult {
   totalInvestment: number;
   totalHoursMonth: number; peakHoursMonth: number; offPeakHoursMonth: number;
@@ -82,6 +94,7 @@ export interface KPIResult {
   loanAmount: number;
   annualCourtRevenue: number; annualOtherRevenue: number; annualCosts: number;
   costBreakdown: CostBreakdown;
+  revenueBreakdown: RevenueBreakdown;
   // Investor / financing metrics
   equityInvested: number;
   annualDebtPayment: number;
@@ -107,7 +120,6 @@ export function calculateDriverDeltas(inputs: ProjectInputs, scenario: Scenario)
     { key: "offPeakPrice", label: "Off-Peak Price", unit: "+€5/h", delta: 5 },
     { key: "numberOfCourts", label: "Courts", unit: "+1 court", delta: 1 },
     { key: "openingHoursPerDay", label: "Hours/Day", unit: "+1 hour/day", delta: 1 },
-    { key: "variableCostPerHour", label: "Variable Cost/Hour", unit: "+€1/h", delta: 1 },
   ];
   for (const t of tests) {
     const tweaked = { ...inputs, [t.key]: (inputs[t.key] as number) + t.delta };
@@ -119,61 +131,6 @@ export function calculateDriverDeltas(inputs: ProjectInputs, scenario: Scenario)
     deltas[t.key] = { key: t.key, label: t.label, unit: t.unit, annualRevenueImpact: alt.totalRevenueYear - base.totalRevenueYear, ebitdaImpact: alt.ebitdaYear - base.ebitdaYear, paybackImpact };
   }
   return deltas;
-}
-
-// ─── Full sensitivity analysis (multi-metric) ────────────────
-export interface SensitivityVariable {
-  key: string;
-  label: string;
-  change: string; // human-readable change description
-  ebitdaImpact: number;
-  returnMultipleImpact: number | null;
-  paybackImpact: number | null;
-}
-
-export function calculateFullSensitivity(inputs: ProjectInputs, scenario: Scenario): SensitivityVariable[] {
-  const base = calculateKPIs(inputs, scenario);
-  const basePayback = calculatePaybackCumulative(inputs, scenario);
-  const baseInvestment = safe(inputs.initialInvestment);
-  const base5YProjection = calculate5YearProjection(inputs, scenario);
-  const baseCum5Y = base5YProjection.reduce((s, p) => s + p.ebitda, 0);
-  const baseMultiple = baseInvestment > 0 ? baseCum5Y / baseInvestment : null;
-
-  const tests: { key: keyof ProjectInputs; label: string; change: string; delta: number }[] = [
-    { key: "peakOccupancy", label: "Occupancy", change: "+5 pp", delta: 5 },
-    { key: "peakPrice", label: "Price", change: "+10%", delta: Math.round(inputs.peakPrice * 0.1) || 1 },
-    { key: "numberOfCourts", label: "Courts", change: "+1 court", delta: 1 },
-    { key: "variableCostPerHour", label: "Variable Cost/Hour", change: "+€1/hr", delta: 1 },
-  ];
-
-  const results: SensitivityVariable[] = [];
-
-  for (const t of tests) {
-    // For occupancy, bump both peak and off-peak
-    const tweaked = t.key === "peakOccupancy"
-      ? { ...inputs, peakOccupancy: inputs.peakOccupancy + 5, offPeakOccupancy: inputs.offPeakOccupancy + 5 }
-      : t.key === "peakPrice"
-        ? { ...inputs, peakPrice: inputs.peakPrice + t.delta, offPeakPrice: inputs.offPeakPrice + Math.round(inputs.offPeakPrice * 0.1) }
-        : { ...inputs, [t.key]: (inputs[t.key] as number) + t.delta };
-
-    const alt = calculateKPIs(tweaked, scenario);
-    const altPayback = calculatePaybackCumulative(tweaked, scenario);
-    const alt5YProjection = calculate5YearProjection(tweaked, scenario);
-    const altCum5Y = alt5YProjection.reduce((s, p) => s + p.ebitda, 0);
-    const altInvestment = safe(tweaked.initialInvestment);
-    const altMultiple = altInvestment > 0 ? altCum5Y / altInvestment : null;
-
-    results.push({
-      key: t.key,
-      label: t.label,
-      change: t.change,
-      ebitdaImpact: alt.ebitdaYear - base.ebitdaYear,
-      returnMultipleImpact: baseMultiple !== null && altMultiple !== null ? altMultiple - baseMultiple : null,
-      paybackImpact: basePayback !== null && altPayback !== null ? altPayback - basePayback : null,
-    });
-  }
-
-  return results.sort((a, b) => Math.abs(b.ebitdaImpact) - Math.abs(a.ebitdaImpact));
 }
 
 // ─── Consolidated drivers (merge peak/off-peak) ─────────────
@@ -199,15 +156,11 @@ export function getConsolidatedDrivers(deltas: Record<string, DriverDelta>): Con
   if (deltas.numberOfCourts) {
     consolidated.push({ label: "Courts", unit: "+1 court", ebitdaImpact: deltas.numberOfCourts.ebitdaImpact });
   }
-  // Variable cost
-  if (deltas.variableCostPerHour) {
-    consolidated.push({ label: "Variable Cost", unit: "+€1/h", ebitdaImpact: deltas.variableCostPerHour.ebitdaImpact });
-  }
   // Hours
   if (deltas.openingHoursPerDay) {
     consolidated.push({ label: "Hours/Day", unit: "+1 hour/day", ebitdaImpact: deltas.openingHoursPerDay.ebitdaImpact });
   }
-  return consolidated.sort((a, b) => Math.abs(b.ebitdaImpact) - Math.abs(a.ebitdaImpact)).slice(0, 4);
+  return consolidated.sort((a, b) => Math.abs(b.ebitdaImpact) - Math.abs(a.ebitdaImpact)).slice(0, 3);
 }
 
 // ─── Recommended actions ─────────────────────────────────────
@@ -502,14 +455,51 @@ export function calculateKPIs(inputs: ProjectInputs, scenario: Scenario): KPIRes
   const offPeakHoursMonth = totalHoursMonth * OFFPEAK_RATIO;
 
   const courtRevenueMonth = safe(peakHoursMonth * peakOcc * peakPrice) + safe(offPeakHoursMonth * offPeakOcc * offPeakPrice);
-  const otherRevenueMonth = safe(inputs.otherMonthlyRevenue) + safe(inputs.proshopRevenue) + safe(inputs.fAndBRevenue) + safe(inputs.membershipFees);
-  const totalRevenueMonth = courtRevenueMonth + otherRevenueMonth;
+
+  // ── Modular Revenue Calculation ──
+  const bookedHoursMonth = (peakHoursMonth * peakOcc) + (offPeakHoursMonth * offPeakOcc);
+
+  // A. Coaching / Classes
+  const coachingRevenueMonth = inputs.coachingEnabled
+    ? bookedHoursMonth * (safe(inputs.coachingPctOfHours) / 100) * safe(inputs.coachingPricePerHour)
+    : 0;
+  const coachingCostMonth = coachingRevenueMonth * (safe(inputs.coachingCostShare) / 100);
+  const coachingNetMonth = coachingRevenueMonth - coachingCostMonth;
+
+  // B. Tournaments / Events
+  const tournamentRevenueMonth = inputs.tournamentsEnabled
+    ? safe(inputs.eventsPerMonth) * safe(inputs.avgRevenuePerEvent)
+    : 0;
+  const tournamentCostMonth = inputs.tournamentsEnabled
+    ? safe(inputs.eventsPerMonth) * safe(inputs.avgCostPerEvent)
+    : 0;
+  const tournamentNetMonth = tournamentRevenueMonth - tournamentCostMonth;
+
+  // C. Other Revenue
+  const otherRevenueMonth = inputs.otherRevenueEnabled
+    ? safe(inputs.proshopRevenue) + safe(inputs.fAndBRevenue) + safe(inputs.membershipFees)
+    : 0;
+
+  const totalRevenueMonth = courtRevenueMonth + coachingRevenueMonth + tournamentRevenueMonth + otherRevenueMonth;
   const totalRevenueYear = totalRevenueMonth * MONTHS_PER_YEAR;
 
-  const bookedHoursMonth = (peakHoursMonth * peakOcc) + (offPeakHoursMonth * offPeakOcc);
+  const revenueBreakdown: RevenueBreakdown = {
+    courtRevenue: courtRevenueMonth * MONTHS_PER_YEAR,
+    coachingRevenue: coachingRevenueMonth * MONTHS_PER_YEAR,
+    coachingCost: coachingCostMonth * MONTHS_PER_YEAR,
+    coachingNet: coachingNetMonth * MONTHS_PER_YEAR,
+    tournamentRevenue: tournamentRevenueMonth * MONTHS_PER_YEAR,
+    tournamentCost: tournamentCostMonth * MONTHS_PER_YEAR,
+    tournamentNet: tournamentNetMonth * MONTHS_PER_YEAR,
+    otherRevenue: otherRevenueMonth * MONTHS_PER_YEAR,
+    totalRevenue: totalRevenueYear,
+  };
+
+  // Total costs to deduct includes coaching and tournament costs
+  const additionalCosts = coachingCostMonth + tournamentCostMonth;
   const costBreakdown = calculateCostBreakdown(inputs, totalHoursMonth, bookedHoursMonth);
   // Apply scenario cost multiplier
-  const monthlyCosts = costBreakdown.totalCosts * m.costMultiplier;
+  const monthlyCosts = (costBreakdown.totalCosts + additionalCosts) * m.costMultiplier;
 
   const ebitdaMonth = totalRevenueMonth - monthlyCosts;
   const ebitdaYear = ebitdaMonth * MONTHS_PER_YEAR;
@@ -588,9 +578,10 @@ export function calculateKPIs(inputs: ProjectInputs, scenario: Scenario): KPIRes
     ebitdaMargin, roi, paybackYears, breakEvenOccupancy, weightedOccupancy,
     loanAmount: safe(loanAmount),
     annualCourtRevenue: courtRevenueMonth * MONTHS_PER_YEAR,
-    annualOtherRevenue: otherRevenueMonth * MONTHS_PER_YEAR,
+    annualOtherRevenue: (coachingRevenueMonth + tournamentRevenueMonth + otherRevenueMonth) * MONTHS_PER_YEAR,
     annualCosts: monthlyCosts * MONTHS_PER_YEAR,
     costBreakdown,
+    revenueBreakdown,
     equityInvested, annualDebtPayment, totalInterestPaid, cashFlowToEquity,
     roiOnEquity, paybackEquity,
   };

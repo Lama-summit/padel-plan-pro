@@ -16,7 +16,7 @@ import { DashboardCharts } from "@/components/DashboardCharts";
 import { KeyDriversPanel } from "@/components/KeyDriversPanel";
 import { InvestmentTab } from "@/components/InvestmentTab";
 import { ROIAnalysisTab } from "@/components/ROIAnalysisTab";
-import { SensitivityAnalysisTab } from "@/components/SensitivityAnalysisTab";
+import { RevenueModelTab } from "@/components/RevenueModelTab";
 import { downloadExport } from "@/lib/export";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -113,9 +113,10 @@ export default function Dashboard() {
     toast.success("Version saved");
   };
 
-  const handleDriverChange = (key: keyof ProjectInputs, value: string | number) => {
+  const handleDriverChange = (key: keyof ProjectInputs, value: string | number | boolean) => {
     if (isReadOnly) return;
-    let numVal = key === "courtType" || key === "costMode" ? value as any : typeof value === "number" ? value : parseFloat(value) || 0;
+    const BOOL_KEYS: (keyof ProjectInputs)[] = ["coachingEnabled", "tournamentsEnabled", "otherRevenueEnabled"];
+    let numVal = BOOL_KEYS.includes(key) ? value : key === "courtType" || key === "costMode" ? value as any : typeof value === "number" ? value : parseFloat(value as string) || 0;
 
     if (key === "offPeakOccupancy" || key === "peakOccupancy") {
       numVal = Math.min(90, Math.max(10, numVal as number));
@@ -619,17 +620,14 @@ export default function Dashboard() {
                 </TabsContent>
 
                 {/* ═══ REVENUE MODEL TAB ═══ */}
-                <TabsContent value="revenue" className="mt-0 space-y-6 animate-fade-in">
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <KPICard label="Annual Revenue" value={fmt(kpis.totalRevenueYear)} icon={TrendingUp} variant="accent" />
-                    <KPICard label="Court Revenue" value={fmt(kpis.annualCourtRevenue)} icon={BarChart3} variant="default"
-                      subtitle={`${kpis.totalRevenueYear > 0 ? Math.round(kpis.annualCourtRevenue / kpis.totalRevenueYear * 100) : 0}% of total`} />
-                    <KPICard label="Other Revenue" value={fmt(kpis.annualOtherRevenue)} icon={PieChart} variant="default" />
-                    <KPICard label="Wtd. Occupancy" value={`${kpis.weightedOccupancy.toFixed(0)}%`} icon={Target}
-                      variant={occAbove ? "success" : "warning"}
-                      subtitle={beValid ? `Break-even: ${beVal.toFixed(0)}%` : undefined} />
-                  </div>
-                  <DashboardCharts monthlyData={monthlyData} kpis={kpis} currency={currency} />
+                <TabsContent value="revenue" className="mt-0">
+                  <RevenueModelTab
+                    inputs={activeVersion.inputs}
+                    kpis={kpis}
+                    onInputChange={handleDriverChange}
+                    readOnly={isReadOnly}
+                    currency={currency}
+                  />
                 </TabsContent>
 
                 {/* ═══ ROI ANALYSIS TAB ═══ */}
@@ -643,12 +641,56 @@ export default function Dashboard() {
                 </TabsContent>
 
                 {/* ═══ SENSITIVITY ANALYSIS TAB ═══ */}
-                <TabsContent value="sensitivity" className="mt-0">
-                  <SensitivityAnalysisTab
-                    inputs={activeVersion.inputs}
-                    scenario={scenario}
-                    currency={currency}
-                  />
+                <TabsContent value="sensitivity" className="mt-0 space-y-6 animate-fade-in">
+                  <div className="grid gap-5 md:grid-cols-2">
+                    <div className="bg-card border rounded-2xl p-6">
+                      <div className="flex items-center gap-2 mb-5">
+                        <Zap className="h-4 w-4 text-accent-foreground" />
+                        <span className="text-sm font-semibold">Top Drivers by EBITDA Impact</span>
+                      </div>
+                      <div className="space-y-4">
+                        {sensitivity.map((s, i) => {
+                          const maxImpact = sensitivity[0]?.ebitdaImpact || 1;
+                          return (
+                            <div key={s.key} className="space-y-1.5">
+                              <div className="flex items-center gap-3">
+                                <span className="text-xs font-bold text-muted-foreground w-5">{i + 1}.</span>
+                                <span className="text-sm flex-1">{s.label}</span>
+                                <span className="text-xs font-semibold tabular-nums text-success">
+                                  {s.ebitdaImpact >= 1000 ? `${sym}${(s.ebitdaImpact / 1000).toFixed(0)}K` : `${sym}${s.ebitdaImpact.toFixed(0)}`}
+                                </span>
+                              </div>
+                              <div className="ml-8 h-1.5 bg-muted rounded-full overflow-hidden">
+                                <div className="h-full bg-accent rounded-full transition-all" style={{ width: `${(s.ebitdaImpact / maxImpact) * 100}%` }} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="bg-card border rounded-2xl p-6">
+                      <div className="flex items-center gap-2 mb-5">
+                        <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-semibold">Driver Impact Detail</span>
+                      </div>
+                      <div className="space-y-3">
+                        {Object.values(driverDeltas).map((d) => (
+                          <div key={d.key} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
+                            <span className="text-xs text-muted-foreground">{d.label}</span>
+                            <div className="flex items-center gap-3">
+                              <span className={cn("text-xs font-medium tabular-nums", d.annualRevenueImpact > 0 ? "text-success" : d.annualRevenueImpact < 0 ? "text-destructive" : "text-muted-foreground")}>
+                                Rev: {d.annualRevenueImpact >= 0 ? "+" : ""}{fmt(d.annualRevenueImpact)}
+                              </span>
+                              <span className={cn("text-xs font-medium tabular-nums", d.ebitdaImpact > 0 ? "text-success" : d.ebitdaImpact < 0 ? "text-destructive" : "text-muted-foreground")}>
+                                EBITDA: {d.ebitdaImpact >= 0 ? "+" : ""}{fmt(d.ebitdaImpact)}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </TabsContent>
               </div>
             </Tabs>

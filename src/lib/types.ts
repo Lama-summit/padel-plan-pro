@@ -52,13 +52,28 @@ export interface ProjectInputs {
   maintenanceCostPerUsage: number;
   cleaningCostPerDay: number;
 
-  // Classes / Coaching
+  // ─── Revenue Modules ───────────────────────────────────────
+
+  // Module A: Coaching / Classes
+  coachingEnabled: boolean;
+  coachingPctOfHours: number;     // % of total court hours used for coaching
+  coachingPricePerHour: number;   // avg price per coaching hour
+  coachingCostShare: number;      // coach revenue share (% cost)
+
+  // Legacy class fields (kept for backwards compat, now derived from coaching module)
   classesPerWeek: number;
   avgClassPrice: number;
   avgClassSize: number;
   coachingCostPerHour: number;
 
-  // Other Revenue
+  // Module B: Tournaments / Events
+  tournamentsEnabled: boolean;
+  eventsPerMonth: number;
+  avgRevenuePerEvent: number;
+  avgCostPerEvent: number;
+
+  // Module C: Other Revenue
+  otherRevenueEnabled: boolean;
   otherMonthlyRevenue: number;
   proshopRevenue: number;
   fAndBRevenue: number;
@@ -112,11 +127,11 @@ export const DEFAULT_INPUTS: ProjectInputs = {
   peakPrice: 50,
   offPeakOccupancy: 45,
   peakOccupancy: 75,
-  initialInvestment: 80000 * 4 + 120000 + 20000, // auto: courts × cost + buildout + equipment
+  initialInvestment: 80000 * 4 + 120000 + 20000,
   courtConstructionCost: 80000,
   facilityBuildout: 120000,
   equipmentCost: 20000,
-  monthlyOperatingCosts: 12000 + 3000 + 2000 + 5000 + 2000 + 1000, // auto: sum of cost lines
+  monthlyOperatingCosts: 12000 + 3000 + 2000 + 5000 + 2000 + 1000,
   staffCosts: 12000,
   utilitiesCosts: 3000,
   maintenanceCosts: 2000,
@@ -130,14 +145,32 @@ export const DEFAULT_INPUTS: ProjectInputs = {
   energyCostPerHour: 3,
   maintenanceCostPerUsage: 1.5,
   cleaningCostPerDay: 15,
+
+  // Coaching module
+  coachingEnabled: true,
+  coachingPctOfHours: 15,
+  coachingPricePerHour: 60,
+  coachingCostShare: 40,
+
+  // Legacy class fields
   classesPerWeek: 10,
   avgClassPrice: 15,
   avgClassSize: 8,
   coachingCostPerHour: 25,
-  otherMonthlyRevenue: 1500 + 2000 + 500, // auto: sum of revenue lines
+
+  // Tournaments module
+  tournamentsEnabled: false,
+  eventsPerMonth: 2,
+  avgRevenuePerEvent: 1500,
+  avgCostPerEvent: 500,
+
+  // Other revenue module
+  otherRevenueEnabled: true,
+  otherMonthlyRevenue: 4000,
   proshopRevenue: 1500,
   fAndBRevenue: 2000,
   membershipFees: 500,
+
   debtPercentage: 60,
   interestRate: 5,
   loanTermYears: 10,

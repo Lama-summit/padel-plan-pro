@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStore } from "@/lib/store";
-import { Plus, Search, MapPin, Calendar, FolderOpen, ArrowRight, Trash2 } from "lucide-react";
+import { Plus, Search, MapPin, Calendar, FolderOpen, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +23,7 @@ import {
 import { CURRENCY_OPTIONS, CURRENCIES, CurrencyCode } from "@/lib/currency";
 
 export default function ProjectsHome() {
-  const { projects, createProject, deleteProject } = useStore();
+  const { projects, createProject } = useStore();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -159,22 +159,7 @@ export default function ProjectsHome() {
                   <span className="text-xs text-muted-foreground">
                     {project.versions.length} version{project.versions.length !== 1 ? "s" : ""} · {CURRENCIES[project.currency as CurrencyCode]?.symbol ?? "€"} {project.currency}
                   </span>
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      role="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (window.confirm(`¿Eliminar el proyecto "${project.name}"? Esta acción no se puede deshacer.`)) {
-                          deleteProject(project.id);
-                        }
-                      }}
-                      className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
-                      title="Eliminar proyecto"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </span>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
-                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
                 </div>
               </button>
             ))}
