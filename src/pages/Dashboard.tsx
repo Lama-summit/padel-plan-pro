@@ -113,9 +113,10 @@ export default function Dashboard() {
     toast.success("Version saved");
   };
 
-  const handleDriverChange = (key: keyof ProjectInputs, value: string | number) => {
+  const handleDriverChange = (key: keyof ProjectInputs, value: string | number | boolean) => {
     if (isReadOnly) return;
-    let numVal = key === "courtType" || key === "costMode" ? value as any : typeof value === "number" ? value : parseFloat(value) || 0;
+    const BOOL_KEYS: (keyof ProjectInputs)[] = ["coachingEnabled", "tournamentsEnabled", "otherRevenueEnabled"];
+    let numVal = BOOL_KEYS.includes(key) ? value : key === "courtType" || key === "costMode" ? value as any : typeof value === "number" ? value : parseFloat(value as string) || 0;
 
     if (key === "offPeakOccupancy" || key === "peakOccupancy") {
       numVal = Math.min(90, Math.max(10, numVal as number));
