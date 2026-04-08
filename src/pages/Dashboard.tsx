@@ -643,56 +643,12 @@ export default function Dashboard() {
                 </TabsContent>
 
                 {/* ═══ SENSITIVITY ANALYSIS TAB ═══ */}
-                <TabsContent value="sensitivity" className="mt-0 space-y-6 animate-fade-in">
-                  <div className="grid gap-5 md:grid-cols-2">
-                    <div className="bg-card border rounded-2xl p-6">
-                      <div className="flex items-center gap-2 mb-5">
-                        <Zap className="h-4 w-4 text-accent-foreground" />
-                        <span className="text-sm font-semibold">Top Drivers by EBITDA Impact</span>
-                      </div>
-                      <div className="space-y-4">
-                        {sensitivity.map((s, i) => {
-                          const maxImpact = sensitivity[0]?.ebitdaImpact || 1;
-                          return (
-                            <div key={s.key} className="space-y-1.5">
-                              <div className="flex items-center gap-3">
-                                <span className="text-xs font-bold text-muted-foreground w-5">{i + 1}.</span>
-                                <span className="text-sm flex-1">{s.label}</span>
-                                <span className="text-xs font-semibold tabular-nums text-success">
-                                  {s.ebitdaImpact >= 1000 ? `${sym}${(s.ebitdaImpact / 1000).toFixed(0)}K` : `${sym}${s.ebitdaImpact.toFixed(0)}`}
-                                </span>
-                              </div>
-                              <div className="ml-8 h-1.5 bg-muted rounded-full overflow-hidden">
-                                <div className="h-full bg-accent rounded-full transition-all" style={{ width: `${(s.ebitdaImpact / maxImpact) * 100}%` }} />
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="bg-card border rounded-2xl p-6">
-                      <div className="flex items-center gap-2 mb-5">
-                        <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-semibold">Driver Impact Detail</span>
-                      </div>
-                      <div className="space-y-3">
-                        {Object.values(driverDeltas).map((d) => (
-                          <div key={d.key} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
-                            <span className="text-xs text-muted-foreground">{d.label}</span>
-                            <div className="flex items-center gap-3">
-                              <span className={cn("text-xs font-medium tabular-nums", d.annualRevenueImpact > 0 ? "text-success" : d.annualRevenueImpact < 0 ? "text-destructive" : "text-muted-foreground")}>
-                                Rev: {d.annualRevenueImpact >= 0 ? "+" : ""}{fmt(d.annualRevenueImpact)}
-                              </span>
-                              <span className={cn("text-xs font-medium tabular-nums", d.ebitdaImpact > 0 ? "text-success" : d.ebitdaImpact < 0 ? "text-destructive" : "text-muted-foreground")}>
-                                EBITDA: {d.ebitdaImpact >= 0 ? "+" : ""}{fmt(d.ebitdaImpact)}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
+                <TabsContent value="sensitivity" className="mt-0">
+                  <SensitivityAnalysisTab
+                    inputs={activeVersion.inputs}
+                    scenario={scenario}
+                    currency={currency}
+                  />
                 </TabsContent>
               </div>
             </Tabs>
