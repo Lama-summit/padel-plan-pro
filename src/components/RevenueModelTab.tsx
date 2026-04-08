@@ -315,7 +315,7 @@ export function RevenueModelTab({
       <ModuleCard
         icon={Trophy}
         title="Tournaments / Events"
-        subtitle="Revenue from organized competitions and events"
+        subtitle="Additional revenue not tied to regular bookings"
         enabled={inputs.tournamentsEnabled}
         onToggle={(v) => onInputChange("tournamentsEnabled", v)}
         readOnly={readOnly}
