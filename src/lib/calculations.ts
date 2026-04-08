@@ -752,3 +752,60 @@ export interface ExportData {
   inputs: ProjectInputs;
   currency?: string;
 }
+
+// ─── EBITDA Sensitivity Matrix ───────────────────────────────
+export interface SensitivityMatrixCell {
+  occupancy: number;
+  price: number;
+  ebitda: number;
+  isBase: boolean;
+}
+
+export interface SensitivityMatrix {
+  occupancyLevels: number[];
+  priceLevels: number[];
+  cells: SensitivityMatrixCell[][];
+  minEbitda: number;
+  maxEbitda: number;
+}
+
+export function calculateSensitivityMatrix(inputs: ProjectInputs, scenario: Scenario): SensitivityMatrix {
+  const occupancyLevels = [10, 20, 30, 40, 50, 60, 70, 80, 90];
+
+  // Build price levels around weighted average of peak/off-peak
+  const basePrice = safe(inputs.peakPrice);
+  const multipliers = [-0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3];
+  const priceLevels = multipliers.map(m => Math.round(basePrice * (1 + m)));
+
+  // Current base occupancy (weighted)
+  const baseOcc = Math.round(
+    safe(inputs.peakOccupancy) * 0.4 + safe(inputs.offPeakOccupancy) * 0.6
+  );
+
+  let minEbitda = Infinity;
+  let maxEbitda = -Infinity;
+
+  const cells: SensitivityMatrixCell[][] = occupancyLevels.map(occ => {
+    return priceLevels.map(price => {
+      // Override both peak and off-peak occupancy uniformly
+      // Scale off-peak price proportionally to peak price change
+      const priceRatio = basePrice > 0 ? price / basePrice : 1;
+      const tweaked: ProjectInputs = {
+        ...inputs,
+        peakOccupancy: occ,
+        offPeakOccupancy: occ,
+        peakPrice: price,
+        offPeakPrice: Math.round(safe(inputs.offPeakPrice) * priceRatio),
+      };
+      const result = calculateKPIs(tweaked, scenario);
+      const ebitda = result.ebitdaYear;
+      if (ebitda < minEbitda) minEbitda = ebitda;
+      if (ebitda > maxEbitda) maxEbitda = ebitda;
+
+      const isBase = occ === baseOcc && price === basePrice;
+      return { occupancy: occ, price, ebitda, isBase };
+    });
+  });
+
+  return { occupancyLevels, priceLevels, cells, minEbitda, maxEbitda };
+}
