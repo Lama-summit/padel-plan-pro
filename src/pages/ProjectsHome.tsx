@@ -13,6 +13,14 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { CURRENCY_OPTIONS, CURRENCIES, CurrencyCode } from "@/lib/currency";
 
 export default function ProjectsHome() {
   const { projects, createProject } = useStore();
@@ -21,7 +29,7 @@ export default function ProjectsHome() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newLocation, setNewLocation] = useState("");
-  const [newCurrency, setNewCurrency] = useState("EUR");
+  const [newCurrency, setNewCurrency] = useState<CurrencyCode>("EUR");
 
   const filtered = projects.filter(
     (p) =>
@@ -35,6 +43,7 @@ export default function ProjectsHome() {
     setDialogOpen(false);
     setNewName("");
     setNewLocation("");
+    setNewCurrency("EUR");
     navigate(`/project/${p.id}`);
   };
 
@@ -74,7 +83,19 @@ export default function ProjectsHome() {
                 </div>
                 <div className="space-y-2">
                   <Label>Currency</Label>
-                  <Input placeholder="EUR" className="rounded-xl" value={newCurrency} onChange={(e) => setNewCurrency(e.target.value)} />
+                  <Select value={newCurrency} onValueChange={(v) => setNewCurrency(v as CurrencyCode)}>
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CURRENCY_OPTIONS.map((code) => (
+                        <SelectItem key={code} value={code}>
+                          <span className="font-medium">{CURRENCIES[code].symbol}</span>
+                          <span className="ml-2 text-muted-foreground">{CURRENCIES[code].name} ({code})</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <Button className="w-full rounded-xl" onClick={handleCreate}>Create Project</Button>
               </div>
@@ -136,7 +157,7 @@ export default function ProjectsHome() {
                 </div>
                 <div className="mt-4 pt-4 border-t flex items-center justify-between">
                   <span className="text-xs text-muted-foreground">
-                    {project.versions.length} version{project.versions.length !== 1 ? "s" : ""}
+                    {project.versions.length} version{project.versions.length !== 1 ? "s" : ""} · {CURRENCIES[project.currency as CurrencyCode]?.symbol ?? "€"} {project.currency}
                   </span>
                   <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
                 </div>

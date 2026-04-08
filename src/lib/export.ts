@@ -1,13 +1,12 @@
 import { ExportData, isSafeValid, formatSafeYears } from "./calculations";
-
-const fmtCurrency = (val: number) => {
-  if (val >= 1_000_000) return `€${(val / 1_000_000).toFixed(1)}M`;
-  if (val >= 1_000) return `€${(val / 1_000).toFixed(0)}K`;
-  return `€${val.toFixed(0)}`;
-};
+import { formatCurrency, getCurrencySymbol } from "./currency";
 
 export function generateExportText(data: ExportData): string {
   const k = data.kpis;
+  const currency = data.currency || "EUR";
+  const sym = getCurrencySymbol(currency);
+  const fmt = (val: number) => formatCurrency(val, currency);
+
   const marginStr = isSafeValid(k.ebitdaMargin) ? `${k.ebitdaMargin.value!.toFixed(0)}%` : "N/A";
   const roiStr = isSafeValid(k.roi) ? `${k.roi.value!.toFixed(1)}%` : "N/A";
   const paybackStr = formatSafeYears(k.paybackYears);
@@ -23,14 +22,15 @@ export function generateExportText(data: ExportData): string {
     `Location:    ${data.location}`,
     `Version:     ${data.versionName}`,
     `Scenario:    ${data.scenario.charAt(0).toUpperCase() + data.scenario.slice(1)}`,
+    `Currency:    ${currency}`,
     `Date:        ${data.date}`,
     ``,
     `───────────────────────────────────────────`,
     `  KEY METRICS`,
     `───────────────────────────────────────────`,
     ``,
-    `  Annual Revenue:      ${fmtCurrency(k.totalRevenueYear)}`,
-    `  Annual EBITDA:       ${fmtCurrency(k.ebitdaYear)}`,
+    `  Annual Revenue:      ${fmt(k.totalRevenueYear)}`,
+    `  Annual EBITDA:       ${fmt(k.ebitdaYear)}`,
     `  EBITDA Margin:       ${marginStr}`,
     `  ROI:                 ${roiStr}`,
     `  Payback Period:      ${paybackStr}`,
@@ -51,7 +51,7 @@ export function generateExportText(data: ExportData): string {
     `───────────────────────────────────────────`,
     ``,
     ...data.sensitivity.map((s, i) =>
-      `  ${i + 1}. ${s.label.padEnd(25)} €${s.ebitdaImpact >= 1000 ? `${(s.ebitdaImpact / 1000).toFixed(0)}K` : s.ebitdaImpact.toFixed(0)}`
+      `  ${i + 1}. ${s.label.padEnd(25)} ${sym}${s.ebitdaImpact >= 1000 ? `${(s.ebitdaImpact / 1000).toFixed(0)}K` : s.ebitdaImpact.toFixed(0)}`
     ),
     ``,
     `───────────────────────────────────────────`,
@@ -66,12 +66,12 @@ export function generateExportText(data: ExportData): string {
     ``,
     `  Courts:              ${data.inputs.numberOfCourts} (${data.inputs.courtType})`,
     `  Hours/Day:           ${data.inputs.openingHoursPerDay}`,
-    `  Peak Price:          €${data.inputs.peakPrice}/hr`,
-    `  Off-Peak Price:      €${data.inputs.offPeakPrice}/hr`,
+    `  Peak Price:          ${sym}${data.inputs.peakPrice}/hr`,
+    `  Off-Peak Price:      ${sym}${data.inputs.offPeakPrice}/hr`,
     `  Peak Occupancy:      ${data.inputs.peakOccupancy}%`,
     `  Off-Peak Occupancy:  ${data.inputs.offPeakOccupancy}%`,
-    `  Investment:          ${fmtCurrency(data.inputs.initialInvestment)}`,
-    `  Monthly Costs:       ${fmtCurrency(k.costBreakdown.totalCosts)}`,
+    `  Investment:          ${fmt(data.inputs.initialInvestment)}`,
+    `  Monthly Costs:       ${fmt(k.costBreakdown.totalCosts)}`,
     `  Cost Mode:           ${data.inputs.costMode}`,
     ``,
     `═══════════════════════════════════════════`,

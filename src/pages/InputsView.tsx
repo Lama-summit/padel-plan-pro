@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useStore } from "@/lib/store";
 import { ProjectInputs, CostMode } from "@/lib/types";
+import { getCurrencySymbol, CURRENCIES, CURRENCY_OPTIONS, CurrencyCode } from "@/lib/currency";
 import { KeyDriversPanel } from "@/components/KeyDriversPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,10 +26,10 @@ import {
   Wallet,
   Banknote,
   Lock,
+  DollarSign,
 } from "lucide-react";
 import { LucideIcon } from "lucide-react";
 
-/* ─── Key driver field keys (excluded from category panels) ── */
 const KEY_DRIVER_KEYS: Set<keyof ProjectInputs> = new Set([
   "numberOfCourts",
   "openingHoursPerDay",
@@ -65,59 +66,62 @@ interface FieldDef {
   helper?: string;
   readonly?: boolean;
   slider?: { min: number; max: number; step: number };
+  useCurrency?: boolean; // dynamically replace suffix with currency symbol
 }
 
-const CATEGORY_FIELDS: Record<Category, FieldDef[]> = {
-  investment: [
-    { key: "initialInvestment", label: "Total Initial Investment", suffix: "€", helper: "Auto-calculated: (Court Cost × Courts) + Buildout + Equipment", readonly: true },
-    { key: "courtConstructionCost", label: "Court Construction Cost", suffix: "€", helper: "Per-court construction budget" },
-    { key: "facilityBuildout", label: "Facility Buildout", suffix: "€", helper: "Clubhouse, reception, amenities" },
-    { key: "equipmentCost", label: "Equipment Cost", suffix: "€", helper: "Nets, lighting, furniture" },
-  ],
-  hours: [
-    { key: "operatingDaysPerYear", label: "Operating Days / Year", suffix: "days" },
-    { key: "peakHoursPerDay", label: "Peak Hours / Day", suffix: "hrs", slider: { min: 1, max: 10, step: 1 } },
-  ],
-  classes: [
-    { key: "classesPerWeek", label: "Classes per Week", slider: { min: 0, max: 30, step: 1 } },
-    { key: "avgClassPrice", label: "Avg Class Price", suffix: "€" },
-    { key: "avgClassSize", label: "Avg Class Size", suffix: "players" },
-    { key: "coachingCostPerHour", label: "Coaching Cost / Hour", suffix: "€" },
-  ],
-  otherRevenue: [
-    { key: "otherMonthlyRevenue", label: "Total Other Revenue / Month", suffix: "€", helper: "Auto-calculated: Pro Shop + F&B + Memberships", readonly: true },
-    { key: "proshopRevenue", label: "Pro Shop Revenue / Month", suffix: "€" },
-    { key: "fAndBRevenue", label: "F&B Revenue / Month", suffix: "€" },
-    { key: "membershipFees", label: "Membership Fees / Month", suffix: "€" },
-  ],
-  operatingCosts: [
-    { key: "monthlyOperatingCosts", label: "Total Monthly OpCosts", suffix: "€", helper: "Auto-calculated: fixed costs + variable costs (scales with usage)", readonly: true },
-    { key: "staffCosts", label: "Staff Costs / Month", suffix: "€" },
-    { key: "utilitiesCosts", label: "Utilities / Month", suffix: "€" },
-    { key: "maintenanceCosts", label: "Maintenance / Month", suffix: "€" },
-    { key: "rentOrMortgage", label: "Rent or Mortgage / Month", suffix: "€" },
-    { key: "marketingCosts", label: "Marketing / Month", suffix: "€" },
-    { key: "insuranceCosts", label: "Insurance / Month", suffix: "€" },
-    { key: "variableCostPerHour", label: "Variable Cost per Booking Hour", suffix: "€/hr", helper: "Scales with courts × occupancy × hours (e.g. consumables, extra energy)" },
-  ],
-  detailedCosts: [
-    { key: "staffCostPerCourtHour", label: "Staff Cost / Court-Hour", suffix: "€", helper: "Scales with courts × hours" },
-    { key: "softwareManagementCost", label: "Software & Management", suffix: "€/mo" },
-    { key: "energyCostPerHour", label: "Energy / Court-Hour", suffix: "€", helper: "Scales with operating hours" },
-    { key: "maintenanceCostPerUsage", label: "Maintenance / Booked Hour", suffix: "€", helper: "Scales with usage" },
-    { key: "cleaningCostPerDay", label: "Cleaning / Court / Day", suffix: "€" },
-  ],
-  financing: [
-    { key: "debtPercentage", label: "Debt Percentage", suffix: "%", slider: { min: 0, max: 100, step: 5 }, helper: "% of investment financed by loan" },
-    { key: "interestRate", label: "Interest Rate", suffix: "%", slider: { min: 0, max: 15, step: 0.25 } },
-    { key: "loanTermYears", label: "Loan Term", suffix: "years", slider: { min: 1, max: 30, step: 1 } },
-  ],
-};
+function buildCategoryFields(sym: string): Record<Category, FieldDef[]> {
+  return {
+    investment: [
+      { key: "initialInvestment", label: "Total Initial Investment", suffix: sym, helper: "Auto-calculated: (Court Cost × Courts) + Buildout + Equipment", readonly: true },
+      { key: "courtConstructionCost", label: "Court Construction Cost", suffix: sym, helper: "Per-court construction budget" },
+      { key: "facilityBuildout", label: "Facility Buildout", suffix: sym, helper: "Clubhouse, reception, amenities" },
+      { key: "equipmentCost", label: "Equipment Cost", suffix: sym, helper: "Nets, lighting, furniture" },
+    ],
+    hours: [
+      { key: "operatingDaysPerYear", label: "Operating Days / Year", suffix: "days" },
+      { key: "peakHoursPerDay", label: "Peak Hours / Day", suffix: "hrs", slider: { min: 1, max: 10, step: 1 } },
+    ],
+    classes: [
+      { key: "classesPerWeek", label: "Classes per Week", slider: { min: 0, max: 30, step: 1 } },
+      { key: "avgClassPrice", label: "Avg Class Price", suffix: sym },
+      { key: "avgClassSize", label: "Avg Class Size", suffix: "players" },
+      { key: "coachingCostPerHour", label: "Coaching Cost / Hour", suffix: sym },
+    ],
+    otherRevenue: [
+      { key: "otherMonthlyRevenue", label: "Total Other Revenue / Month", suffix: sym, helper: "Auto-calculated: Pro Shop + F&B + Memberships", readonly: true },
+      { key: "proshopRevenue", label: "Pro Shop Revenue / Month", suffix: sym },
+      { key: "fAndBRevenue", label: "F&B Revenue / Month", suffix: sym },
+      { key: "membershipFees", label: "Membership Fees / Month", suffix: sym },
+    ],
+    operatingCosts: [
+      { key: "monthlyOperatingCosts", label: "Total Monthly OpCosts", suffix: sym, helper: "Auto-calculated: fixed costs + variable costs (scales with usage)", readonly: true },
+      { key: "staffCosts", label: "Staff Costs / Month", suffix: sym },
+      { key: "utilitiesCosts", label: "Utilities / Month", suffix: sym },
+      { key: "maintenanceCosts", label: "Maintenance / Month", suffix: sym },
+      { key: "rentOrMortgage", label: "Rent or Mortgage / Month", suffix: sym },
+      { key: "marketingCosts", label: "Marketing / Month", suffix: sym },
+      { key: "insuranceCosts", label: "Insurance / Month", suffix: sym },
+      { key: "variableCostPerHour", label: "Variable Cost per Booking Hour", suffix: `${sym}/hr`, helper: "Scales with courts × occupancy × hours (e.g. consumables, extra energy)" },
+    ],
+    detailedCosts: [
+      { key: "staffCostPerCourtHour", label: "Staff Cost / Court-Hour", suffix: sym, helper: "Scales with courts × hours" },
+      { key: "softwareManagementCost", label: "Software & Management", suffix: `${sym}/mo` },
+      { key: "energyCostPerHour", label: "Energy / Court-Hour", suffix: sym, helper: "Scales with operating hours" },
+      { key: "maintenanceCostPerUsage", label: "Maintenance / Booked Hour", suffix: sym, helper: "Scales with usage" },
+      { key: "cleaningCostPerDay", label: "Cleaning / Court / Day", suffix: sym },
+    ],
+    financing: [
+      { key: "debtPercentage", label: "Debt Percentage", suffix: "%", slider: { min: 0, max: 100, step: 5 }, helper: "% of investment financed by loan" },
+      { key: "interestRate", label: "Interest Rate", suffix: "%", slider: { min: 0, max: 15, step: 0.25 } },
+      { key: "loanTermYears", label: "Loan Term", suffix: "years", slider: { min: 1, max: 30, step: 1 } },
+    ],
+  };
+}
 
 export default function InputsView() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-  const { getProject, updateVersionInputs, duplicateVersion } = useStore();
+  const { getProject, updateVersionInputs, duplicateVersion, updateProject } = useStore();
   const [activeCategory, setActiveCategory] = useState<Category>("investment");
 
   const project = getProject(projectId!);
@@ -129,19 +133,21 @@ export default function InputsView() {
     );
   }
 
+  const currency = (project.currency ?? "EUR") as CurrencyCode;
+  const sym = getCurrencySymbol(currency);
+  const CATEGORY_FIELDS = buildCategoryFields(sym);
+
   const version = project.versions.find((v) => v.id === project.activeVersionId) || project.versions[0];
 
   const handleChange = (key: keyof ProjectInputs, value: string | number) => {
     let numVal = key === "courtType" ? value as any : typeof value === "number" ? value : parseFloat(value) || 0;
 
-    // Clamp base occupancy so derived scenarios (±10 pp) stay within 0–100%
     if (key === "offPeakOccupancy" || key === "peakOccupancy") {
       numVal = Math.min(90, Math.max(10, numVal as number));
     }
     const patch: Partial<ProjectInputs> = { [key]: numVal };
     const next = { ...version.inputs, ...patch };
 
-    // Auto-compute category totals
     const OPEX_KEYS: (keyof ProjectInputs)[] = ["staffCosts", "utilitiesCosts", "maintenanceCosts", "rentOrMortgage", "marketingCosts", "insuranceCosts"];
     const OTHER_REV_KEYS: (keyof ProjectInputs)[] = ["proshopRevenue", "fAndBRevenue", "membershipFees"];
     const INVEST_KEYS: (keyof ProjectInputs)[] = ["courtConstructionCost", "facilityBuildout", "equipmentCost", "numberOfCourts"];
@@ -159,9 +165,12 @@ export default function InputsView() {
     updateVersionInputs(project.id, version.id, patch);
   };
 
+  const handleCurrencyChange = (newCurrency: CurrencyCode) => {
+    updateProject(project.id, { currency: newCurrency });
+  };
+
   const activeCat = CATEGORIES.find((c) => c.key === activeCategory)!;
 
-  // Filter out key-driver fields from category panels
   const categoryFields = CATEGORY_FIELDS[activeCategory].filter(
     (f) => !KEY_DRIVER_KEYS.has(f.key)
   );
@@ -172,7 +181,6 @@ export default function InputsView() {
       case "initialInvestment": return (i.courtConstructionCost * i.numberOfCourts) + i.facilityBuildout + i.equipmentCost;
       case "monthlyOperatingCosts": {
         const fixed = i.staffCosts + i.utilitiesCosts + i.maintenanceCosts + i.rentOrMortgage + i.marketingCosts + i.insuranceCosts;
-        // Estimate variable: courts × hours × weighted occupancy × variable rate × 30 days
         const weightedOcc = (i.peakOccupancy * 0.4 + i.offPeakOccupancy * 0.6) / 100;
         const bookedHrs = i.numberOfCourts * i.openingHoursPerDay * weightedOcc * 30;
         return fixed + (i.variableCostPerHour * bookedHrs);
@@ -237,7 +245,6 @@ export default function InputsView() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
       <header className="border-b bg-card sticky top-0 z-10">
         <div className="max-w-full mx-auto px-6 py-4 flex items-center gap-4 flex-wrap">
           <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => navigate(`/project/${project.id}`)}>
@@ -246,6 +253,20 @@ export default function InputsView() {
           <div className="flex-1 min-w-0">
             <h1 className="text-lg font-bold truncate">{project.name}</h1>
             <p className="text-sm text-muted-foreground">Editing: {version.name}</p>
+          </div>
+          {/* Currency selector */}
+          <div className="flex items-center gap-1.5 bg-muted/50 rounded-xl px-2 py-1">
+            <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
+            <Select value={currency} onValueChange={(v) => handleCurrencyChange(v as CurrencyCode)}>
+              <SelectTrigger className="border-0 bg-transparent h-auto p-0 shadow-none text-xs font-medium min-w-[60px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {CURRENCY_OPTIONS.map((code) => (
+                  <SelectItem key={code} value={code}>
+                    {CURRENCIES[code].symbol} {code}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <Button
             variant="outline"
@@ -266,10 +287,8 @@ export default function InputsView() {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Main content area */}
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-5xl mx-auto px-6 py-8 flex gap-8 animate-fade-in">
-            {/* Sidebar */}
             <aside className="w-56 flex-shrink-0 hidden lg:block">
               <nav className="space-y-1 sticky top-24">
                 <p className="section-title px-3 mb-3">Categories</p>
@@ -294,9 +313,7 @@ export default function InputsView() {
               </nav>
             </aside>
 
-            {/* Main */}
             <div className="flex-1 min-w-0 space-y-8">
-              {/* Mobile category selector */}
               <div className="lg:hidden">
                 <Select value={activeCategory} onValueChange={(v) => setActiveCategory(v as Category)}>
                   <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
@@ -308,7 +325,6 @@ export default function InputsView() {
                 </Select>
               </div>
 
-              {/* Category-specific inputs */}
               <div className="bg-card border rounded-2xl p-7">
                 <div className="flex items-center gap-3 mb-1">
                   <activeCat.icon className="h-5 w-5 text-primary" />
@@ -327,10 +343,10 @@ export default function InputsView() {
           </div>
         </div>
 
-        {/* Right-side Key Drivers Panel */}
         <KeyDriversPanel
           inputs={version.inputs}
           onChange={handleChange}
+          currency={currency}
           className="hidden lg:flex lg:flex-col sticky top-0 h-screen"
         />
       </div>

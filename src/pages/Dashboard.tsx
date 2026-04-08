@@ -10,6 +10,7 @@ import {
   ExportData,
 } from "@/lib/calculations";
 import { Scenario, ProjectInputs, DEFAULT_INPUTS } from "@/lib/types";
+import { formatCurrency, formatCurrencyAxis, formatCurrencyFull, getCurrencySymbol, CURRENCIES, CURRENCY_OPTIONS, CurrencyCode } from "@/lib/currency";
 import { KPICard } from "@/components/KPICard";
 import { DashboardCharts } from "@/components/DashboardCharts";
 import { KeyDriversPanel } from "@/components/KeyDriversPanel";
@@ -47,7 +48,7 @@ type DashboardTab = "summary" | "investment" | "revenue" | "roi" | "sensitivity"
 export default function Dashboard() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-  const { getProject, setActiveVersion, createVersionFromCurrent, saveVersion, updateVersionInputs } = useStore();
+  const { getProject, setActiveVersion, createVersionFromCurrent, saveVersion, updateVersionInputs, updateProject } = useStore();
   const [scenario, setScenario] = useState<Scenario>("base");
   const [newVersionName, setNewVersionName] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -59,6 +60,12 @@ export default function Dashboard() {
     () => project?.versions.find((v) => v.id === project.activeVersionId) || project?.versions[0],
     [project]
   );
+
+  const currency = (project?.currency ?? "EUR") as CurrencyCode;
+  const sym = getCurrencySymbol(currency);
+  const fmt = (val: number) => formatCurrency(val, currency);
+  const fmtAxis = (val: number) => formatCurrencyAxis(val, currency);
+  const fmtFull = (val: number) => formatCurrencyFull(val, currency);
 
   const isReadOnly = scenario !== "base";
 
@@ -79,7 +86,6 @@ export default function Dashboard() {
   const cumulativeROI = useMemo(() => activeVersion ? calculateCumulativeROI(activeVersion.inputs, scenario, 5) : null, [activeVersion, scenario]);
   const highlights = useMemo(() => kpis && activeVersion ? generateHighlights(kpis, activeVersion.inputs) : [], [kpis, activeVersion]);
 
-  // Compute all 3 scenarios for comparison display
   const allScenarioKPIs = useMemo(() => {
     if (!activeVersion) return null;
     return {
@@ -110,7 +116,6 @@ export default function Dashboard() {
     if (isReadOnly) return;
     let numVal = key === "courtType" || key === "costMode" ? value as any : typeof value === "number" ? value : parseFloat(value) || 0;
 
-    // Clamp base occupancy so derived scenarios (±10 pp) stay within 0–100%
     if (key === "offPeakOccupancy" || key === "peakOccupancy") {
       numVal = Math.min(90, Math.max(10, numVal as number));
     }
@@ -118,7 +123,6 @@ export default function Dashboard() {
     const patch: Partial<ProjectInputs> = { [key]: numVal };
     const next = { ...activeVersion.inputs, ...patch };
 
-    // Auto-compute category totals
     const INVEST_KEYS: (keyof ProjectInputs)[] = ["courtConstructionCost", "facilityBuildout", "equipmentCost", "numberOfCourts"];
     const OPEX_KEYS: (keyof ProjectInputs)[] = ["staffCosts", "utilitiesCosts", "maintenanceCosts", "rentOrMortgage", "marketingCosts", "insuranceCosts"];
     const OTHER_REV_KEYS: (keyof ProjectInputs)[] = ["proshopRevenue", "fAndBRevenue", "membershipFees"];
@@ -144,19 +148,18 @@ export default function Dashboard() {
     updateVersionInputs(project.id, activeVersion.id, resetValues);
   };
 
+  const handleCurrencyChange = (newCurrency: CurrencyCode) => {
+    updateProject(project.id, { currency: newCurrency });
+  };
+
   const handleExport = () => {
     if (!verdict || !confidence) return;
     const data: ExportData = {
       projectName: project.name, location: project.location, versionName: activeVersion.name,
       scenario, date: new Date().toLocaleDateString(), kpis, verdict, confidence, insight, sensitivity, inputs: activeVersion.inputs,
+      currency,
     };
     downloadExport(data);
-  };
-
-  const formatCurrency = (val: number) => {
-    if (val >= 1_000_000) return `€${(val / 1_000_000).toFixed(1)}M`;
-    if (val >= 1_000) return `€${(val / 1_000).toFixed(0)}K`;
-    return `€${val.toFixed(0)}`;
   };
 
   const marginVal = isSafeValid(kpis.ebitdaMargin) ? kpis.ebitdaMargin.value! : null;
@@ -169,7 +172,6 @@ export default function Dashboard() {
   const verdictIconColors = { strong: "bg-success/10 text-success", moderate: "bg-warning/10 text-warning", weak: "bg-destructive/10 text-destructive", incomplete: "bg-muted text-muted-foreground" };
   const confColors = { high: "text-success", medium: "text-warning", low: "text-destructive" };
 
-  // Derived scenario occupancy display
   const baseOccPeak = activeVersion.inputs.peakOccupancy;
   const baseOccOff = activeVersion.inputs.offPeakOccupancy;
   const derivedInfo = scenario !== "base" ? {
@@ -180,9 +182,7 @@ export default function Dashboard() {
   return (
     <TooltipProvider>
       <div className="h-screen bg-background flex flex-col overflow-hidden">
-        {/* ─── HEADER (sticky, includes tabs) ─── */}
         <header className="border-b bg-card flex-shrink-0 z-10">
-          {/* Top row: project title */}
           <div className="w-full px-8 pt-4 pb-2">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon" className="rounded-xl h-8 w-8 flex-shrink-0" onClick={() => navigate("/")}>
@@ -192,13 +192,25 @@ export default function Dashboard() {
                 <h1 className="text-base font-bold tracking-tight truncate">{project.name}</h1>
                 <p className="text-xs text-muted-foreground">{project.location}</p>
               </div>
+              {/* Currency selector in header */}
+              <div className="ml-auto flex items-center gap-1.5 bg-muted/50 rounded-xl px-2 py-1">
+                <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
+                <Select value={currency} onValueChange={(v) => handleCurrencyChange(v as CurrencyCode)}>
+                  <SelectTrigger className="border-0 bg-transparent h-auto p-0 shadow-none text-xs font-medium min-w-[60px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {CURRENCY_OPTIONS.map((code) => (
+                      <SelectItem key={code} value={code}>
+                        {CURRENCIES[code].symbol} {code}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
-          {/* Bottom row: controls */}
           <div className="w-full px-8 pb-3">
             <div className="flex items-center gap-6">
-              {/* LEFT GROUP — Version management */}
               <div className="flex items-center gap-2.5">
                 <div className="flex items-center gap-1.5 bg-muted/50 rounded-xl px-3 py-1.5">
                   <GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
@@ -234,7 +246,6 @@ export default function Dashboard() {
                 </Dialog>
               </div>
 
-              {/* CENTER — Scenario selector (visually independent) */}
               <div className="mx-auto">
                 <div className="flex bg-muted rounded-xl p-0.5 gap-0.5">
                   {SCENARIOS.map((s) => (
@@ -246,7 +257,6 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* RIGHT GROUP — Secondary actions */}
               <div className="flex items-center gap-2.5">
                 <Button variant="outline" size="sm" className="gap-1.5 rounded-xl text-xs h-8" onClick={handleExport}>
                   <Download className="h-3.5 w-3.5" /> Export
@@ -258,7 +268,6 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Tab bar — integrated in header */}
           <div className="bg-muted/40 px-8 pt-2 pb-0 relative">
             <div className="flex items-end gap-1.5">
               {([
@@ -289,7 +298,6 @@ export default function Dashboard() {
           </div>
         </header>
 
-        {/* ─── DERIVED SCENARIO BANNER ─── */}
         {isReadOnly && derivedInfo && (
           <div className="bg-muted/40 border-b px-8 py-2 flex items-center gap-3 text-xs text-muted-foreground flex-shrink-0">
             <Info className="h-3.5 w-3.5 flex-shrink-0" />
@@ -305,7 +313,6 @@ export default function Dashboard() {
         )}
 
         <div className="flex flex-1 min-h-0">
-          {/* ─── MAIN CONTENT (independently scrollable) ─── */}
           <main className="flex-1 overflow-y-auto">
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as DashboardTab)} className="flex flex-col flex-1">
 
@@ -314,17 +321,15 @@ export default function Dashboard() {
                 {/* ═══ EXECUTIVE SUMMARY TAB ═══ */}
                 <TabsContent value="summary" className="mt-0 space-y-6 animate-fade-in">
 
-                  {/* ── SECTION 1: 6 KPIs ── */}
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                    {/* Primary KPIs — dominant */}
                     <div className="bg-card border-2 border-foreground/10 rounded-xl p-5">
                       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Total CAPEX</p>
-                      <p className="text-2xl font-extrabold tabular-nums">{formatCurrency(kpis.totalInvestment)}</p>
-                      <p className="text-[10px] text-muted-foreground mt-1">Debt: {formatCurrency(kpis.loanAmount)}</p>
+                      <p className="text-2xl font-extrabold tabular-nums">{fmt(kpis.totalInvestment)}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">Debt: {fmt(kpis.loanAmount)}</p>
                     </div>
                     <div className="bg-card border-2 border-foreground/10 rounded-xl p-5">
                       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Year 1 EBITDA</p>
-                      <p className={cn("text-2xl font-extrabold tabular-nums", kpis.ebitdaYear >= 0 ? "text-success" : "text-destructive")}>{formatCurrency(kpis.ebitdaYear)}</p>
+                      <p className={cn("text-2xl font-extrabold tabular-nums", kpis.ebitdaYear >= 0 ? "text-success" : "text-destructive")}>{fmt(kpis.ebitdaYear)}</p>
                       <p className="text-[10px] text-muted-foreground mt-1">{marginVal !== null ? `${marginVal.toFixed(0)}% margin` : "—"}</p>
                     </div>
                     <div className="bg-card border-2 border-foreground/10 rounded-xl p-5">
@@ -340,11 +345,10 @@ export default function Dashboard() {
                       <p className="text-[10px] text-muted-foreground mt-1">Cumulative cash flow</p>
                     </div>
 
-                    {/* Secondary KPIs — lighter */}
                     <div className="bg-card border rounded-xl p-4">
                       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Year 1 Revenue</p>
-                      <p className="text-lg font-bold tabular-nums text-muted-foreground">{formatCurrency(kpis.totalRevenueYear)}</p>
-                      <p className="text-[10px] text-muted-foreground mt-1">{formatCurrency(kpis.totalRevenueMonth)}/mo avg</p>
+                      <p className="text-lg font-bold tabular-nums text-muted-foreground">{fmt(kpis.totalRevenueYear)}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">{fmt(kpis.totalRevenueMonth)}/mo avg</p>
                     </div>
                     <div className="bg-card border rounded-xl p-4">
                       <div className="flex items-center gap-1">
@@ -377,20 +381,19 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {/* ── Secondary cost context ── */}
                   <div className="flex items-center gap-6 px-1 -mt-1">
                     <div className="flex items-center gap-1.5">
                       <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Year 1 OPEX</span>
-                      <span className="text-xs font-semibold tabular-nums">{formatCurrency(kpis.annualCosts)}</span>
+                      <span className="text-xs font-semibold tabular-nums">{fmt(kpis.annualCosts)}</span>
                     </div>
                     <div className="h-3 w-px bg-border" />
                     <div className="flex items-center gap-1.5">
                       <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Total Year 1 Cost</span>
-                      <span className="text-xs font-semibold tabular-nums">{formatCurrency(kpis.totalInvestment + kpis.annualCosts)}</span>
+                      <span className="text-xs font-semibold tabular-nums">{fmt(kpis.totalInvestment + kpis.annualCosts)}</span>
                     </div>
                   </div>
 
-                  {/* ── SECTION 2: 5-Year Projection Chart ── */}
+                  {/* 5-Year Projection Chart */}
                   <div className="bg-card border rounded-2xl p-6">
                     <div className="flex items-center justify-between mb-5">
                       <div>
@@ -405,7 +408,7 @@ export default function Dashboard() {
                       <BarChart data={fiveYearProjection} barCategoryGap="25%">
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 91%)" vertical={false} />
                         <XAxis dataKey="year" tick={{ fontSize: 11, fill: "hsl(220 9% 46%)" }} axisLine={false} tickLine={false} />
-                        <YAxis tickFormatter={(v: number) => `€${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11, fill: "hsl(220 9% 46%)" }} axisLine={false} tickLine={false} />
+                        <YAxis tickFormatter={fmtAxis} tick={{ fontSize: 11, fill: "hsl(220 9% 46%)" }} axisLine={false} tickLine={false} />
                         <RechartsTooltip
                           content={({ active, payload, label }: any) => {
                             if (!active || !payload) return null;
@@ -416,7 +419,7 @@ export default function Dashboard() {
                                   <div key={i} className="flex items-center gap-2 text-sm">
                                     <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
                                     <span className="text-muted-foreground">{entry.name}:</span>
-                                    <span className="font-semibold">€{entry.value?.toLocaleString()}</span>
+                                    <span className="font-semibold">{fmtFull(entry.value)}</span>
                                   </div>
                                 ))}
                               </div>
@@ -430,7 +433,7 @@ export default function Dashboard() {
                     </ResponsiveContainer>
                   </div>
 
-                  {/* ── SECTION 3: Highlights ── */}
+                  {/* Highlights */}
                   <div className="bg-card border rounded-2xl p-5">
                     <div className="flex items-center gap-2 mb-3">
                       <Sparkles className="h-4 w-4 text-primary" />
@@ -446,7 +449,7 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {/* ── SECTION 4: Investment Verdict (dominant) ── */}
+                  {/* Investment Verdict */}
                   {verdict && (
                     <div className={cn(
                       "border-2 rounded-2xl p-6 relative overflow-hidden",
@@ -488,7 +491,7 @@ export default function Dashboard() {
                     </div>
                   )}
 
-                  {/* ── SECTION: Investor Returns ── */}
+                  {/* Investor Returns */}
                   <div className="bg-card border rounded-2xl p-6 space-y-4">
                     <div className="flex items-center gap-2">
                       <DollarSign className="h-4 w-4 text-primary" />
@@ -506,13 +509,13 @@ export default function Dashboard() {
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                       <div className="bg-muted/30 rounded-xl p-4">
                         <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Equity Invested</p>
-                        <p className="text-lg font-bold tabular-nums">{formatCurrency(kpis.equityInvested)}</p>
+                        <p className="text-lg font-bold tabular-nums">{fmt(kpis.equityInvested)}</p>
                         <p className="text-[10px] text-muted-foreground mt-1">{(100 - activeVersion.inputs.debtPercentage).toFixed(0)}% of CAPEX</p>
                       </div>
                       <div className="bg-muted/30 rounded-xl p-4">
                         <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Annual Cash Flow</p>
                         <p className={cn("text-lg font-bold tabular-nums", kpis.cashFlowToEquity >= 0 ? "text-success" : "text-destructive")}>
-                          {formatCurrency(kpis.cashFlowToEquity)}
+                          {fmt(kpis.cashFlowToEquity)}
                         </p>
                         <p className="text-[10px] text-muted-foreground mt-1">EBITDA − Debt Service</p>
                       </div>
@@ -540,7 +543,6 @@ export default function Dashboard() {
                       </div>
                     </div>
 
-                    {/* Warnings */}
                     {(kpis.cashFlowToEquity < 0 || (isSafeValid(kpis.paybackEquity) && kpis.paybackEquity.value! > activeVersion.inputs.loanTermYears)) && (
                       <div className="space-y-2">
                         {kpis.cashFlowToEquity < 0 && (
@@ -561,7 +563,6 @@ export default function Dashboard() {
 
 
                   <div className="grid gap-5 md:grid-cols-2">
-                    {/* What Drives This Business */}
                     <div className="bg-card border rounded-2xl p-5">
                       <div className="flex items-center gap-2 mb-4">
                         <TrendingUp className="h-4 w-4 text-accent" />
@@ -579,14 +580,13 @@ export default function Dashboard() {
                               "text-xs font-bold tabular-nums flex-shrink-0",
                               d.ebitdaImpact >= 0 ? "text-success" : "text-destructive"
                             )}>
-                              {d.ebitdaImpact >= 0 ? "+" : ""}€{Math.abs(d.ebitdaImpact / 1000).toFixed(0)}K EBITDA
+                              {d.ebitdaImpact >= 0 ? "+" : ""}{sym}{Math.abs(d.ebitdaImpact / 1000).toFixed(0)}K EBITDA
                             </span>
                           </div>
                         ))}
                       </div>
                     </div>
 
-                    {/* Recommended Actions */}
                     <div className="bg-card border rounded-2xl p-5">
                       <div className="flex items-center gap-2 mb-4">
                         <Zap className="h-4 w-4 text-warning" />
@@ -613,21 +613,22 @@ export default function Dashboard() {
                     allScenarioKPIs={allScenarioKPIs}
                     onInputChange={handleDriverChange}
                     readOnly={isReadOnly}
+                    currency={currency}
                   />
                 </TabsContent>
 
                 {/* ═══ REVENUE MODEL TAB ═══ */}
                 <TabsContent value="revenue" className="mt-0 space-y-6 animate-fade-in">
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <KPICard label="Annual Revenue" value={formatCurrency(kpis.totalRevenueYear)} icon={TrendingUp} variant="accent" />
-                    <KPICard label="Court Revenue" value={formatCurrency(kpis.annualCourtRevenue)} icon={BarChart3} variant="default"
+                    <KPICard label="Annual Revenue" value={fmt(kpis.totalRevenueYear)} icon={TrendingUp} variant="accent" />
+                    <KPICard label="Court Revenue" value={fmt(kpis.annualCourtRevenue)} icon={BarChart3} variant="default"
                       subtitle={`${kpis.totalRevenueYear > 0 ? Math.round(kpis.annualCourtRevenue / kpis.totalRevenueYear * 100) : 0}% of total`} />
-                    <KPICard label="Other Revenue" value={formatCurrency(kpis.annualOtherRevenue)} icon={PieChart} variant="default" />
+                    <KPICard label="Other Revenue" value={fmt(kpis.annualOtherRevenue)} icon={PieChart} variant="default" />
                     <KPICard label="Wtd. Occupancy" value={`${kpis.weightedOccupancy.toFixed(0)}%`} icon={Target}
                       variant={occAbove ? "success" : "warning"}
                       subtitle={beValid ? `Break-even: ${beVal.toFixed(0)}%` : undefined} />
                   </div>
-                  <DashboardCharts monthlyData={monthlyData} kpis={kpis} />
+                  <DashboardCharts monthlyData={monthlyData} kpis={kpis} currency={currency} />
                 </TabsContent>
 
                 {/* ═══ ROI ANALYSIS TAB ═══ */}
@@ -636,13 +637,13 @@ export default function Dashboard() {
                     inputs={activeVersion.inputs}
                     kpis={kpis}
                     scenario={scenario}
+                    currency={currency}
                   />
                 </TabsContent>
 
                 {/* ═══ SENSITIVITY ANALYSIS TAB ═══ */}
                 <TabsContent value="sensitivity" className="mt-0 space-y-6 animate-fade-in">
                   <div className="grid gap-5 md:grid-cols-2">
-                    {/* Top Drivers */}
                     <div className="bg-card border rounded-2xl p-6">
                       <div className="flex items-center gap-2 mb-5">
                         <Zap className="h-4 w-4 text-accent-foreground" />
@@ -657,7 +658,7 @@ export default function Dashboard() {
                                 <span className="text-xs font-bold text-muted-foreground w-5">{i + 1}.</span>
                                 <span className="text-sm flex-1">{s.label}</span>
                                 <span className="text-xs font-semibold tabular-nums text-success">
-                                  {s.ebitdaImpact >= 1000 ? `€${(s.ebitdaImpact / 1000).toFixed(0)}K` : `€${s.ebitdaImpact.toFixed(0)}`}
+                                  {s.ebitdaImpact >= 1000 ? `${sym}${(s.ebitdaImpact / 1000).toFixed(0)}K` : `${sym}${s.ebitdaImpact.toFixed(0)}`}
                                 </span>
                               </div>
                               <div className="ml-8 h-1.5 bg-muted rounded-full overflow-hidden">
@@ -669,7 +670,6 @@ export default function Dashboard() {
                       </div>
                     </div>
 
-                    {/* Detailed driver deltas */}
                     <div className="bg-card border rounded-2xl p-6">
                       <div className="flex items-center gap-2 mb-5">
                         <BarChart3 className="h-4 w-4 text-muted-foreground" />
@@ -681,10 +681,10 @@ export default function Dashboard() {
                             <span className="text-xs text-muted-foreground">{d.label}</span>
                             <div className="flex items-center gap-3">
                               <span className={cn("text-xs font-medium tabular-nums", d.annualRevenueImpact > 0 ? "text-success" : d.annualRevenueImpact < 0 ? "text-destructive" : "text-muted-foreground")}>
-                                Rev: {d.annualRevenueImpact >= 0 ? "+" : ""}{formatCurrency(d.annualRevenueImpact)}
+                                Rev: {d.annualRevenueImpact >= 0 ? "+" : ""}{fmt(d.annualRevenueImpact)}
                               </span>
                               <span className={cn("text-xs font-medium tabular-nums", d.ebitdaImpact > 0 ? "text-success" : d.ebitdaImpact < 0 ? "text-destructive" : "text-muted-foreground")}>
-                                EBITDA: {d.ebitdaImpact >= 0 ? "+" : ""}{formatCurrency(d.ebitdaImpact)}
+                                EBITDA: {d.ebitdaImpact >= 0 ? "+" : ""}{fmt(d.ebitdaImpact)}
                               </span>
                             </div>
                           </div>
@@ -697,11 +697,11 @@ export default function Dashboard() {
             </Tabs>
           </main>
 
-          {/* ─── KEY DRIVERS PANEL (independently scrollable) ─── */}
           <KeyDriversPanel
             inputs={activeVersion.inputs} onChange={handleDriverChange} onReset={handleReset}
             scenario={scenario} collapsed={panelCollapsed} onToggle={() => setPanelCollapsed((p) => !p)}
             readOnly={isReadOnly}
+            currency={currency}
             className="hidden lg:flex lg:flex-col h-full overflow-y-auto"
           />
         </div>
