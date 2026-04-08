@@ -1,12 +1,12 @@
 import { useState, useMemo, useCallback } from "react";
 import { ProjectInputs } from "@/lib/types";
-import { KPIResult, isSafeValid, formatSafeYears } from "@/lib/calculations";
+import { KPIResult, formatSafeYears } from "@/lib/calculations";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  AlertTriangle, Plus, Trash2, Info, BarChart3, Clock, Target,
-  DollarSign, Users, Calendar,
+  AlertTriangle, Plus, Trash2, Info, BarChart3,
+  Users, Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -42,12 +42,12 @@ interface InvestmentTabProps {
 
 // ─── Helpers ─────────────────────────────────────────────────
 const PIE_COLORS = [
-  "hsl(217 91% 60%)",   // primary blue
-  "hsl(152 69% 41%)",   // success green
-  "hsl(38 92% 50%)",    // warning amber
-  "hsl(346 77% 50%)",   // destructive red
-  "hsl(262 83% 58%)",   // purple
-  "hsl(190 80% 42%)",   // teal
+  "hsl(217 91% 60%)",
+  "hsl(152 69% 41%)",
+  "hsl(38 92% 50%)",
+  "hsl(346 77% 50%)",
+  "hsl(262 83% 58%)",
+  "hsl(190 80% 42%)",
 ];
 
 const fmt = (val: number) => {
@@ -62,13 +62,29 @@ const pct = (part: number, total: number) =>
 let _id = 0;
 const uid = () => `inv-${++_id}-${Date.now()}`;
 
+const FOUNDERS_PCT = 25;
+const INVESTORS_PCT = 75;
+
 // ─── Component ───────────────────────────────────────────────
 export function InvestmentTab({ inputs, kpis, allScenarioKPIs, onInputChange, readOnly }: InvestmentTabProps) {
-  // ── Investors state ──
-  const [investors, setInvestors] = useState<Investor[]>([
-    { id: uid(), name: "Founders", investment: 0 },
+  const totalCapex = kpis.totalInvestment;
+
+  // ── Investors state — Investor 1 defaults to full CAPEX ──
+  const [investors, setInvestors] = useState<Investor[]>(() => [
     { id: uid(), name: "Investor 1", investment: 0 },
   ]);
+
+  // Recompute Investor 1's investment so all investors always sum to totalCapex
+  const investorsWithAdjusted = useMemo(() => {
+    const othersTotal = investors.slice(1).reduce((s, inv) => s + inv.investment, 0);
+    const investor1Amount = Math.max(0, totalCapex - othersTotal);
+    return investors.map((inv, i) =>
+      i === 0 ? { ...inv, investment: investor1Amount } : inv
+    );
+  }, [investors, totalCapex]);
+
+  const totalInvestorContribution = investorsWithAdjusted.reduce((s, inv) => s + inv.investment, 0);
+  const contributionMismatch = Math.abs(totalInvestorContribution - totalCapex) > 1;
 
   // ── Timeline state ──
   const [phases, setPhases] = useState<TimelinePhase[]>([
@@ -76,8 +92,10 @@ export function InvestmentTab({ inputs, kpis, allScenarioKPIs, onInputChange, re
     { id: uid(), phase: "Construction", monthRange: "3-6", description: "Court building & facility", amount: 0 },
     { id: uid(), phase: "Equipment & Setup", monthRange: "7-8", description: "Equipment, furnishing, testing", amount: 0 },
   ]);
+  const timelineTotal = phases.reduce((s, p) => s + p.amount, 0);
+  const timelineMismatch = Math.abs(timelineTotal - totalCapex) > 1 && timelineTotal > 0;
 
-  // ── Derived values ──
+  // ── CAPEX items ──
   const capexItems = useMemo(() => {
     const courts = inputs.numberOfCourts;
     const courtTotal = inputs.courtConstructionCost * courts;
@@ -88,23 +106,6 @@ export function InvestmentTab({ inputs, kpis, allScenarioKPIs, onInputChange, re
     ];
   }, [inputs.numberOfCourts, inputs.courtConstructionCost, inputs.facilityBuildout, inputs.equipmentCost]);
 
-  const totalCapex = kpis.totalInvestment;
-  const debtAmount = kpis.loanAmount;
-  const equityTotal = kpis.equityInvested;
-  const annualDebtPayment = kpis.annualDebtPayment;
-  const totalInterest = kpis.totalInterestPaid;
-
-  // Investor equity split: founders get 25%, investors get 75%
-  const foundersPct = 25;
-  const investorsPct = 75;
-  const totalInvestorContribution = investors.reduce((s, inv) => s + inv.investment, 0);
-  const investorMismatch = Math.abs(totalInvestorContribution - equityTotal) > 1 && totalInvestorContribution > 0;
-
-  // Timeline
-  const timelineTotal = phases.reduce((s, p) => s + p.amount, 0);
-  const timelineMismatch = Math.abs(timelineTotal - totalCapex) > 1 && timelineTotal > 0;
-
-  // Pie data for CAPEX
   const capexPieData = capexItems.filter(c => c.value > 0).map(c => ({
     name: c.label, value: c.value,
   }));
@@ -117,11 +118,17 @@ export function InvestmentTab({ inputs, kpis, allScenarioKPIs, onInputChange, re
   }, []);
 
   const addInvestor = useCallback(() => {
-    setInvestors(prev => [...prev, { id: uid(), name: `Investor ${prev.length}`, investment: 0 }]);
+    setInvestors(prev => [...prev, { id: uid(), name: `Investor ${prev.length + 1}`, investment: 0 }]);
   }, []);
 
   const removeInvestor = useCallback((id: string) => {
-    setInvestors(prev => prev.length > 1 ? prev.filter(inv => inv.id !== id) : prev);
+    setInvestors(prev => {
+      if (prev.length <= 1) return prev;
+      // Don't allow removing Investor 1 (index 0)
+      const idx = prev.findIndex(inv => inv.id === id);
+      if (idx === 0) return prev;
+      return prev.filter(inv => inv.id !== id);
+    });
   }, []);
 
   const updatePhase = useCallback((id: string, field: keyof TimelinePhase, val: string | number) => {
@@ -149,7 +156,6 @@ export function InvestmentTab({ inputs, kpis, allScenarioKPIs, onInputChange, re
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
-          {/* Table */}
           <div>
             <table className="w-full text-sm">
               <thead>
@@ -185,7 +191,6 @@ export function InvestmentTab({ inputs, kpis, allScenarioKPIs, onInputChange, re
             </table>
           </div>
 
-          {/* Pie chart */}
           {capexPieData.length > 0 && (
             <div className="flex flex-col items-center justify-center">
               <ResponsiveContainer width="100%" height={200}>
@@ -226,86 +231,7 @@ export function InvestmentTab({ inputs, kpis, allScenarioKPIs, onInputChange, re
         </div>
       </div>
 
-      {/* ═══ SECTION 2: FINANCING ═══ */}
-      <div className="bg-card border rounded-2xl p-6">
-        <div className="flex items-center gap-2 mb-5">
-          <DollarSign className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-semibold">Financing</h3>
-        </div>
-
-        {/* Editable financing inputs */}
-        <div className="grid gap-4 sm:grid-cols-3 mb-6">
-          <div className="space-y-1.5">
-            <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Debt Percentage (%)</label>
-            <Input
-              type="number" min={0} max={100} step={5}
-              value={inputs.debtPercentage}
-              onChange={(e) => onInputChange("debtPercentage", parseFloat(e.target.value) || 0)}
-              disabled={readOnly}
-              className="h-9 text-sm tabular-nums"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Interest Rate (%)</label>
-            <Input
-              type="number" min={0} max={30} step={0.25}
-              value={inputs.interestRate}
-              onChange={(e) => onInputChange("interestRate", parseFloat(e.target.value) || 0)}
-              disabled={readOnly}
-              className="h-9 text-sm tabular-nums"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Loan Term (years)</label>
-            <Input
-              type="number" min={1} max={30} step={1}
-              value={inputs.loanTermYears}
-              onChange={(e) => onInputChange("loanTermYears", parseFloat(e.target.value) || 1)}
-              disabled={readOnly}
-              className="h-9 text-sm tabular-nums"
-            />
-          </div>
-        </div>
-
-        {/* Computed financing summary */}
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="bg-muted/30 rounded-xl p-4">
-            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Debt</p>
-            <p className="text-lg font-bold tabular-nums">{fmt(debtAmount)}</p>
-            <p className="text-[10px] text-muted-foreground mt-1">{inputs.debtPercentage}% of CAPEX</p>
-          </div>
-          <div className="bg-muted/30 rounded-xl p-4">
-            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Equity</p>
-            <p className="text-lg font-bold tabular-nums">{fmt(equityTotal)}</p>
-            <p className="text-[10px] text-muted-foreground mt-1">{(100 - inputs.debtPercentage).toFixed(0)}% of CAPEX</p>
-          </div>
-          <div className="bg-muted/30 rounded-xl p-4">
-            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Annual Payment</p>
-            <p className="text-lg font-bold tabular-nums">{fmt(annualDebtPayment)}</p>
-            <p className="text-[10px] text-muted-foreground mt-1">{fmt(kpis.loanPaymentMonth)}/mo</p>
-          </div>
-          <div className="bg-muted/30 rounded-xl p-4">
-            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Total Interest</p>
-            <p className={cn("text-lg font-bold tabular-nums", totalInterest > debtAmount * 0.5 ? "text-warning" : "text-foreground")}>
-              {fmt(totalInterest)}
-            </p>
-            <p className="text-[10px] text-muted-foreground mt-1">Over {inputs.loanTermYears} years</p>
-          </div>
-        </div>
-
-        {/* Debt + Equity = CAPEX validation */}
-        <div className="flex items-center gap-2 mt-3 text-[10px] text-muted-foreground">
-          <Info className="h-3 w-3" />
-          <span>Debt ({fmt(debtAmount)}) + Equity ({fmt(equityTotal)}) = {fmt(debtAmount + equityTotal)}</span>
-          {Math.abs(debtAmount + equityTotal - totalCapex) < 1 ? (
-            <span className="text-success font-medium ml-1">✓ Matches CAPEX</span>
-          ) : (
-            <span className="text-destructive font-medium ml-1">✗ Mismatch</span>
-          )}
-        </div>
-      </div>
-
-      {/* ═══ SECTION 3: EQUITY STRUCTURE ═══ */}
+      {/* ═══ SECTION 2: EQUITY STRUCTURE ═══ */}
       <div className="bg-card border rounded-2xl p-6">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
@@ -315,8 +241,8 @@ export function InvestmentTab({ inputs, kpis, allScenarioKPIs, onInputChange, re
               <TooltipTrigger asChild>
                 <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
               </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-[240px] text-[11px] leading-snug">
-                Founders hold {foundersPct}% equity. Remaining {investorsPct}% is distributed among investors proportionally to their contribution.
+              <TooltipContent side="top" className="max-w-[260px] text-[11px] leading-snug">
+                Founders hold a fixed {FOUNDERS_PCT}% equity with no cash contribution. Investors fund the full CAPEX and share the remaining {INVESTORS_PCT}% proportionally.
               </TooltipContent>
             </Tooltip>
           </div>
@@ -325,28 +251,38 @@ export function InvestmentTab({ inputs, kpis, allScenarioKPIs, onInputChange, re
           </Button>
         </div>
 
-        <div className="mb-3 flex items-center gap-3">
-          <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Equity to distribute:</span>
-          <span className="text-sm font-bold tabular-nums">{fmt(equityTotal)}</span>
+        <div className="mb-4 flex items-center gap-3">
+          <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Total CAPEX to fund:</span>
+          <span className="text-sm font-bold tabular-nums">{fmt(totalCapex)}</span>
         </div>
 
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b">
-              <th className="text-left py-2 text-xs text-muted-foreground font-medium">Investor</th>
+              <th className="text-left py-2 text-xs text-muted-foreground font-medium">Name</th>
               <th className="text-right py-2 text-xs text-muted-foreground font-medium">Investment (€)</th>
               <th className="text-right py-2 text-xs text-muted-foreground font-medium">Equity (%)</th>
               <th className="w-10"></th>
             </tr>
           </thead>
           <tbody className="divide-y">
-            {investors.map((inv, i) => {
-              const isFounder = i === 0;
-              const equityPctVal = isFounder
-                ? foundersPct
-                : totalInvestorContribution > 0
-                  ? (inv.investment / totalInvestorContribution) * investorsPct
-                  : 0;
+            {/* Founders row — fixed */}
+            <tr className="bg-muted/20">
+              <td className="py-2.5 text-xs font-medium text-muted-foreground pl-1">
+                Founders
+                <span className="ml-2 text-[10px] text-muted-foreground/70 italic">fixed — no cash contribution</span>
+              </td>
+              <td className="py-2.5 text-xs text-right tabular-nums text-muted-foreground">€0</td>
+              <td className="py-2.5 text-xs text-right tabular-nums font-semibold">{FOUNDERS_PCT.toFixed(1)}%</td>
+              <td></td>
+            </tr>
+
+            {/* Investor rows */}
+            {investorsWithAdjusted.map((inv, i) => {
+              const equityPctVal = totalCapex > 0
+                ? (inv.investment / totalCapex) * INVESTORS_PCT
+                : 0;
+              const isFirst = i === 0;
               return (
                 <tr key={inv.id}>
                   <td className="py-2">
@@ -358,20 +294,34 @@ export function InvestmentTab({ inputs, kpis, allScenarioKPIs, onInputChange, re
                     />
                   </td>
                   <td className="py-2">
-                    <Input
-                      type="number" min={0} step={1000}
-                      value={inv.investment || ""}
-                      onChange={(e) => updateInvestor(inv.id, "investment", e.target.value)}
-                      disabled={readOnly}
-                      className="h-8 text-xs text-right tabular-nums w-32 ml-auto"
-                      placeholder="0"
-                    />
+                    {isFirst ? (
+                      <div className="flex items-center justify-end gap-1.5">
+                        <span className="text-xs tabular-nums font-semibold">{fmt(inv.investment)}</span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-3 w-3 text-muted-foreground/50 cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="text-[11px]">
+                            Auto-calculated: Total CAPEX minus other investors
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                    ) : (
+                      <Input
+                        type="number" min={0} max={totalCapex} step={1000}
+                        value={inv.investment || ""}
+                        onChange={(e) => updateInvestor(inv.id, "investment", e.target.value)}
+                        disabled={readOnly}
+                        className="h-8 text-xs text-right tabular-nums w-32 ml-auto"
+                        placeholder="0"
+                      />
+                    )}
                   </td>
-                  <td className="py-2 text-xs text-right tabular-nums text-muted-foreground">
+                  <td className="py-2 text-xs text-right tabular-nums text-muted-foreground font-semibold">
                     {equityPctVal.toFixed(1)}%
                   </td>
                   <td className="py-2 text-center">
-                    {investors.length > 1 && (
+                    {!isFirst && (
                       <button onClick={() => removeInvestor(inv.id)} disabled={readOnly}
                         className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-30">
                         <Trash2 className="h-3.5 w-3.5" />
@@ -384,25 +334,30 @@ export function InvestmentTab({ inputs, kpis, allScenarioKPIs, onInputChange, re
           </tbody>
           <tfoot>
             <tr className="border-t-2">
-              <td className="py-2 text-xs font-bold">Total</td>
-              <td className="py-2 text-xs text-right tabular-nums font-bold">{fmt(totalInvestorContribution)}</td>
-              <td className="py-2 text-xs text-right tabular-nums font-bold">100%</td>
+              <td className="py-2.5 text-xs font-bold">Total</td>
+              <td className="py-2.5 text-xs text-right tabular-nums font-bold">{fmt(totalInvestorContribution)}</td>
+              <td className="py-2.5 text-xs text-right tabular-nums font-bold">100.0%</td>
               <td></td>
             </tr>
           </tfoot>
         </table>
 
-        {investorMismatch && (
+        {contributionMismatch && (
           <div className="flex items-center gap-2 text-warning bg-warning/5 border border-warning/20 rounded-lg px-3 py-2 mt-3">
             <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
             <span className="text-xs">
-              Investor contributions ({fmt(totalInvestorContribution)}) don't match required equity ({fmt(equityTotal)}) — difference: {fmt(Math.abs(totalInvestorContribution - equityTotal))}
+              Investor contributions ({fmt(totalInvestorContribution)}) don't match Total CAPEX ({fmt(totalCapex)}) — difference: {fmt(Math.abs(totalInvestorContribution - totalCapex))}
             </span>
           </div>
         )}
+
+        <div className="flex items-center gap-2 mt-3 text-[10px] text-muted-foreground">
+          <Info className="h-3 w-3" />
+          <span>Founders ({FOUNDERS_PCT}%) + Investors ({INVESTORS_PCT}%) = 100% equity. Investor equity is proportional to their share of the total CAPEX.</span>
+        </div>
       </div>
 
-      {/* ═══ SECTION 4: INVESTMENT TIMELINE ═══ */}
+      {/* ═══ SECTION 3: INVESTMENT TIMELINE ═══ */}
       <div className="bg-card border rounded-2xl p-6">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
@@ -476,7 +431,7 @@ export function InvestmentTab({ inputs, kpis, allScenarioKPIs, onInputChange, re
         )}
       </div>
 
-      {/* ═══ SECTION 5: SCENARIO COMPARISON ═══ */}
+      {/* ═══ SECTION 4: SCENARIO COMPARISON ═══ */}
       {allScenarioKPIs && (
         <div className="bg-card border rounded-2xl p-6">
           <h3 className="text-sm font-semibold mb-4">Investment Returns by Scenario</h3>
@@ -498,22 +453,10 @@ export function InvestmentTab({ inputs, kpis, allScenarioKPIs, onInputChange, re
                   <td className="py-2 text-xs text-right tabular-nums">{fmt(allScenarioKPIs.optimistic.ebitdaYear)}</td>
                 </tr>
                 <tr>
-                  <td className="py-2 text-xs text-muted-foreground">Cash Flow to Equity</td>
-                  <td className="py-2 text-xs text-right tabular-nums">{fmt(allScenarioKPIs.pessimistic.cashFlowToEquity)}</td>
-                  <td className="py-2 text-xs text-right tabular-nums font-semibold">{fmt(allScenarioKPIs.base.cashFlowToEquity)}</td>
-                  <td className="py-2 text-xs text-right tabular-nums">{fmt(allScenarioKPIs.optimistic.cashFlowToEquity)}</td>
-                </tr>
-                <tr>
                   <td className="py-2 text-xs text-muted-foreground">Payback</td>
                   <td className="py-2 text-xs text-right tabular-nums">{formatSafeYears(allScenarioKPIs.pessimistic.paybackYears)}</td>
                   <td className="py-2 text-xs text-right tabular-nums font-semibold">{formatSafeYears(allScenarioKPIs.base.paybackYears)}</td>
                   <td className="py-2 text-xs text-right tabular-nums">{formatSafeYears(allScenarioKPIs.optimistic.paybackYears)}</td>
-                </tr>
-                <tr>
-                  <td className="py-2 text-xs text-muted-foreground">ROI on Equity</td>
-                  <td className="py-2 text-xs text-right tabular-nums">{isSafeValid(allScenarioKPIs.pessimistic.roiOnEquity) ? `${allScenarioKPIs.pessimistic.roiOnEquity.value!.toFixed(1)}%` : "—"}</td>
-                  <td className="py-2 text-xs text-right tabular-nums font-semibold">{isSafeValid(allScenarioKPIs.base.roiOnEquity) ? `${allScenarioKPIs.base.roiOnEquity.value!.toFixed(1)}%` : "—"}</td>
-                  <td className="py-2 text-xs text-right tabular-nums">{isSafeValid(allScenarioKPIs.optimistic.roiOnEquity) ? `${allScenarioKPIs.optimistic.roiOnEquity.value!.toFixed(1)}%` : "—"}</td>
                 </tr>
                 <tr>
                   <td className="py-2 text-xs text-muted-foreground">Net Cashflow/yr</td>
