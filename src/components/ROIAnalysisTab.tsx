@@ -265,10 +265,10 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors }: ROIAnalysi
           </thead>
           <tbody className="divide-y">
             {displayInvestors.map((inv, i) => {
-              const cashReceived = cumCashFlow5Y > 0 ? cumCashFlow5Y * (inv.equityPct / 100) : 0;
-              const multiple = inv.investment > 0 ? cashReceived / inv.investment : null;
-              const totalReturnPct = inv.investment > 0 ? (cashReceived / inv.investment - 1) * 100 : null;
-              const isFounder = inv.investment === 0 && inv.equityPct === 25;
+              const cashReceived = cumCashFlow5Y * (inv.equityPct / 100);
+              const isFounder = inv.investment === 0;
+              const multiple = !isFounder && inv.investment > 0 ? cashReceived / inv.investment : null;
+              const totalReturnPct = !isFounder && inv.investment > 0 ? (cashReceived / inv.investment - 1) * 100 : null;
 
               return (
                 <tr key={i} className={isFounder ? "bg-muted/20" : ""}>
@@ -293,7 +293,7 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors }: ROIAnalysi
                   <td className={cn("py-2.5 text-xs text-right tabular-nums font-semibold",
                     totalReturnPct !== null && totalReturnPct >= 0 ? "text-success" : totalReturnPct !== null ? "text-destructive" : "text-muted-foreground"
                   )}>
-                    {totalReturnPct !== null ? `${totalReturnPct >= 0 ? "+" : ""}${totalReturnPct.toFixed(0)}%` : "∞"}
+                    {totalReturnPct !== null ? `${totalReturnPct >= 0 ? "+" : ""}${totalReturnPct.toFixed(0)}%` : "—"}
                   </td>
                 </tr>
               );
