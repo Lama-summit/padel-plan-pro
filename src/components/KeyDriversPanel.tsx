@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { ProjectInputs, Scenario, DEFAULT_INPUTS } from "@/lib/types";
+import { ProjectInputs, Scenario, SCENARIO_MULTIPLIERS, DEFAULT_INPUTS } from "@/lib/types";
 import { calculateDriverDeltas } from "@/lib/calculations";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
