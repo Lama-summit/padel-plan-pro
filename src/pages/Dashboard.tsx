@@ -486,7 +486,78 @@ export default function Dashboard() {
                     </div>
                   )}
 
-                  {/* ── SECTION 5-7: Drivers | Actions | Risk ── */}
+                  {/* ── SECTION: Investor Returns ── */}
+                  <div className="bg-card border rounded-2xl p-6 space-y-4">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-4 w-4 text-primary" />
+                      <span className="text-xs font-semibold uppercase tracking-wide">Investor Returns</span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-[260px] text-[11px] leading-snug">
+                          Equity-level metrics after debt service. Based on {activeVersion.inputs.debtPercentage}% debt at {activeVersion.inputs.interestRate}% over {activeVersion.inputs.loanTermYears} years.
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                      <div className="bg-muted/30 rounded-xl p-4">
+                        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Equity Invested</p>
+                        <p className="text-lg font-bold tabular-nums">{formatCurrency(kpis.equityInvested)}</p>
+                        <p className="text-[10px] text-muted-foreground mt-1">{(100 - activeVersion.inputs.debtPercentage).toFixed(0)}% of CAPEX</p>
+                      </div>
+                      <div className="bg-muted/30 rounded-xl p-4">
+                        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Annual Cash Flow</p>
+                        <p className={cn("text-lg font-bold tabular-nums", kpis.cashFlowToEquity >= 0 ? "text-success" : "text-destructive")}>
+                          {formatCurrency(kpis.cashFlowToEquity)}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground mt-1">EBITDA − Debt Service</p>
+                      </div>
+                      <div className="bg-muted/30 rounded-xl p-4">
+                        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">ROI on Equity</p>
+                        <p className={cn("text-lg font-bold tabular-nums",
+                          isSafeValid(kpis.roiOnEquity) && kpis.roiOnEquity.value! >= 15 ? "text-success" :
+                          isSafeValid(kpis.roiOnEquity) && kpis.roiOnEquity.value! >= 0 ? "text-foreground" : "text-destructive"
+                        )}>
+                          {isSafeValid(kpis.roiOnEquity) ? `${kpis.roiOnEquity.value!.toFixed(0)}%` : "—"}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground mt-1">Cash Flow / Equity</p>
+                      </div>
+                      <div className="bg-muted/30 rounded-xl p-4">
+                        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Payback (Equity)</p>
+                        <p className={cn("text-lg font-bold tabular-nums",
+                          isSafeValid(kpis.paybackEquity) && kpis.paybackEquity.value! <= 3 ? "text-success" :
+                          isSafeValid(kpis.paybackEquity) && kpis.paybackEquity.value! <= 5 ? "text-warning" : "text-foreground"
+                        )}>
+                          {isSafeValid(kpis.paybackEquity)
+                            ? kpis.paybackEquity.value! < 1 ? "<1 year" : `${kpis.paybackEquity.value!.toFixed(1)} yrs`
+                            : "N/A"}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground mt-1">Equity / Cash Flow</p>
+                      </div>
+                    </div>
+
+                    {/* Warnings */}
+                    {(kpis.cashFlowToEquity < 0 || (isSafeValid(kpis.paybackEquity) && kpis.paybackEquity.value! > activeVersion.inputs.loanTermYears)) && (
+                      <div className="space-y-2">
+                        {kpis.cashFlowToEquity < 0 && (
+                          <div className="flex items-center gap-2 text-destructive bg-destructive/5 border border-destructive/20 rounded-lg px-3 py-2">
+                            <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span className="text-xs">Negative cash flow to equity — debt service exceeds EBITDA</span>
+                          </div>
+                        )}
+                        {isSafeValid(kpis.paybackEquity) && kpis.paybackEquity.value! > activeVersion.inputs.loanTermYears && kpis.cashFlowToEquity > 0 && (
+                          <div className="flex items-center gap-2 text-warning bg-warning/5 border border-warning/20 rounded-lg px-3 py-2">
+                            <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span className="text-xs">Equity payback ({kpis.paybackEquity.value!.toFixed(1)} yrs) exceeds loan term ({activeVersion.inputs.loanTermYears} yrs)</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+
                   <div className="grid gap-5 md:grid-cols-2">
                     {/* What Drives This Business */}
                     <div className="bg-card border rounded-2xl p-5">
