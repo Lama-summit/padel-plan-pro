@@ -153,7 +153,10 @@ export default function InputsView() {
   );
 
   const renderField = (field: FieldDef) => {
-    const currentVal = version.inputs[field.key] as number;
+    // For readonly computed fields, calculate the value live
+    const currentVal = field.readonly && field.key === "initialInvestment"
+      ? (version.inputs.courtConstructionCost * version.inputs.numberOfCourts) + version.inputs.facilityBuildout + version.inputs.equipmentCost
+      : version.inputs[field.key] as number;
 
     return (
       <div key={field.key} className="space-y-2">
@@ -185,7 +188,8 @@ export default function InputsView() {
               type="number"
               value={currentVal}
               onChange={(e) => handleChange(field.key, e.target.value)}
-              className="pr-12 rounded-xl h-11 text-base font-medium"
+              disabled={field.readonly}
+              className={`pr-12 rounded-xl h-11 text-base font-medium ${field.readonly ? 'bg-muted/50 text-foreground font-semibold' : ''}`}
             />
             {field.suffix && (
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">
