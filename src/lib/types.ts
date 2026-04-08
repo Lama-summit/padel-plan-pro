@@ -107,7 +107,7 @@ export const DEFAULT_INPUTS: ProjectInputs = {
   peakPrice: 50,
   offPeakOccupancy: 45,
   peakOccupancy: 75,
-  initialInvestment: 500000,
+  initialInvestment: 80000 * 4 + 120000 + 20000, // auto: courts × cost + buildout + equipment
   courtConstructionCost: 80000,
   facilityBuildout: 120000,
   equipmentCost: 20000,
