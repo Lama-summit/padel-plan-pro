@@ -262,7 +262,7 @@ export default function Dashboard() {
                 </TabsList>
               </div>
 
-              <div className="px-6 py-6 max-w-6xl mx-auto w-full">
+              <div className="px-8 py-6 max-w-6xl mx-auto w-full">
                 {/* Validation warnings - show on all tabs */}
                 {warnings.length > 0 && (
                   <div className="space-y-2 mb-6">
