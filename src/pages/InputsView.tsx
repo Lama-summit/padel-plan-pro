@@ -62,12 +62,13 @@ interface FieldDef {
   label: string;
   suffix?: string;
   helper?: string;
+  readonly?: boolean;
   slider?: { min: number; max: number; step: number };
 }
 
 const CATEGORY_FIELDS: Record<Category, FieldDef[]> = {
   investment: [
-    { key: "initialInvestment", label: "Total Initial Investment", suffix: "€", helper: "Total capital required to launch" },
+    { key: "initialInvestment", label: "Total Initial Investment", suffix: "€", helper: "Auto-calculated: (Court Cost × Courts) + Buildout + Equipment", readonly: true },
     { key: "courtConstructionCost", label: "Court Construction Cost", suffix: "€", helper: "Per-court construction budget" },
     { key: "facilityBuildout", label: "Facility Buildout", suffix: "€", helper: "Clubhouse, reception, amenities" },
     { key: "equipmentCost", label: "Equipment Cost", suffix: "€", helper: "Nets, lighting, furniture" },
@@ -130,7 +131,18 @@ export default function InputsView() {
 
   const handleChange = (key: keyof ProjectInputs, value: string | number) => {
     const numVal = key === "courtType" ? value as any : typeof value === "number" ? value : parseFloat(value) || 0;
-    updateVersionInputs(project.id, version.id, { [key]: numVal });
+    const patch: Partial<ProjectInputs> = { [key]: numVal };
+
+    // Auto-compute Total Initial Investment from components
+    const next = { ...version.inputs, ...patch };
+    if (key === "courtConstructionCost" || key === "facilityBuildout" || key === "equipmentCost" || key === "numberOfCourts") {
+      patch.initialInvestment =
+        (next.courtConstructionCost * next.numberOfCourts) +
+        next.facilityBuildout +
+        next.equipmentCost;
+    }
+
+    updateVersionInputs(project.id, version.id, patch);
   };
 
   const activeCat = CATEGORIES.find((c) => c.key === activeCategory)!;
@@ -141,7 +153,10 @@ export default function InputsView() {
   );
 
   const renderField = (field: FieldDef) => {
-    const currentVal = version.inputs[field.key] as number;
+    // For readonly computed fields, calculate the value live
+    const currentVal = field.readonly && field.key === "initialInvestment"
+      ? (version.inputs.courtConstructionCost * version.inputs.numberOfCourts) + version.inputs.facilityBuildout + version.inputs.equipmentCost
+      : version.inputs[field.key] as number;
 
     return (
       <div key={field.key} className="space-y-2">
@@ -173,7 +188,8 @@ export default function InputsView() {
               type="number"
               value={currentVal}
               onChange={(e) => handleChange(field.key, e.target.value)}
-              className="pr-12 rounded-xl h-11 text-base font-medium"
+              disabled={field.readonly}
+              className={`pr-12 rounded-xl h-11 text-base font-medium ${field.readonly ? 'bg-muted/50 text-foreground font-semibold' : ''}`}
             />
             {field.suffix && (
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">

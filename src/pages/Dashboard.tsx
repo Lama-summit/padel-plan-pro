@@ -107,7 +107,18 @@ export default function Dashboard() {
   const handleDriverChange = (key: keyof ProjectInputs, value: string | number) => {
     if (isReadOnly) return;
     const numVal = key === "courtType" || key === "costMode" ? value as any : typeof value === "number" ? value : parseFloat(value) || 0;
-    updateVersionInputs(project.id, activeVersion.id, { [key]: numVal });
+    const patch: Partial<ProjectInputs> = { [key]: numVal };
+
+    // Auto-compute Total Initial Investment when relevant fields change
+    const next = { ...activeVersion.inputs, ...patch };
+    if (key === "courtConstructionCost" || key === "facilityBuildout" || key === "equipmentCost" || key === "numberOfCourts") {
+      patch.initialInvestment =
+        (next.courtConstructionCost * next.numberOfCourts) +
+        next.facilityBuildout +
+        next.equipmentCost;
+    }
+
+    updateVersionInputs(project.id, activeVersion.id, patch);
   };
 
   const handleReset = () => {
