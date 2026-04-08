@@ -497,8 +497,9 @@ export function calculateKPIs(inputs: ProjectInputs, scenario: Scenario): KPIRes
 
   // Total costs to deduct includes coaching and tournament costs
   const additionalCosts = coachingCostMonth + tournamentCostMonth;
+  const costBreakdown = calculateCostBreakdown(inputs, totalHoursMonth, bookedHoursMonth);
   // Apply scenario cost multiplier
-  const monthlyCosts = costBreakdown.totalCosts * m.costMultiplier;
+  const monthlyCosts = (costBreakdown.totalCosts + additionalCosts) * m.costMultiplier;
 
   const ebitdaMonth = totalRevenueMonth - monthlyCosts;
   const ebitdaYear = ebitdaMonth * MONTHS_PER_YEAR;
