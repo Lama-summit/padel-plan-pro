@@ -5,7 +5,9 @@ import {
   calculateKPIs, getMonthlyEvolution, formatSafeYears, isSafeValid,
   calculateScenarioDelta, calculateScenarioComparison, calculateSensitivityRanking,
   generateInsight, generateStructuredInsight, getValidationWarnings, getInvestmentVerdict, getModelConfidence,
-  calculateDriverDeltas, getConsolidatedDrivers, generateRecommendedActions, ExportData,
+  calculateDriverDeltas, getConsolidatedDrivers, generateRecommendedActions,
+  calculate5YearProjection, calculatePaybackCumulative, calculateCumulativeROI, generateHighlights,
+  ExportData,
 } from "@/lib/calculations";
 import { Scenario, ProjectInputs, DEFAULT_INPUTS } from "@/lib/types";
 import { KPICard } from "@/components/KPICard";
