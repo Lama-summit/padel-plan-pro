@@ -341,7 +341,7 @@ export function RevenueModelTab({
       <ModuleCard
         icon={Store}
         title="Other Revenue"
-        subtitle="Pro shop, F&B, memberships, and other sources"
+        subtitle="Ancillary revenue (F&B, shop, memberships)"
         enabled={inputs.otherRevenueEnabled}
         onToggle={(v) => onInputChange("otherRevenueEnabled", v)}
         readOnly={readOnly}
