@@ -284,17 +284,6 @@ export default function Dashboard() {
               </div>
 
               <div className="px-8 py-6 max-w-6xl mx-auto w-full">
-                {/* Validation warnings - show on all tabs */}
-                {warnings.length > 0 && (
-                  <div className="space-y-2 mb-6">
-                    {warnings.map((w) => (
-                      <div key={w.id} className={cn("flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-xs font-medium",
-                        w.severity === "error" ? "bg-destructive/5 border-destructive/20 text-destructive" : "bg-warning/5 border-warning/20 text-warning")}>
-                        <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />{w.message}
-                      </div>
-                    ))}
-                  </div>
-                )}
 
                 {/* ═══ EXECUTIVE SUMMARY TAB ═══ */}
                 <TabsContent value="summary" className="mt-0 space-y-6 animate-fade-in">
