@@ -199,11 +199,15 @@ export function getConsolidatedDrivers(deltas: Record<string, DriverDelta>): Con
   if (deltas.numberOfCourts) {
     consolidated.push({ label: "Courts", unit: "+1 court", ebitdaImpact: deltas.numberOfCourts.ebitdaImpact });
   }
+  // Variable cost
+  if (deltas.variableCostPerHour) {
+    consolidated.push({ label: "Variable Cost", unit: "+€1/h", ebitdaImpact: deltas.variableCostPerHour.ebitdaImpact });
+  }
   // Hours
   if (deltas.openingHoursPerDay) {
     consolidated.push({ label: "Hours/Day", unit: "+1 hour/day", ebitdaImpact: deltas.openingHoursPerDay.ebitdaImpact });
   }
-  return consolidated.sort((a, b) => Math.abs(b.ebitdaImpact) - Math.abs(a.ebitdaImpact)).slice(0, 3);
+  return consolidated.sort((a, b) => Math.abs(b.ebitdaImpact) - Math.abs(a.ebitdaImpact)).slice(0, 4);
 }
 
 // ─── Recommended actions ─────────────────────────────────────
