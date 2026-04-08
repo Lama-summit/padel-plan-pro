@@ -130,7 +130,18 @@ export default function InputsView() {
 
   const handleChange = (key: keyof ProjectInputs, value: string | number) => {
     const numVal = key === "courtType" ? value as any : typeof value === "number" ? value : parseFloat(value) || 0;
-    updateVersionInputs(project.id, version.id, { [key]: numVal });
+    const patch: Partial<ProjectInputs> = { [key]: numVal };
+
+    // Auto-compute Total Initial Investment from components
+    const next = { ...version.inputs, ...patch };
+    if (key === "courtConstructionCost" || key === "facilityBuildout" || key === "equipmentCost" || key === "numberOfCourts") {
+      patch.initialInvestment =
+        (next.courtConstructionCost * next.numberOfCourts) +
+        next.facilityBuildout +
+        next.equipmentCost;
+    }
+
+    updateVersionInputs(project.id, version.id, patch);
   };
 
   const activeCat = CATEGORIES.find((c) => c.key === activeCategory)!;
