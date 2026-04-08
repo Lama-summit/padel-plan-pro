@@ -14,6 +14,7 @@ import { KPICard } from "@/components/KPICard";
 import { DashboardCharts } from "@/components/DashboardCharts";
 import { KeyDriversPanel } from "@/components/KeyDriversPanel";
 import { InvestmentTab } from "@/components/InvestmentTab";
+import { ROIAnalysisTab } from "@/components/ROIAnalysisTab";
 import { downloadExport } from "@/lib/export";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -630,39 +631,12 @@ export default function Dashboard() {
                 </TabsContent>
 
                 {/* ═══ ROI ANALYSIS TAB ═══ */}
-                <TabsContent value="roi" className="mt-0 space-y-6 animate-fade-in">
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    <KPICard label="Annual EBITDA" value={formatCurrency(kpis.ebitdaYear)} icon={BarChart3}
-                      variant={kpis.ebitdaYear >= 0 ? "success" : "destructive"}
-                      subtitle={marginVal !== null ? `${marginVal.toFixed(0)}% margin` : undefined} />
-                    <KPICard label="Annual Costs" value={formatCurrency(kpis.annualCosts)} icon={TrendingDown} variant="destructive"
-                      subtitle={`Fixed: ${formatCurrency(kpis.costBreakdown.fixedCosts * 12)} · Var: ${formatCurrency(kpis.costBreakdown.variableCosts * 12)}`} />
-                    <KPICard label="Net Cashflow" value={formatCurrency(kpis.netCashflowYear)} icon={Target}
-                      variant={kpis.netCashflowYear >= 0 ? "success" : "destructive"}
-                      subtitle={`After loan: ${formatCurrency(kpis.loanPaymentMonth)}/mo`} />
-                  </div>
-
-                  {/* Cost breakdown */}
-                  <div className="bg-card border rounded-2xl p-6">
-                    <h3 className="text-sm font-semibold mb-4">Monthly Cost Breakdown</h3>
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                      {[
-                        { label: "Staff", value: kpis.costBreakdown.details.staff },
-                        { label: "Rent", value: kpis.costBreakdown.details.rent },
-                        { label: "Energy", value: kpis.costBreakdown.details.energy },
-                        { label: "Maintenance", value: kpis.costBreakdown.details.maintenance },
-                        { label: "Cleaning", value: kpis.costBreakdown.details.cleaning },
-                        { label: "Marketing", value: kpis.costBreakdown.details.marketing },
-                        { label: "Insurance", value: kpis.costBreakdown.details.insurance },
-                        { label: "Software", value: kpis.costBreakdown.details.software },
-                      ].filter(c => c.value > 0).map((c) => (
-                        <div key={c.label} className="flex items-center justify-between py-2 px-3 bg-muted/30 rounded-lg">
-                          <span className="text-xs text-muted-foreground">{c.label}</span>
-                          <span className="text-xs font-semibold tabular-nums">{formatCurrency(c.value)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                <TabsContent value="roi" className="mt-0">
+                  <ROIAnalysisTab
+                    inputs={activeVersion.inputs}
+                    kpis={kpis}
+                    scenario={scenario}
+                  />
                 </TabsContent>
 
                 {/* ═══ SENSITIVITY ANALYSIS TAB ═══ */}
