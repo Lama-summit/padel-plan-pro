@@ -107,6 +107,7 @@ export function calculateDriverDeltas(inputs: ProjectInputs, scenario: Scenario)
     { key: "offPeakPrice", label: "Off-Peak Price", unit: "+€5/h", delta: 5 },
     { key: "numberOfCourts", label: "Courts", unit: "+1 court", delta: 1 },
     { key: "openingHoursPerDay", label: "Hours/Day", unit: "+1 hour/day", delta: 1 },
+    { key: "variableCostPerHour", label: "Variable Cost/Hour", unit: "+€1/h", delta: 1 },
   ];
   for (const t of tests) {
     const tweaked = { ...inputs, [t.key]: (inputs[t.key] as number) + t.delta };
@@ -118,6 +119,61 @@ export function calculateDriverDeltas(inputs: ProjectInputs, scenario: Scenario)
     deltas[t.key] = { key: t.key, label: t.label, unit: t.unit, annualRevenueImpact: alt.totalRevenueYear - base.totalRevenueYear, ebitdaImpact: alt.ebitdaYear - base.ebitdaYear, paybackImpact };
   }
   return deltas;
+}
+
+// ─── Full sensitivity analysis (multi-metric) ────────────────
+export interface SensitivityVariable {
+  key: string;
+  label: string;
+  change: string; // human-readable change description
+  ebitdaImpact: number;
+  returnMultipleImpact: number | null;
+  paybackImpact: number | null;
+}
+
+export function calculateFullSensitivity(inputs: ProjectInputs, scenario: Scenario): SensitivityVariable[] {
+  const base = calculateKPIs(inputs, scenario);
+  const basePayback = calculatePaybackCumulative(inputs, scenario);
+  const baseInvestment = safe(inputs.initialInvestment);
+  const base5YProjection = calculate5YearProjection(inputs, scenario);
+  const baseCum5Y = base5YProjection.reduce((s, p) => s + p.ebitda, 0);
+  const baseMultiple = baseInvestment > 0 ? baseCum5Y / baseInvestment : null;
+
+  const tests: { key: keyof ProjectInputs; label: string; change: string; delta: number }[] = [
+    { key: "peakOccupancy", label: "Occupancy", change: "+5 pp", delta: 5 },
+    { key: "peakPrice", label: "Price", change: "+10%", delta: Math.round(inputs.peakPrice * 0.1) || 1 },
+    { key: "numberOfCourts", label: "Courts", change: "+1 court", delta: 1 },
+    { key: "variableCostPerHour", label: "Variable Cost/Hour", change: "+€1/hr", delta: 1 },
+  ];
+
+  const results: SensitivityVariable[] = [];
+
+  for (const t of tests) {
+    // For occupancy, bump both peak and off-peak
+    const tweaked = t.key === "peakOccupancy"
+      ? { ...inputs, peakOccupancy: inputs.peakOccupancy + 5, offPeakOccupancy: inputs.offPeakOccupancy + 5 }
+      : t.key === "peakPrice"
+        ? { ...inputs, peakPrice: inputs.peakPrice + t.delta, offPeakPrice: inputs.offPeakPrice + Math.round(inputs.offPeakPrice * 0.1) }
+        : { ...inputs, [t.key]: (inputs[t.key] as number) + t.delta };
+
+    const alt = calculateKPIs(tweaked, scenario);
+    const altPayback = calculatePaybackCumulative(tweaked, scenario);
+    const alt5YProjection = calculate5YearProjection(tweaked, scenario);
+    const altCum5Y = alt5YProjection.reduce((s, p) => s + p.ebitda, 0);
+    const altInvestment = safe(tweaked.initialInvestment);
+    const altMultiple = altInvestment > 0 ? altCum5Y / altInvestment : null;
+
+    results.push({
+      key: t.key,
+      label: t.label,
+      change: t.change,
+      ebitdaImpact: alt.ebitdaYear - base.ebitdaYear,
+      returnMultipleImpact: baseMultiple !== null && altMultiple !== null ? altMultiple - baseMultiple : null,
+      paybackImpact: basePayback !== null && altPayback !== null ? altPayback - basePayback : null,
+    });
+  }
+
+  return results.sort((a, b) => Math.abs(b.ebitdaImpact) - Math.abs(a.ebitdaImpact));
 }
 
 // ─── Consolidated drivers (merge peak/off-peak) ─────────────
