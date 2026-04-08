@@ -552,6 +552,12 @@ export function calculateKPIs(inputs: ProjectInputs, scenario: Scenario): KPIRes
   const ebitdaMarginRaw = safeDiv(ebitdaMonth, totalRevenueMonth);
   const ebitdaMargin = makeSafeMetric(ebitdaMarginRaw !== null ? ebitdaMarginRaw * 100 : null, totalRevenueMonth > 0);
 
+  // Update revenue breakdown with final EBITDA figures
+  revenueBreakdown.totalEbitda = ebitdaYear;
+  revenueBreakdown.addOnPct = ebitdaYear !== 0
+    ? (revenueBreakdown.addOnEbitda / Math.abs(ebitdaYear)) * 100
+    : 0;
+
   const loanAmount = investment * (debtPct / 100);
   const loanPaymentMonth = calcMonthlyLoanPayment(loanAmount, intRate, loanTerm);
   const netCashflowMonth = ebitdaMonth - safe(loanPaymentMonth);
