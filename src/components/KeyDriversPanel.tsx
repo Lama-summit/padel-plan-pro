@@ -158,6 +158,23 @@ export function KeyDriversPanel({
               Base {offset > 0 ? "+" : ""}{offset} pp
             </p>
           )}
+          {(() => {
+            const peakH = inputs.peakHoursPerDay || 0;
+            const offPeakH = (inputs.openingHoursPerDay || 0) - peakH;
+            const totalH = peakH + offPeakH;
+            const peakOcc = readOnly ? derivedPeak : inputs.peakOccupancy;
+            const offPeakOcc = readOnly ? derivedOffPeak : inputs.offPeakOccupancy;
+            const weighted = totalH > 0 ? Math.round((peakOcc * peakH + offPeakOcc * offPeakH) / totalH) : 0;
+            return (
+              <div className="mt-1 px-2.5 py-1.5 rounded-lg bg-muted/60 border border-border">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-muted-foreground">Weighted Avg. Occupancy</span>
+                  <span className="text-sm font-bold tabular-nums">{weighted}<span className="text-[10px] text-muted-foreground ml-0.5 font-medium">%</span></span>
+                </div>
+                <p className="text-[9px] text-muted-foreground mt-0.5">{peakH}h peak · {offPeakH}h off-peak</p>
+              </div>
+            );
+          })()}
         </DriverSection>
       </div>
     </aside>
