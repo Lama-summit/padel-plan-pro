@@ -179,9 +179,9 @@ export default function Dashboard() {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-background flex flex-col">
-        {/* ─── HEADER ─── */}
-        <header className="border-b bg-card sticky top-0 z-10">
+      <div className="h-screen bg-background flex flex-col overflow-hidden">
+        {/* ─── HEADER (sticky, includes tabs) ─── */}
+        <header className="border-b bg-card flex-shrink-0 z-10">
           {/* Top row: project title */}
           <div className="w-full px-8 pt-4 pb-2">
             <div className="flex items-center gap-3">
@@ -257,11 +257,41 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+
+          {/* Tab bar — integrated in header */}
+          <div className="bg-muted/40 px-8 pt-2 pb-0 relative">
+            <div className="flex items-end gap-1.5">
+              {([
+                { value: "summary", label: "Executive Summary" },
+                { value: "investment", label: "Investment" },
+                { value: "revenue", label: "Revenue Model" },
+                { value: "roi", label: "ROI Analysis" },
+                { value: "sensitivity", label: "Sensitivity Analysis" },
+              ] as { value: DashboardTab; label: string }[]).map((tab) => {
+                const isActive = activeTab === tab.value;
+                return (
+                  <button
+                    key={tab.value}
+                    onClick={() => setActiveTab(tab.value)}
+                    className={cn(
+                      "relative px-5 py-2.5 text-xs font-medium transition-all rounded-t-xl",
+                      isActive
+                        ? "bg-background text-foreground shadow-[0_-2px_6px_rgba(0,0,0,0.05)] z-10 -mb-px"
+                        : "bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted/90 -mb-px"
+                    )}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="absolute bottom-0 left-0 right-0 h-px bg-border" />
+          </div>
         </header>
 
         {/* ─── DERIVED SCENARIO BANNER ─── */}
         {isReadOnly && derivedInfo && (
-          <div className="bg-muted/40 border-b px-8 py-2 flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="bg-muted/40 border-b px-8 py-2 flex items-center gap-2 text-xs text-muted-foreground flex-shrink-0">
             <Info className="h-3.5 w-3.5 flex-shrink-0" />
             <span>
               Derived from Base scenario — Occupancy adjusted by {scenario === "optimistic" ? "+10" : "−10"} pts
@@ -275,39 +305,10 @@ export default function Dashboard() {
           </div>
         )}
 
-        <div className="flex flex-1 overflow-hidden">
-          {/* ─── MAIN CONTENT ─── */}
+        <div className="flex flex-1 min-h-0">
+          {/* ─── MAIN CONTENT (independently scrollable) ─── */}
           <main className="flex-1 overflow-y-auto">
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as DashboardTab)} className="flex flex-col flex-1">
-              {/* Tab bar — workspace folder style */}
-              <div className="bg-muted/40 px-8 pt-3 pb-0 relative">
-                <div className="flex items-end gap-1.5">
-                  {([
-                    { value: "summary", label: "Executive Summary" },
-                    { value: "investment", label: "Investment" },
-                    { value: "revenue", label: "Revenue Model" },
-                    { value: "roi", label: "ROI Analysis" },
-                    { value: "sensitivity", label: "Sensitivity Analysis" },
-                  ] as { value: DashboardTab; label: string }[]).map((tab) => {
-                    const isActive = activeTab === tab.value;
-                    return (
-                      <button
-                        key={tab.value}
-                        onClick={() => setActiveTab(tab.value)}
-                        className={cn(
-                          "relative px-5 py-2.5 text-xs font-medium transition-all rounded-t-xl",
-                          isActive
-                            ? "bg-background text-foreground shadow-[0_-2px_6px_rgba(0,0,0,0.05)] z-10 -mb-px"
-                            : "bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted/90 -mb-px"
-                        )}
-                      >
-                        {tab.label}
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 h-px bg-border" />
-              </div>
 
               <div className="px-8 py-6 max-w-6xl mx-auto w-full">
 
@@ -697,12 +698,12 @@ export default function Dashboard() {
             </Tabs>
           </main>
 
-          {/* ─── KEY DRIVERS PANEL ─── */}
+          {/* ─── KEY DRIVERS PANEL (independently scrollable) ─── */}
           <KeyDriversPanel
             inputs={activeVersion.inputs} onChange={handleDriverChange} onReset={handleReset}
             scenario={scenario} collapsed={panelCollapsed} onToggle={() => setPanelCollapsed((p) => !p)}
             readOnly={isReadOnly}
-            className="hidden lg:flex lg:flex-col sticky top-0 h-screen"
+            className="hidden lg:flex lg:flex-col h-full overflow-y-auto"
           />
         </div>
       </div>
