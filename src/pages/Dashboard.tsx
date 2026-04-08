@@ -241,25 +241,35 @@ export default function Dashboard() {
           {/* ─── MAIN CONTENT ─── */}
           <main className="flex-1 overflow-y-auto">
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as DashboardTab)} className="flex flex-col flex-1">
-              {/* Tab bar */}
-              <div className="border-b bg-card/50 px-8">
-                <TabsList className="bg-transparent h-auto p-0 gap-0 rounded-none">
+              {/* Tab bar — workspace folder style */}
+              <div className="bg-muted/50 px-8 pt-2 pb-0 relative">
+                <div className="flex items-end gap-0.5">
                   {([
                     { value: "summary", label: "Executive Summary" },
                     { value: "investment", label: "Investment" },
                     { value: "revenue", label: "Revenue Model" },
                     { value: "roi", label: "ROI Analysis" },
                     { value: "sensitivity", label: "Sensitivity Analysis" },
-                  ] as { value: DashboardTab; label: string }[]).map((tab) => (
-                    <TabsTrigger
-                      key={tab.value}
-                      value={tab.value}
-                      className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-3 text-xs font-medium"
-                    >
-                      {tab.label}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
+                  ] as { value: DashboardTab; label: string }[]).map((tab) => {
+                    const isActive = activeTab === tab.value;
+                    return (
+                      <button
+                        key={tab.value}
+                        onClick={() => setActiveTab(tab.value)}
+                        className={cn(
+                          "relative px-5 py-2.5 text-xs font-medium transition-all rounded-t-lg",
+                          isActive
+                            ? "bg-background text-foreground shadow-[0_-1px_4px_rgba(0,0,0,0.06)] z-10 -mb-px border border-border border-b-transparent"
+                            : "bg-muted/70 text-muted-foreground hover:text-foreground hover:bg-muted border border-transparent -mb-px"
+                        )}
+                      >
+                        {tab.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* Bottom edge that the active tab overlaps */}
+                <div className="absolute bottom-0 left-0 right-0 h-px bg-border" />
               </div>
 
               <div className="px-8 py-6 max-w-6xl mx-auto w-full">
