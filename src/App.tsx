@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import InputsView from "./pages/InputsView";
 import NotFound from "./pages/NotFound";
 
+
 const queryClient = new QueryClient();
 
 const App = () => (
