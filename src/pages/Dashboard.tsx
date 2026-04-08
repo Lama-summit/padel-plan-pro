@@ -5,7 +5,7 @@ import {
   calculateKPIs, getMonthlyEvolution, formatSafeYears, isSafeValid,
   calculateScenarioDelta, calculateScenarioComparison, calculateSensitivityRanking,
   generateInsight, generateStructuredInsight, getInvestmentVerdict, getModelConfidence,
-  calculateDriverDeltas, getConsolidatedDrivers, generateRecommendedActions,
+  calculateDriverDeltas, getConsolidatedDrivers, generateRecommendedActions, calculateSensitivityMatrix,
   calculate5YearProjection, calculatePaybackCumulative, calculateCumulativeROI, generateHighlights,
   ExportData,
 } from "@/lib/calculations";
