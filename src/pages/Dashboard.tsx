@@ -16,6 +16,7 @@ import { DashboardCharts } from "@/components/DashboardCharts";
 import { KeyDriversPanel } from "@/components/KeyDriversPanel";
 import { InvestmentTab } from "@/components/InvestmentTab";
 import { ROIAnalysisTab } from "@/components/ROIAnalysisTab";
+import { SensitivityAnalysisTab } from "@/components/SensitivityAnalysisTab";
 import { downloadExport } from "@/lib/export";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
