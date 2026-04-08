@@ -165,11 +165,18 @@ export default function InputsView() {
     (f) => !KEY_DRIVER_KEYS.has(f.key)
   );
 
+  const computeReadonly = (key: keyof ProjectInputs): number => {
+    const i = version.inputs;
+    switch (key) {
+      case "initialInvestment": return (i.courtConstructionCost * i.numberOfCourts) + i.facilityBuildout + i.equipmentCost;
+      case "monthlyOperatingCosts": return (i.staffCosts + i.utilitiesCosts + i.maintenanceCosts + i.rentOrMortgage + i.marketingCosts + i.insuranceCosts);
+      case "otherMonthlyRevenue": return (i.proshopRevenue + i.fAndBRevenue + i.membershipFees);
+      default: return i[key] as number;
+    }
+  };
+
   const renderField = (field: FieldDef) => {
-    // For readonly computed fields, calculate the value live
-    const currentVal = field.readonly && field.key === "initialInvestment"
-      ? (version.inputs.courtConstructionCost * version.inputs.numberOfCourts) + version.inputs.facilityBuildout + version.inputs.equipmentCost
-      : version.inputs[field.key] as number;
+    const currentVal = field.readonly ? computeReadonly(field.key) : version.inputs[field.key] as number;
 
     return (
       <div key={field.key} className="space-y-2">
