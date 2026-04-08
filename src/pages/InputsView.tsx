@@ -67,7 +67,7 @@ interface FieldDef {
 
 const CATEGORY_FIELDS: Record<Category, FieldDef[]> = {
   investment: [
-    { key: "initialInvestment", label: "Total Initial Investment", suffix: "€", helper: "Total capital required to launch" },
+    { key: "initialInvestment", label: "Total Initial Investment", suffix: "€", helper: "Auto-calculated: (Court Cost × Courts) + Buildout + Equipment", readonly: true },
     { key: "courtConstructionCost", label: "Court Construction Cost", suffix: "€", helper: "Per-court construction budget" },
     { key: "facilityBuildout", label: "Facility Buildout", suffix: "€", helper: "Clubhouse, reception, amenities" },
     { key: "equipmentCost", label: "Equipment Cost", suffix: "€", helper: "Nets, lighting, furniture" },
