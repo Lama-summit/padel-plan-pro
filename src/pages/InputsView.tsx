@@ -91,13 +91,14 @@ const CATEGORY_FIELDS: Record<Category, FieldDef[]> = {
     { key: "membershipFees", label: "Membership Fees / Month", suffix: "€" },
   ],
   operatingCosts: [
-    { key: "monthlyOperatingCosts", label: "Total Monthly OpCosts", suffix: "€", helper: "Auto-calculated: sum of all monthly costs", readonly: true },
+    { key: "monthlyOperatingCosts", label: "Total Monthly OpCosts", suffix: "€", helper: "Auto-calculated: fixed costs + variable costs (scales with usage)", readonly: true },
     { key: "staffCosts", label: "Staff Costs / Month", suffix: "€" },
     { key: "utilitiesCosts", label: "Utilities / Month", suffix: "€" },
     { key: "maintenanceCosts", label: "Maintenance / Month", suffix: "€" },
     { key: "rentOrMortgage", label: "Rent or Mortgage / Month", suffix: "€" },
     { key: "marketingCosts", label: "Marketing / Month", suffix: "€" },
     { key: "insuranceCosts", label: "Insurance / Month", suffix: "€" },
+    { key: "variableCostPerHour", label: "Variable Cost per Booking Hour", suffix: "€/hr", helper: "Scales with courts × occupancy × hours (e.g. consumables, extra energy)" },
   ],
   detailedCosts: [
     { key: "staffCostPerCourtHour", label: "Staff Cost / Court-Hour", suffix: "€", helper: "Scales with courts × hours" },
