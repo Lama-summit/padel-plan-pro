@@ -578,9 +578,10 @@ export function calculateKPIs(inputs: ProjectInputs, scenario: Scenario): KPIRes
     ebitdaMargin, roi, paybackYears, breakEvenOccupancy, weightedOccupancy,
     loanAmount: safe(loanAmount),
     annualCourtRevenue: courtRevenueMonth * MONTHS_PER_YEAR,
-    annualOtherRevenue: otherRevenueMonth * MONTHS_PER_YEAR,
+    annualOtherRevenue: (coachingRevenueMonth + tournamentRevenueMonth + otherRevenueMonth) * MONTHS_PER_YEAR,
     annualCosts: monthlyCosts * MONTHS_PER_YEAR,
     costBreakdown,
+    revenueBreakdown,
     equityInvested, annualDebtPayment, totalInterestPaid, cashFlowToEquity,
     roiOnEquity, paybackEquity,
   };
