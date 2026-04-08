@@ -435,7 +435,7 @@ export default function Dashboard() {
                   )}
 
                   {/* ── SECTION 5-7: Drivers | Actions | Risk ── */}
-                  <div className="grid gap-5 md:grid-cols-3">
+                  <div className="grid gap-5 md:grid-cols-2">
                     {/* What Drives This Business */}
                     <div className="bg-card border rounded-2xl p-5">
                       <div className="flex items-center gap-2 mb-4">
