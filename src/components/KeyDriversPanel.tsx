@@ -208,12 +208,13 @@ function DriverSection({ icon: Icon, label, hint, children }: {
   );
 }
 
-function CompactSlider({ label, value, min, max, step, suffix, onChange, delta }: {
+function CompactSlider({ label, value, min, max, step, suffix, onChange, delta, disabled }: {
   label: string; value: number; min: number; max: number; step: number; suffix?: string;
   onChange: (v: number) => void; delta?: { annualRevenueImpact: number; ebitdaImpact: number; paybackImpact: number | null };
+  disabled?: boolean;
 }) {
   return (
-    <div className="space-y-1.5">
+    <div className={cn("space-y-1.5", disabled && "opacity-60")}>
       <div className="flex items-center justify-between">
         <Label className="text-xs text-muted-foreground">{label}</Label>
         <span className="text-sm font-bold tabular-nums">
@@ -221,27 +222,28 @@ function CompactSlider({ label, value, min, max, step, suffix, onChange, delta }
           {suffix && <span className="text-[10px] text-muted-foreground ml-0.5 font-medium">{suffix}</span>}
         </span>
       </div>
-      <Slider value={[value]} min={min} max={max} step={step} onValueChange={([v]) => onChange(v)} className="py-0.5" />
-      <DeltaIndicator delta={delta} />
+      <Slider value={[value]} min={min} max={max} step={step} onValueChange={([v]) => !disabled && onChange(v)} disabled={disabled} className="py-0.5" />
+      {!disabled && <DeltaIndicator delta={delta} />}
     </div>
   );
 }
 
-function CompactNumber({ label, value, suffix, onChange, delta }: {
+function CompactNumber({ label, value, suffix, onChange, delta, disabled }: {
   label: string; value: number; suffix?: string; onChange: (v: string) => void;
   delta?: { annualRevenueImpact: number; ebitdaImpact: number; paybackImpact: number | null };
+  disabled?: boolean;
 }) {
   return (
-    <div className="space-y-1.5">
+    <div className={cn("space-y-1.5", disabled && "opacity-60")}>
       <Label className="text-xs text-muted-foreground">{label}</Label>
       <div className="relative">
-        <Input type="number" value={value} onChange={(e) => onChange(e.target.value)}
-          className="h-8 text-sm font-medium rounded-lg pr-10" />
+        <Input type="number" value={value} onChange={(e) => !disabled && onChange(e.target.value)}
+          className="h-8 text-sm font-medium rounded-lg pr-10" disabled={disabled} />
         {suffix && (
           <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-medium">{suffix}</span>
         )}
       </div>
-      <DeltaIndicator delta={delta} />
+      {!disabled && <DeltaIndicator delta={delta} />}
     </div>
   );
 }
