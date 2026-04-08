@@ -345,7 +345,17 @@ export default function Dashboard() {
                       <p className="text-[10px] text-muted-foreground mt-1">{formatCurrency(kpis.totalRevenueMonth)}/mo avg</p>
                     </div>
                     <div className="bg-card border rounded-xl p-4">
-                      <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Break-even Occ.</p>
+                      <div className="flex items-center gap-1">
+                        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Break-even Occ.</p>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-3 w-3 text-muted-foreground/60 -mt-1 cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[220px] text-[11px] leading-snug">
+                            Occupancy required to recover initial investment (CAPEX) plus first-year operating costs (OPEX)
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                       <p className={cn("text-lg font-bold tabular-nums", occAbove ? "text-success" : "text-warning")}>
                         {beValid ? `${beVal.toFixed(0)}%` : "—"}
                       </p>
@@ -362,6 +372,19 @@ export default function Dashboard() {
                       <p className="text-[10px] text-muted-foreground mt-1">
                         {cumulativeROI !== null ? `${cumulativeROI.toFixed(0)}% cum. (5yr)` : "—"}
                       </p>
+                    </div>
+                  </div>
+
+                  {/* ── Secondary cost context ── */}
+                  <div className="flex items-center gap-6 px-1 -mt-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Year 1 OPEX</span>
+                      <span className="text-xs font-semibold tabular-nums">{formatCurrency(kpis.annualCosts)}</span>
+                    </div>
+                    <div className="h-3 w-px bg-border" />
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Total Year 1 Cost</span>
+                      <span className="text-xs font-semibold tabular-nums">{formatCurrency(kpis.totalInvestment + kpis.annualCosts)}</span>
                     </div>
                   </div>
 
