@@ -66,7 +66,9 @@ interface StoreContextType {
   deleteProject: (id: string) => void;
   getProject: (id: string) => Project | undefined;
   createVersion: (projectId: string, name: string) => void;
+  createVersionFromCurrent: (projectId: string, name: string) => void;
   duplicateVersion: (projectId: string, versionId: string) => void;
+  saveVersion: (projectId: string, versionId: string) => void;
   updateVersionInputs: (projectId: string, versionId: string, inputs: Partial<ProjectVersion["inputs"]>) => void;
   setActiveVersion: (projectId: string, versionId: string) => void;
 }
