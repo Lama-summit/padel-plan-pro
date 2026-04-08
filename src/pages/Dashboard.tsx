@@ -25,10 +25,14 @@ import { Label } from "@/components/ui/label";
 import {
   ArrowLeft, Plus, Settings, TrendingUp, TrendingDown, PieChart, Target, Clock,
   BarChart3, GitBranch, AlertTriangle, Info, Lightbulb, Zap, Download,
-  Shield, Gauge, Save, CheckCircle,
+  Shield, Gauge, Save, CheckCircle, Sparkles, DollarSign,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
+  ResponsiveContainer, Legend,
+} from "recharts";
 
 const SCENARIOS: { value: Scenario; label: string; color: string }[] = [
   { value: "base", label: "Base", color: "data-[active=true]:bg-primary data-[active=true]:text-primary-foreground" },
