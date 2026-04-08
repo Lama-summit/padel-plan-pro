@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { ProjectInputs, Scenario } from "@/lib/types";
 import { KPIResult, isSafeValid, calculate5YearProjection } from "@/lib/calculations";
+import { formatCurrency, formatCurrencyAxis, formatCurrencyFull, getCurrencySymbol } from "@/lib/currency";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
   ResponsiveContainer, Legend, Line, ComposedChart, Cell,
@@ -10,7 +11,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// ─── Types ───────────────────────────────────────────────────
 interface Investor {
   name: string;
   investment: number;
@@ -22,16 +22,9 @@ interface ROIAnalysisTabProps {
   kpis: KPIResult;
   scenario: Scenario;
   investors?: Investor[];
+  currency?: string;
 }
 
-// ─── Helpers ─────────────────────────────────────────────────
-const fmt = (val: number) => {
-  if (Math.abs(val) >= 1_000_000) return `€${(val / 1_000_000).toFixed(1)}M`;
-  if (Math.abs(val) >= 1_000) return `€${(val / 1_000).toFixed(0)}K`;
-  return `€${val.toFixed(0)}`;
-};
-
-// ─── Cash Flow Model ─────────────────────────────────────────
 interface CashFlowYear {
   year: string;
   yearNum: number;
@@ -60,12 +53,7 @@ function buildCashFlowModel(inputs: ProjectInputs, kpis: KPIResult, scenario: Sc
     rows.push({
       year: `Year ${i + 1}`,
       yearNum: i + 1,
-      revenue,
-      opex,
-      ebitda,
-      capex,
-      netCashFlow,
-      cumulative,
+      revenue, opex, ebitda, capex, netCashFlow, cumulative,
     });
   }
   return rows;
@@ -75,33 +63,29 @@ function calcPayback(rows: CashFlowYear[]): number | null {
   for (let i = 0; i < rows.length; i++) {
     if (rows[i].cumulative >= 0) {
       if (i === 0) {
-        // Interpolate within year 1
         const totalNeeded = rows[0].capex;
-        if (rows[0].ebitda > 0) {
-          return totalNeeded / rows[0].ebitda;
-        }
+        if (rows[0].ebitda > 0) return totalNeeded / rows[0].ebitda;
         return null;
       }
       const prevCum = rows[i - 1].cumulative;
       const remaining = Math.abs(prevCum);
-      if (rows[i].netCashFlow > 0) {
-        return i + remaining / rows[i].netCashFlow;
-      }
+      if (rows[i].netCashFlow > 0) return i + remaining / rows[i].netCashFlow;
       return i + 1;
     }
   }
   return null;
 }
 
-// ─── Component ───────────────────────────────────────────────
-export function ROIAnalysisTab({ inputs, kpis, scenario, investors }: ROIAnalysisTabProps) {
+export function ROIAnalysisTab({ inputs, kpis, scenario, investors, currency = "EUR" }: ROIAnalysisTabProps) {
+  const fmt = (val: number) => formatCurrency(val, currency);
+  const sym = getCurrencySymbol(currency);
+
   const cashFlow = useMemo(() => buildCashFlowModel(inputs, kpis, scenario), [inputs, kpis, scenario]);
   const payback = useMemo(() => calcPayback(cashFlow), [cashFlow]);
   const totalCapex = kpis.totalInvestment;
 
   const cumCashFlow5Y = cashFlow.length === 5 ? cashFlow[4].cumulative : 0;
 
-  // Investor-standard metrics
   const totalReturn5Y = totalCapex > 0 ? (cumCashFlow5Y / totalCapex - 1) * 100 : null;
   const returnMultiple = totalCapex > 0 ? cumCashFlow5Y / totalCapex : null;
   const avgAnnualCashFlow = cashFlow.length > 0
@@ -109,7 +93,6 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors }: ROIAnalysi
     : 0;
   const annualCashYield = totalCapex > 0 ? (avgAnnualCashFlow / totalCapex) * 100 : null;
 
-  // Default investors if none provided
   const displayInvestors: Investor[] = investors && investors.length > 0
     ? investors
     : [
@@ -122,7 +105,6 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors }: ROIAnalysi
   return (
     <div className="space-y-6 animate-fade-in">
 
-      {/* ═══ SECTION 1: KPI STRIP ═══ */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <KPIMetric
           icon={Clock} label="Payback"
@@ -154,7 +136,6 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors }: ROIAnalysi
         />
       </div>
 
-      {/* ═══ SECTION 2: CASH FLOW CHART ═══ */}
       <div className="bg-card border rounded-2xl p-6">
         <div className="flex items-center gap-2 mb-5">
           <BarChart3 className="h-4 w-4 text-primary" />
@@ -166,7 +147,7 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors }: ROIAnalysi
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 91%)" vertical={false} />
             <XAxis dataKey="year" tick={{ fontSize: 11, fill: "hsl(220 9% 46%)" }} axisLine={false} tickLine={false} />
             <YAxis
-              tickFormatter={(v: number) => `€${(v / 1000).toFixed(0)}K`}
+              tickFormatter={(v: number) => formatCurrencyAxis(v, currency)}
               tick={{ fontSize: 11, fill: "hsl(220 9% 46%)" }} axisLine={false} tickLine={false}
             />
             <RechartsTooltip
@@ -179,7 +160,7 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors }: ROIAnalysi
                       <div key={i} className="flex items-center gap-2 text-sm">
                         <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
                         <span className="text-muted-foreground">{entry.name}:</span>
-                        <span className="font-semibold">€{entry.value?.toLocaleString()}</span>
+                        <span className="font-semibold">{formatCurrencyFull(entry.value, currency)}</span>
                       </div>
                     ))}
                   </div>
@@ -200,7 +181,6 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors }: ROIAnalysi
         </ResponsiveContainer>
       </div>
 
-      {/* ═══ SECTION 3: CASH FLOW TABLE ═══ */}
       <div className="bg-card border rounded-2xl p-6">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
@@ -242,7 +222,6 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors }: ROIAnalysi
         </div>
       </div>
 
-      {/* ═══ SECTION 4: INVESTOR RETURNS ═══ */}
       <div className="bg-card border rounded-2xl p-6">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
@@ -256,7 +235,7 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors }: ROIAnalysi
           <thead>
             <tr className="border-b">
               <th className="text-left py-2 text-xs text-muted-foreground font-medium">Investor</th>
-              <th className="text-right py-2 text-xs text-muted-foreground font-medium">Investment (€)</th>
+              <th className="text-right py-2 text-xs text-muted-foreground font-medium">Investment ({sym})</th>
               <th className="text-right py-2 text-xs text-muted-foreground font-medium">Equity (%)</th>
               <th className="text-right py-2 text-xs text-muted-foreground font-medium">Cash Received (5Y)</th>
               <th className="text-right py-2 text-xs text-muted-foreground font-medium">Return Multiple</th>
@@ -277,7 +256,7 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors }: ROIAnalysi
                     {isFounder && <span className="ml-2 text-[10px] text-muted-foreground italic">no cash contribution</span>}
                   </td>
                   <td className="py-2.5 text-xs text-right tabular-nums">
-                    {isFounder ? "€0" : fmt(inv.investment)}
+                    {isFounder ? `${sym}0` : fmt(inv.investment)}
                   </td>
                   <td className="py-2.5 text-xs text-right tabular-nums">{inv.equityPct.toFixed(1)}%</td>
                   <td className={cn("py-2.5 text-xs text-right tabular-nums font-semibold",
@@ -332,7 +311,6 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors }: ROIAnalysi
   );
 }
 
-// ─── KPI Metric Card ─────────────────────────────────────────
 function KPIMetric({ icon: Icon, label, value, color, subtitle }: {
   icon: React.ElementType; label: string; value: string;
   color: "success" | "warning" | "destructive" | "muted"; subtitle: string;

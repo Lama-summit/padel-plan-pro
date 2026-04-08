@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { ProjectInputs, Scenario, SCENARIO_MULTIPLIERS, DEFAULT_INPUTS } from "@/lib/types";
 import { calculateDriverDeltas } from "@/lib/calculations";
+import { getCurrencySymbol } from "@/lib/currency";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +29,7 @@ interface KeyDriversPanelProps {
   onToggle?: () => void;
   className?: string;
   readOnly?: boolean;
+  currency?: string;
 }
 
 export function KeyDriversPanel({
@@ -39,7 +41,9 @@ export function KeyDriversPanel({
   onToggle,
   className,
   readOnly = false,
+  currency = "EUR",
 }: KeyDriversPanelProps) {
+  const sym = getCurrencySymbol(currency);
   const offset = SCENARIO_MULTIPLIERS[scenario].occupancyOffset;
   const derivedOffPeak = Math.min(100, Math.max(0, inputs.offPeakOccupancy + offset));
   const derivedPeak = Math.min(100, Math.max(0, inputs.peakOccupancy + offset));
@@ -59,7 +63,6 @@ export function KeyDriversPanel({
   return (
     <aside className={cn("w-[300px] flex-shrink-0 bg-card border-l overflow-y-auto transition-all duration-300", className)}>
       <div className="p-5 space-y-5">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="h-8 w-8 rounded-lg bg-accent/15 flex items-center justify-center">
@@ -88,7 +91,6 @@ export function KeyDriversPanel({
           </div>
         )}
 
-        {/* Capacity */}
         <DriverSection icon={LayoutGrid} label="Capacity" hint="Defines capacity">
           <CompactSlider
             label="Courts"
@@ -127,15 +129,13 @@ export function KeyDriversPanel({
           </div>
         </DriverSection>
 
-        {/* Pricing */}
         <DriverSection icon={Tag} label="Pricing" hint="Impacts margin">
-          <CompactNumber label="Off-Peak Price" value={inputs.offPeakPrice} suffix="€/hr"
+          <CompactNumber label="Off-Peak Price" value={inputs.offPeakPrice} suffix={`${sym}/hr`}
             onChange={(v) => onChange("offPeakPrice", v)} delta={deltas.offPeakPrice} disabled={readOnly} />
-          <CompactNumber label="Peak Price" value={inputs.peakPrice} suffix="€/hr"
+          <CompactNumber label="Peak Price" value={inputs.peakPrice} suffix={`${sym}/hr`}
             onChange={(v) => onChange("peakPrice", v)} delta={deltas.peakPrice} disabled={readOnly} />
         </DriverSection>
 
-        {/* Demand */}
         <DriverSection icon={BarChart3} label="Demand" hint="Main revenue driver">
           <CompactSlider
             label="Off-Peak Occupancy"
@@ -180,8 +180,6 @@ export function KeyDriversPanel({
     </aside>
   );
 }
-
-/* ─── Sub-components ──────────────────────────────────────── */
 
 function DeltaIndicator({ delta }: { delta?: { annualRevenueImpact: number; ebitdaImpact: number; paybackImpact: number | null } }) {
   if (!delta) return null;
