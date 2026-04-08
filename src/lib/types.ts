@@ -128,7 +128,7 @@ export const DEFAULT_INPUTS: ProjectInputs = {
   avgClassPrice: 15,
   avgClassSize: 8,
   coachingCostPerHour: 25,
-  otherMonthlyRevenue: 3000,
+  otherMonthlyRevenue: 1500 + 2000 + 500, // auto: sum of revenue lines
   proshopRevenue: 1500,
   fAndBRevenue: 2000,
   membershipFees: 500,
