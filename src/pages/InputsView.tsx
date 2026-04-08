@@ -62,6 +62,7 @@ interface FieldDef {
   label: string;
   suffix?: string;
   helper?: string;
+  readonly?: boolean;
   slider?: { min: number; max: number; step: number };
 }
 
