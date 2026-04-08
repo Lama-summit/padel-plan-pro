@@ -37,6 +37,7 @@ export function KeyDriversPanel({
   collapsed = false,
   onToggle,
   className,
+  readOnly = false,
 }: KeyDriversPanelProps) {
   const deltas = useMemo(() => calculateDriverDeltas(inputs, scenario), [inputs, scenario]);
 
