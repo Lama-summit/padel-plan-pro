@@ -24,6 +24,7 @@ import {
   Store,
   Wallet,
   Banknote,
+  Lock,
 } from "lucide-react";
 import { LucideIcon } from "lucide-react";
 
