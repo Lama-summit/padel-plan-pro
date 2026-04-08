@@ -37,6 +37,9 @@ export interface ProjectInputs {
   marketingCosts: number;
   insuranceCosts: number;
 
+  // Variable cost component (basic mode)
+  variableCostPerHour: number;
+
   // Cost mode
   costMode: CostMode;
 
