@@ -698,12 +698,12 @@ export default function Dashboard() {
             </Tabs>
           </main>
 
-          {/* ─── KEY DRIVERS PANEL ─── */}
+          {/* ─── KEY DRIVERS PANEL (independently scrollable) ─── */}
           <KeyDriversPanel
             inputs={activeVersion.inputs} onChange={handleDriverChange} onReset={handleReset}
             scenario={scenario} collapsed={panelCollapsed} onToggle={() => setPanelCollapsed((p) => !p)}
             readOnly={isReadOnly}
-            className="hidden lg:flex lg:flex-col sticky top-0 h-screen"
+            className="hidden lg:flex lg:flex-col h-full overflow-y-auto"
           />
         </div>
       </div>
