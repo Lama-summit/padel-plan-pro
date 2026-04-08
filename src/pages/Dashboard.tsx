@@ -242,8 +242,8 @@ export default function Dashboard() {
           <main className="flex-1 overflow-y-auto">
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as DashboardTab)} className="flex flex-col flex-1">
               {/* Tab bar — workspace folder style */}
-              <div className="bg-muted/50 px-8 pt-2 pb-0 relative">
-                <div className="flex items-end gap-0.5">
+              <div className="bg-muted/40 px-8 pt-3 pb-0 relative">
+                <div className="flex items-end gap-1.5">
                   {([
                     { value: "summary", label: "Executive Summary" },
                     { value: "investment", label: "Investment" },
@@ -257,10 +257,10 @@ export default function Dashboard() {
                         key={tab.value}
                         onClick={() => setActiveTab(tab.value)}
                         className={cn(
-                          "relative px-5 py-2.5 text-xs font-medium transition-all rounded-t-lg",
+                          "relative px-5 py-2.5 text-xs font-medium transition-all rounded-t-xl",
                           isActive
-                            ? "bg-background text-foreground shadow-[0_-1px_4px_rgba(0,0,0,0.06)] z-10 -mb-px border border-border border-b-transparent"
-                            : "bg-muted/70 text-muted-foreground hover:text-foreground hover:bg-muted border border-transparent -mb-px"
+                            ? "bg-background text-foreground shadow-[0_-2px_6px_rgba(0,0,0,0.05)] z-10 -mb-px"
+                            : "bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted/90 -mb-px"
                         )}
                       >
                         {tab.label}
@@ -268,7 +268,6 @@ export default function Dashboard() {
                     );
                   })}
                 </div>
-                {/* Bottom edge that the active tab overlaps */}
                 <div className="absolute bottom-0 left-0 right-0 h-px bg-border" />
               </div>
 
