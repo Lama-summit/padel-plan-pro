@@ -263,7 +263,7 @@ export function RevenueModelTab({
       <ModuleCard
         icon={GraduationCap}
         title="Coaching / Classes"
-        subtitle="Revenue from structured coaching sessions using court capacity"
+        subtitle="Uses court capacity and replaces standard bookings"
         enabled={inputs.coachingEnabled}
         onToggle={(v) => onInputChange("coachingEnabled", v)}
         readOnly={readOnly}
