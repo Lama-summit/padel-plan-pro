@@ -126,7 +126,11 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors }: ROIAnalysi
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <KPIMetric
           icon={Clock} label="Payback"
-          value={payback !== null ? (payback < 1 ? "<1 year" : `${(Math.round(payback * 2) / 2).toFixed(1)} yrs`) : ">5 yrs"}
+          value={payback !== null
+            ? (payback < 1
+              ? `${Math.round(payback * 12)} months`
+              : `${payback.toFixed(1)} yrs`)
+            : ">5 yrs"}
           color={payback !== null && payback <= 3 ? "success" : payback !== null && payback <= 5 ? "warning" : "muted"}
           subtitle="Time to recover investment"
         />
@@ -146,7 +150,7 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors }: ROIAnalysi
           icon={DollarSign} label="Annual Cash Yield"
           value={annualCashYield !== null ? `${annualCashYield.toFixed(1)}%` : "—"}
           color={annualCashYield !== null && annualCashYield > 0 ? "success" : "destructive"}
-          subtitle="Avg. Annual Cash Flow / CAPEX"
+          subtitle="Based on average annual operating cash flow"
         />
       </div>
 
