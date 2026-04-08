@@ -455,12 +455,48 @@ export function calculateKPIs(inputs: ProjectInputs, scenario: Scenario): KPIRes
   const offPeakHoursMonth = totalHoursMonth * OFFPEAK_RATIO;
 
   const courtRevenueMonth = safe(peakHoursMonth * peakOcc * peakPrice) + safe(offPeakHoursMonth * offPeakOcc * offPeakPrice);
-  const otherRevenueMonth = safe(inputs.otherMonthlyRevenue) + safe(inputs.proshopRevenue) + safe(inputs.fAndBRevenue) + safe(inputs.membershipFees);
-  const totalRevenueMonth = courtRevenueMonth + otherRevenueMonth;
+
+  // ── Modular Revenue Calculation ──
+  const bookedHoursMonth = (peakHoursMonth * peakOcc) + (offPeakHoursMonth * offPeakOcc);
+
+  // A. Coaching / Classes
+  const coachingRevenueMonth = inputs.coachingEnabled
+    ? bookedHoursMonth * (safe(inputs.coachingPctOfHours) / 100) * safe(inputs.coachingPricePerHour)
+    : 0;
+  const coachingCostMonth = coachingRevenueMonth * (safe(inputs.coachingCostShare) / 100);
+  const coachingNetMonth = coachingRevenueMonth - coachingCostMonth;
+
+  // B. Tournaments / Events
+  const tournamentRevenueMonth = inputs.tournamentsEnabled
+    ? safe(inputs.eventsPerMonth) * safe(inputs.avgRevenuePerEvent)
+    : 0;
+  const tournamentCostMonth = inputs.tournamentsEnabled
+    ? safe(inputs.eventsPerMonth) * safe(inputs.avgCostPerEvent)
+    : 0;
+  const tournamentNetMonth = tournamentRevenueMonth - tournamentCostMonth;
+
+  // C. Other Revenue
+  const otherRevenueMonth = inputs.otherRevenueEnabled
+    ? safe(inputs.proshopRevenue) + safe(inputs.fAndBRevenue) + safe(inputs.membershipFees)
+    : 0;
+
+  const totalRevenueMonth = courtRevenueMonth + coachingRevenueMonth + tournamentRevenueMonth + otherRevenueMonth;
   const totalRevenueYear = totalRevenueMonth * MONTHS_PER_YEAR;
 
-  const bookedHoursMonth = (peakHoursMonth * peakOcc) + (offPeakHoursMonth * offPeakOcc);
-  const costBreakdown = calculateCostBreakdown(inputs, totalHoursMonth, bookedHoursMonth);
+  const revenueBreakdown: RevenueBreakdown = {
+    courtRevenue: courtRevenueMonth * MONTHS_PER_YEAR,
+    coachingRevenue: coachingRevenueMonth * MONTHS_PER_YEAR,
+    coachingCost: coachingCostMonth * MONTHS_PER_YEAR,
+    coachingNet: coachingNetMonth * MONTHS_PER_YEAR,
+    tournamentRevenue: tournamentRevenueMonth * MONTHS_PER_YEAR,
+    tournamentCost: tournamentCostMonth * MONTHS_PER_YEAR,
+    tournamentNet: tournamentNetMonth * MONTHS_PER_YEAR,
+    otherRevenue: otherRevenueMonth * MONTHS_PER_YEAR,
+    totalRevenue: totalRevenueYear,
+  };
+
+  // Total costs to deduct includes coaching and tournament costs
+  const additionalCosts = coachingCostMonth + tournamentCostMonth;
   // Apply scenario cost multiplier
   const monthlyCosts = costBreakdown.totalCosts * m.costMultiplier;
 
