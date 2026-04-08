@@ -692,6 +692,14 @@ export default function Dashboard() {
                       </div>
                     </div>
                   </div>
+
+                  {activeVersion && (
+                    <SensitivityMatrix
+                      inputs={activeVersion.inputs}
+                      scenario={scenario}
+                      currency={currency}
+                    />
+                  )}
                 </TabsContent>
               </div>
             </Tabs>
