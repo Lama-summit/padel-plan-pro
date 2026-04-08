@@ -74,7 +74,10 @@ export interface ProjectInputs {
 
   // Module C: Other Revenue
   otherRevenueEnabled: boolean;
+  otherRevenueMode: "fixed" | "pctOfBookings" | "perBooking";
   otherMonthlyRevenue: number;
+  otherRevenuePctOfBookings: number;
+  otherRevenuePerBooking: number;
   proshopRevenue: number;
   fAndBRevenue: number;
   membershipFees: number;
