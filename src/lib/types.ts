@@ -89,12 +89,14 @@ export interface Project {
 export interface ScenarioMultipliers {
   occupancyOffset: number;
   pricingMultiplier: number;
+  costMultiplier: number;
+  capexMultiplier: number;
 }
 
 export const SCENARIO_MULTIPLIERS: Record<Scenario, ScenarioMultipliers> = {
-  base: { occupancyOffset: 0, pricingMultiplier: 1.0 },
-  optimistic: { occupancyOffset: 10, pricingMultiplier: 1.0 },
-  pessimistic: { occupancyOffset: -10, pricingMultiplier: 1.0 },
+  base: { occupancyOffset: 0, pricingMultiplier: 1.0, costMultiplier: 1.0, capexMultiplier: 1.0 },
+  optimistic: { occupancyOffset: 10, pricingMultiplier: 1.05, costMultiplier: 0.95, capexMultiplier: 0.95 },
+  pessimistic: { occupancyOffset: -10, pricingMultiplier: 0.95, costMultiplier: 1.05, capexMultiplier: 1.10 },
 };
 
 export const DEFAULT_INPUTS: ProjectInputs = {
