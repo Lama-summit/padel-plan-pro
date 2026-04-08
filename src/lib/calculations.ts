@@ -647,4 +647,5 @@ export interface ExportData {
   insight: string;
   sensitivity: SensitivityRank[];
   inputs: ProjectInputs;
+  currency?: string;
 }
