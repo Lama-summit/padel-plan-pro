@@ -59,9 +59,13 @@ function calculateCostBreakdown(inputs: ProjectInputs, totalHoursMonth: number, 
       details: { staff, rent, software, energy, maintenance, cleaning, marketing: safe(inputs.marketingCosts), insurance: safe(inputs.insuranceCosts) },
     };
   }
-  const total = safe(inputs.monthlyOperatingCosts);
+  // Basic mode: fixed costs from inputs + variable costs from booked hours
+  const fixedTotal = safe(inputs.staffCosts) + safe(inputs.utilitiesCosts) + safe(inputs.maintenanceCosts) +
+    safe(inputs.rentOrMortgage) + safe(inputs.marketingCosts) + safe(inputs.insuranceCosts);
+  const variableFromUsage = safe(inputs.variableCostPerHour) * bookedHoursMonth;
+  const total = fixedTotal + variableFromUsage;
   return {
-    fixedCosts: total * 0.65, variableCosts: total * 0.35, totalCosts: total,
+    fixedCosts: fixedTotal, variableCosts: variableFromUsage, totalCosts: total,
     details: { staff: safe(inputs.staffCosts), rent: safe(inputs.rentOrMortgage), software: 0, energy: safe(inputs.utilitiesCosts), maintenance: safe(inputs.maintenanceCosts), cleaning: 0, marketing: safe(inputs.marketingCosts), insurance: safe(inputs.insuranceCosts) },
   };
 }

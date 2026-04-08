@@ -37,6 +37,9 @@ export interface ProjectInputs {
   marketingCosts: number;
   insuranceCosts: number;
 
+  // Variable cost component (basic mode)
+  variableCostPerHour: number;
+
   // Cost mode
   costMode: CostMode;
 
@@ -120,6 +123,7 @@ export const DEFAULT_INPUTS: ProjectInputs = {
   rentOrMortgage: 5000,
   marketingCosts: 2000,
   insuranceCosts: 1000,
+  variableCostPerHour: 2,
   costMode: "basic",
   staffCostPerCourtHour: 4,
   softwareManagementCost: 500,
