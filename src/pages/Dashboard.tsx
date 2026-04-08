@@ -223,7 +223,7 @@ export default function Dashboard() {
 
         {/* ─── DERIVED SCENARIO BANNER ─── */}
         {isReadOnly && derivedInfo && (
-          <div className="bg-muted/40 border-b px-6 py-2 flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="bg-muted/40 border-b px-8 py-2 flex items-center gap-2 text-xs text-muted-foreground">
             <Info className="h-3.5 w-3.5 flex-shrink-0" />
             <span>
               Derived from Base scenario — Occupancy adjusted by {scenario === "optimistic" ? "+10" : "−10"} pts
