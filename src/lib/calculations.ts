@@ -71,6 +71,18 @@ function calculateCostBreakdown(inputs: ProjectInputs, totalHoursMonth: number, 
 }
 
 // ─── KPI result ──────────────────────────────────────────────
+export interface RevenueBreakdown {
+  courtRevenue: number;
+  coachingRevenue: number;
+  coachingCost: number;
+  coachingNet: number;
+  tournamentRevenue: number;
+  tournamentCost: number;
+  tournamentNet: number;
+  otherRevenue: number;
+  totalRevenue: number;
+}
+
 export interface KPIResult {
   totalInvestment: number;
   totalHoursMonth: number; peakHoursMonth: number; offPeakHoursMonth: number;
@@ -82,6 +94,7 @@ export interface KPIResult {
   loanAmount: number;
   annualCourtRevenue: number; annualOtherRevenue: number; annualCosts: number;
   costBreakdown: CostBreakdown;
+  revenueBreakdown: RevenueBreakdown;
   // Investor / financing metrics
   equityInvested: number;
   annualDebtPayment: number;
