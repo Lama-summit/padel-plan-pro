@@ -26,6 +26,7 @@ interface KeyDriversPanelProps {
   collapsed?: boolean;
   onToggle?: () => void;
   className?: string;
+  readOnly?: boolean;
 }
 
 export function KeyDriversPanel({
