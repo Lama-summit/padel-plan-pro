@@ -489,6 +489,92 @@ export function getMonthlyEvolution(inputs: ProjectInputs, scenario: Scenario) {
   });
 }
 
+// ─── 5-Year Projection ──────────────────────────────────────
+export interface YearProjection {
+  year: string;
+  revenue: number;
+  ebitda: number;
+}
+
+export function calculate5YearProjection(inputs: ProjectInputs, scenario: Scenario, annualGrowthRate = 5): YearProjection[] {
+  const kpis = calculateKPIs(inputs, scenario);
+  const projections: YearProjection[] = [];
+  for (let y = 0; y < 5; y++) {
+    const growthFactor = Math.pow(1 + annualGrowthRate / 100, y);
+    const revenue = Math.round(kpis.totalRevenueYear * growthFactor);
+    const costs = Math.round(kpis.annualCosts * Math.pow(1 + (annualGrowthRate * 0.3) / 100, y));
+    const ebitda = revenue - costs;
+    projections.push({ year: `Year ${y + 1}`, revenue, ebitda });
+  }
+  return projections;
+}
+
+// ─── Cumulative payback (year-by-year) ───────────────────────
+export function calculatePaybackCumulative(inputs: ProjectInputs, scenario: Scenario, annualGrowthRate = 5): number | null {
+  const investment = safe(inputs.initialInvestment);
+  if (investment <= 0) return null;
+  const projection = calculate5YearProjection(inputs, scenario, annualGrowthRate);
+  let cumCashflow = 0;
+  for (let i = 0; i < projection.length; i++) {
+    cumCashflow += projection[i].ebitda;
+    if (cumCashflow >= investment) {
+      const prevCum = cumCashflow - projection[i].ebitda;
+      const remaining = investment - prevCum;
+      const fraction = projection[i].ebitda > 0 ? remaining / projection[i].ebitda : 1;
+      return i + fraction;
+    }
+  }
+  return null;
+}
+
+// ─── Cumulative ROI ──────────────────────────────────────────
+export function calculateCumulativeROI(inputs: ProjectInputs, scenario: Scenario, years: number, annualGrowthRate = 5): number | null {
+  const investment = safe(inputs.initialInvestment);
+  if (investment <= 0) return null;
+  const projection = calculate5YearProjection(inputs, scenario, annualGrowthRate);
+  let cumEbitda = 0;
+  for (let i = 0; i < Math.min(years, projection.length); i++) {
+    cumEbitda += projection[i].ebitda;
+  }
+  return (cumEbitda / investment) * 100;
+}
+
+// ─── Highlights generation ───────────────────────────────────
+export function generateHighlights(kpis: KPIResult, inputs: ProjectInputs): string[] {
+  const highlights: string[] = [];
+  const marginVal = isSafeValid(kpis.ebitdaMargin) ? kpis.ebitdaMargin.value! : null;
+  const paybackVal = isSafeValid(kpis.paybackYears) ? kpis.paybackYears.value! : null;
+
+  highlights.push("Growing padel market with increasing demand across Europe");
+
+  if (marginVal !== null && marginVal > 30) {
+    highlights.push(`High EBITDA margin (${marginVal.toFixed(0)}%) indicates strong profitability`);
+  } else if (marginVal !== null && marginVal > 15) {
+    highlights.push(`Solid EBITDA margin of ${marginVal.toFixed(0)}% with room to optimize`);
+  }
+
+  if (paybackVal !== null && paybackVal <= 3) {
+    highlights.push("Fast payback reduces investment risk significantly");
+  } else if (paybackVal !== null && paybackVal <= 5) {
+    highlights.push("Payback within 5 years — acceptable for facility investments");
+  }
+
+  if (kpis.totalRevenueYear > 0) {
+    const courtShare = kpis.annualCourtRevenue / kpis.totalRevenueYear;
+    if (courtShare < 0.80) {
+      highlights.push("Revenue structure is well diversified across multiple streams");
+    } else {
+      highlights.push("Multiple revenue streams available (courts, coaching, events, bar)");
+    }
+  }
+
+  if (inputs.numberOfCourts >= 6) {
+    highlights.push("Scale advantages with larger facility — lower per-court operating costs");
+  }
+
+  return highlights.slice(0, 5);
+}
+
 // ─── Export data shape ───────────────────────────────────────
 export interface ExportData {
   projectName: string;
