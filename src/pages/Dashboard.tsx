@@ -288,102 +288,147 @@ export default function Dashboard() {
 
                 {/* ═══ EXECUTIVE SUMMARY TAB ═══ */}
                 <TabsContent value="summary" className="mt-0 space-y-6 animate-fade-in">
-                  {/* KPI row */}
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  {/* KPI row — secondary, compact */}
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     <KPICard label="Annual EBITDA" value={kpis.totalRevenueMonth === 0 ? "—" : formatCurrency(kpis.ebitdaYear)} icon={BarChart3}
                       variant={kpis.ebitdaYear >= 0 ? "success" : "destructive"}
-                      subtitle={marginVal !== null ? `${marginVal.toFixed(0)}% margin` : undefined} />
+                      subtitle={scenarioDelta?.ebitdaPctChange !== null && scenarioDelta?.ebitdaPctChange !== undefined ? `${fmtDelta(scenarioDelta.ebitdaPctChange)} vs Base` : marginVal !== null ? `${marginVal.toFixed(0)}% margin` : undefined} />
                     <KPICard label="Payback Period" value={kpis.ebitdaYear <= 0 ? "N/A" : formatSafeYears(kpis.paybackYears)} icon={Clock}
                       variant={isSafeValid(kpis.paybackYears) ? (kpis.paybackYears.value! <= 3 ? "success" : kpis.paybackYears.value! <= 5 ? "warning" : "destructive") : "default"} />
                     <KPICard label="Annual Revenue" value={formatCurrency(kpis.totalRevenueYear)} icon={TrendingUp} variant="accent"
-                      subtitle={`${formatCurrency(kpis.totalRevenueMonth)}/month`} />
+                      subtitle={scenarioDelta?.revenuePctChange !== null && scenarioDelta?.revenuePctChange !== undefined ? `${fmtDelta(scenarioDelta.revenuePctChange)} vs Base` : `${formatCurrency(kpis.totalRevenueMonth)}/mo`} />
                     <KPICard label="ROI" value={isSafeValid(kpis.roi) ? `${kpis.roi.value!.toFixed(1)}%` : "—"} icon={PieChart}
                       variant={isSafeValid(kpis.roi) ? (kpis.roi.value! >= 15 ? "success" : "warning") : "default"} />
                   </div>
 
-                  {/* Verdict + Insight + Confidence row */}
+                  {/* ── Investment Verdict (dominant) ── */}
+                  {verdict && (
+                    <div className={cn(
+                      "border-2 rounded-2xl p-6 relative overflow-hidden",
+                      verdict.level === "strong" ? "border-success/40 bg-success/5" :
+                      verdict.level === "moderate" ? "border-warning/40 bg-warning/5" :
+                      verdict.level === "weak" ? "border-destructive/40 bg-destructive/5" :
+                      "border-border bg-muted/30"
+                    )}>
+                      <div className="flex items-start gap-5">
+                        <div className={cn(
+                          "h-14 w-14 rounded-xl flex items-center justify-center flex-shrink-0",
+                          verdictIconColors[verdict.level]
+                        )}>
+                          <Shield className="h-7 w-7" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Investment Verdict</p>
+                          <p className={cn(
+                            "text-2xl font-bold tracking-tight mb-1",
+                            verdict.level === "strong" ? "text-success" :
+                            verdict.level === "moderate" ? "text-warning" :
+                            verdict.level === "weak" ? "text-destructive" :
+                            "text-muted-foreground"
+                          )}>{verdict.label}</p>
+                          <p className="text-xs text-muted-foreground leading-relaxed max-w-lg">{verdict.interpretation}</p>
+                        </div>
+                        <div className="flex-shrink-0 grid grid-cols-3 gap-4 text-center">
+                          <div>
+                            <p className="text-[10px] text-muted-foreground font-medium mb-0.5">Payback</p>
+                            <p className="text-sm font-bold tabular-nums">{verdict.metrics.payback}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-muted-foreground font-medium mb-0.5">Margin</p>
+                            <p className="text-sm font-bold tabular-nums">{verdict.metrics.margin}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-muted-foreground font-medium mb-0.5">ROI</p>
+                            <p className="text-sm font-bold tabular-nums">{verdict.metrics.roi}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Bottom 3-column grid ── */}
                   <div className="grid gap-5 md:grid-cols-3">
-                    {/* Verdict */}
-                    {verdict && (
-                      <div className={cn("border rounded-2xl p-5 relative overflow-hidden", verdictColors[verdict.level])}>
-                        <div className="flex items-center gap-2 mb-4">
-                          <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", verdictIconColors[verdict.level])}>
-                            <Shield className="h-4 w-4" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-[11px] text-muted-foreground font-medium">Investment Attractiveness</p>
-                          </div>
-                          <Badge variant="outline" className={cn("text-[9px] py-0 font-bold uppercase", verdictColors[verdict.level])}>
-                            {verdict.label}
-                          </Badge>
-                        </div>
-                        <div className="space-y-2 mb-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] text-muted-foreground flex items-center gap-1"><Clock className="h-2.5 w-2.5" /> Payback</span>
-                            <span className="text-xs font-semibold tabular-nums">{verdict.metrics.payback}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] text-muted-foreground flex items-center gap-1"><TrendingUp className="h-2.5 w-2.5" /> Margin</span>
-                            <span className="text-xs font-semibold tabular-nums">{verdict.metrics.margin}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] text-muted-foreground flex items-center gap-1"><Target className="h-2.5 w-2.5" /> BE buffer</span>
-                            <span className="text-xs font-semibold tabular-nums">{verdict.metrics.buffer}</span>
-                          </div>
-                        </div>
-                        <p className="text-[10px] italic leading-snug text-muted-foreground">{verdict.interpretation}</p>
+                    {/* What Drives This Business */}
+                    <div className="bg-card border rounded-2xl p-5">
+                      <div className="flex items-center gap-2 mb-4">
+                        <TrendingUp className="h-4 w-4 text-accent" />
+                        <span className="text-xs font-semibold uppercase tracking-wide">What Drives This Business</span>
                       </div>
-                    )}
-
-                    {/* Key Insight */}
-                    {structuredInsight && (
-                      <div className="bg-card border rounded-2xl p-5 space-y-4">
-                        <div className="flex items-center gap-2">
-                          <Lightbulb className="h-4 w-4 text-warning" />
-                          <span className="text-xs font-semibold uppercase tracking-wide">Key Insight</span>
-                        </div>
-                        <div className="space-y-3">
-                          <div>
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-0.5 flex items-center gap-1"><TrendingUp className="h-3 w-3" /> What drives profit</p>
-                            <p className="text-xs leading-relaxed">{structuredInsight.profitDrivers}</p>
+                      <div className="space-y-3">
+                        {consolidatedDrivers.map((d, i) => (
+                          <div key={i} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className="h-1.5 w-1.5 rounded-full bg-accent flex-shrink-0" />
+                              <span className="text-xs font-medium">{d.label}</span>
+                              <span className="text-[10px] text-muted-foreground">({d.unit})</span>
+                            </div>
+                            <span className={cn(
+                              "text-xs font-bold tabular-nums flex-shrink-0",
+                              d.ebitdaImpact >= 0 ? "text-success" : "text-destructive"
+                            )}>
+                              {d.ebitdaImpact >= 0 ? "+" : ""}€{Math.abs(d.ebitdaImpact / 1000).toFixed(0)}K EBITDA
+                            </span>
                           </div>
-                          <div>
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-success mb-0.5 flex items-center gap-1"><Zap className="h-3 w-3" /> Best action</p>
-                            <p className="text-xs leading-relaxed">{structuredInsight.bestAction}</p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-destructive mb-0.5 flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Main risk</p>
-                            <p className="text-xs leading-relaxed">{structuredInsight.mainRisk}</p>
-                          </div>
-                        </div>
+                        ))}
                       </div>
-                    )}
+                    </div>
 
-                    {/* Model Confidence */}
+                    {/* Recommended Actions */}
+                    <div className="bg-card border rounded-2xl p-5">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Zap className="h-4 w-4 text-warning" />
+                        <span className="text-xs font-semibold uppercase tracking-wide">Recommended Actions</span>
+                      </div>
+                      <div className="space-y-2.5">
+                        {recommendedActions.map((action, i) => (
+                          <div key={i} className="flex items-start gap-2">
+                            <CheckCircle className="h-3.5 w-3.5 text-success mt-0.5 flex-shrink-0" />
+                            <p className="text-xs leading-relaxed">{action}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Risk & Reliability */}
                     {confidence && (
                       <div className="bg-card border rounded-2xl p-5">
                         <div className="flex items-center gap-2 mb-4">
-                          <Gauge className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-xs font-semibold uppercase tracking-wide">Model Confidence</span>
+                          <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-xs font-semibold uppercase tracking-wide">Risk & Reliability</span>
                         </div>
-                        <div className="flex items-center gap-2 mb-3">
-                          <div className={cn("h-3 w-3 rounded-full", confidence.level === "high" ? "bg-success" : confidence.level === "medium" ? "bg-warning" : "bg-destructive")} />
-                          <span className={cn("text-base font-bold capitalize", confColors[confidence.level])}>{confidence.level}</span>
-                        </div>
-                        {confidence.reasons.length > 0 && (
-                          <div className="space-y-1.5 mb-3">
-                            {confidence.reasons.map((r, i) => (
-                              <div key={i} className="flex items-start gap-2">
-                                <Info className="h-3 w-3 text-muted-foreground mt-0.5 flex-shrink-0" />
-                                <p className="text-[11px] text-muted-foreground">{r}</p>
-                              </div>
-                            ))}
+
+                        {/* Business Risks */}
+                        {structuredInsight && (
+                          <div className="mb-4">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Business Risks</p>
+                            <div className="flex items-start gap-2">
+                              <div className="h-1.5 w-1.5 rounded-full bg-destructive mt-1.5 flex-shrink-0" />
+                              <p className="text-xs leading-relaxed">{structuredInsight.mainRisk}</p>
+                            </div>
                           </div>
                         )}
-                        <Button variant="outline" size="sm" className="w-full rounded-xl text-xs gap-1.5"
-                          onClick={() => navigate(`/project/${project.id}/inputs`)}>
-                          <Settings className="h-3 w-3" /> Improve accuracy
-                        </Button>
+
+                        {/* Model Reliability */}
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Model Reliability</p>
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className={cn("h-2.5 w-2.5 rounded-full", confidence.level === "high" ? "bg-success" : confidence.level === "medium" ? "bg-warning" : "bg-destructive")} />
+                            <span className={cn("text-xs font-bold capitalize", confColors[confidence.level])}>{confidence.level}</span>
+                          </div>
+                          {confidence.reasons.length > 0 && (
+                            <div className="space-y-1 mb-3">
+                              {confidence.reasons.map((r, i) => (
+                                <p key={i} className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                                  <Info className="h-2.5 w-2.5 flex-shrink-0" />{r}
+                                </p>
+                              ))}
+                            </div>
+                          )}
+                          <Button variant="outline" size="sm" className="w-full rounded-xl text-xs gap-1.5"
+                            onClick={() => navigate(`/project/${project.id}/inputs`)}>
+                            <Settings className="h-3 w-3" /> Improve accuracy
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>
