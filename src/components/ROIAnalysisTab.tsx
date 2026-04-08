@@ -6,7 +6,7 @@ import {
   ResponsiveContainer, Legend, Line, ComposedChart, Cell,
 } from "recharts";
 import {
-  Clock, TrendingUp, BarChart3, DollarSign, Users, AlertTriangle,
+  Clock, TrendingUp, BarChart3, DollarSign, Users, AlertTriangle, Repeat,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
