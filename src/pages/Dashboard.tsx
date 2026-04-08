@@ -365,6 +365,19 @@ export default function Dashboard() {
                     </div>
                   </div>
 
+                  {/* ── Secondary cost context ── */}
+                  <div className="flex items-center gap-6 px-1 -mt-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Year 1 OPEX</span>
+                      <span className="text-xs font-semibold tabular-nums">{formatCurrency(kpis.annualCosts)}</span>
+                    </div>
+                    <div className="h-3 w-px bg-border" />
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Total Year 1 Cost</span>
+                      <span className="text-xs font-semibold tabular-nums">{formatCurrency(kpis.totalInvestment + kpis.annualCosts)}</span>
+                    </div>
+                  </div>
+
                   {/* ── SECTION 2: 5-Year Projection Chart ── */}
                   <div className="bg-card border rounded-2xl p-6">
                     <div className="flex items-center justify-between mb-5">
