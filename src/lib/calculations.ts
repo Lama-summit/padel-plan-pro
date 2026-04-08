@@ -78,6 +78,13 @@ export interface KPIResult {
   loanAmount: number;
   annualCourtRevenue: number; annualOtherRevenue: number; annualCosts: number;
   costBreakdown: CostBreakdown;
+  // Investor / financing metrics
+  equityInvested: number;
+  annualDebtPayment: number;
+  totalInterestPaid: number;
+  cashFlowToEquity: number;
+  roiOnEquity: SafeMetric;
+  paybackEquity: SafeMetric;
 }
 
 // ─── Driver deltas ───────────────────────────────────────────
