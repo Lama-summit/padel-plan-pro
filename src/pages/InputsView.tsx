@@ -138,14 +138,21 @@ export default function InputsView() {
       numVal = Math.min(90, Math.max(10, numVal as number));
     }
     const patch: Partial<ProjectInputs> = { [key]: numVal };
-
-    // Auto-compute Total Initial Investment from components
     const next = { ...version.inputs, ...patch };
-    if (key === "courtConstructionCost" || key === "facilityBuildout" || key === "equipmentCost" || key === "numberOfCourts") {
-      patch.initialInvestment =
-        (next.courtConstructionCost * next.numberOfCourts) +
-        next.facilityBuildout +
-        next.equipmentCost;
+
+    // Auto-compute category totals
+    const OPEX_KEYS: (keyof ProjectInputs)[] = ["staffCosts", "utilitiesCosts", "maintenanceCosts", "rentOrMortgage", "marketingCosts", "insuranceCosts"];
+    const OTHER_REV_KEYS: (keyof ProjectInputs)[] = ["proshopRevenue", "fAndBRevenue", "membershipFees"];
+    const INVEST_KEYS: (keyof ProjectInputs)[] = ["courtConstructionCost", "facilityBuildout", "equipmentCost", "numberOfCourts"];
+
+    if (INVEST_KEYS.includes(key)) {
+      patch.initialInvestment = (next.courtConstructionCost * next.numberOfCourts) + next.facilityBuildout + next.equipmentCost;
+    }
+    if (OPEX_KEYS.includes(key)) {
+      patch.monthlyOperatingCosts = OPEX_KEYS.reduce((sum, k) => sum + (next[k] as number || 0), 0);
+    }
+    if (OTHER_REV_KEYS.includes(key)) {
+      patch.otherMonthlyRevenue = OTHER_REV_KEYS.reduce((sum, k) => sum + (next[k] as number || 0), 0);
     }
 
     updateVersionInputs(project.id, version.id, patch);
