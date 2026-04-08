@@ -423,7 +423,7 @@ export function calculateKPIs(inputs: ProjectInputs, scenario: Scenario): KPIRes
   const offPeakOccInput = safe(inputs.offPeakOccupancy);
   const peakPriceInput = safe(inputs.peakPrice);
   const offPeakPriceInput = safe(inputs.offPeakPrice);
-  const investment = safe(inputs.initialInvestment);
+  const investment = safe(inputs.initialInvestment) * m.capexMultiplier;
   const debtPct = safe(inputs.debtPercentage);
   const intRate = safe(inputs.interestRate);
   const loanTerm = safe(inputs.loanTermYears);
@@ -444,7 +444,8 @@ export function calculateKPIs(inputs: ProjectInputs, scenario: Scenario): KPIRes
 
   const bookedHoursMonth = (peakHoursMonth * peakOcc) + (offPeakHoursMonth * offPeakOcc);
   const costBreakdown = calculateCostBreakdown(inputs, totalHoursMonth, bookedHoursMonth);
-  const monthlyCosts = costBreakdown.totalCosts;
+  // Apply scenario cost multiplier
+  const monthlyCosts = costBreakdown.totalCosts * m.costMultiplier;
 
   const ebitdaMonth = totalRevenueMonth - monthlyCosts;
   const ebitdaYear = ebitdaMonth * MONTHS_PER_YEAR;
