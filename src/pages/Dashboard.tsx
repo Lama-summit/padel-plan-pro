@@ -298,27 +298,116 @@ export default function Dashboard() {
 
                 {/* ═══ EXECUTIVE SUMMARY TAB ═══ */}
                 <TabsContent value="summary" className="mt-0 space-y-6 animate-fade-in">
-                  {/* KPI row — secondary, compact */}
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    <KPICard label="Annual EBITDA" value={kpis.totalRevenueMonth === 0 ? "—" : formatCurrency(kpis.ebitdaYear)} icon={BarChart3}
-                      variant={kpis.ebitdaYear >= 0 ? "success" : "destructive"}
-                      subtitle={scenarioDelta?.ebitdaPctChange !== null && scenarioDelta?.ebitdaPctChange !== undefined ? `${fmtDelta(scenarioDelta.ebitdaPctChange)} vs Base` : marginVal !== null ? `${marginVal.toFixed(0)}% margin` : undefined} />
-                    <KPICard label="Payback Period" value={kpis.ebitdaYear <= 0 ? "N/A" : formatSafeYears(kpis.paybackYears)} icon={Clock}
-                      variant={isSafeValid(kpis.paybackYears) ? (kpis.paybackYears.value! <= 3 ? "success" : kpis.paybackYears.value! <= 5 ? "warning" : "destructive") : "default"} />
-                    <KPICard label="Annual Revenue" value={formatCurrency(kpis.totalRevenueYear)} icon={TrendingUp} variant="accent"
-                      subtitle={scenarioDelta?.revenuePctChange !== null && scenarioDelta?.revenuePctChange !== undefined ? `${fmtDelta(scenarioDelta.revenuePctChange)} vs Base` : `${formatCurrency(kpis.totalRevenueMonth)}/mo`} />
-                    <KPICard label="ROI" value={isSafeValid(kpis.roi) ? `${kpis.roi.value!.toFixed(1)}%` : "—"} icon={PieChart}
-                      variant={isSafeValid(kpis.roi) ? (kpis.roi.value! >= 15 ? "success" : "warning") : "default"} />
+
+                  {/* ── SECTION 1: 6 KPIs ── */}
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                    <div className="bg-card border rounded-xl p-4">
+                      <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Total CAPEX</p>
+                      <p className="text-lg font-bold tabular-nums">{formatCurrency(kpis.totalInvestment)}</p>
+                      {scenarioDelta && <p className="text-[10px] text-muted-foreground mt-1">Debt: {formatCurrency(kpis.loanAmount)}</p>}
+                    </div>
+                    <div className="bg-card border rounded-xl p-4">
+                      <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Year 1 EBITDA</p>
+                      <p className={cn("text-lg font-bold tabular-nums", kpis.ebitdaYear >= 0 ? "text-success" : "text-destructive")}>{formatCurrency(kpis.ebitdaYear)}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">{marginVal !== null ? `${marginVal.toFixed(0)}% margin` : "—"}</p>
+                    </div>
+                    <div className="bg-card border rounded-xl p-4">
+                      <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Year 1 Revenue</p>
+                      <p className="text-lg font-bold tabular-nums">{formatCurrency(kpis.totalRevenueYear)}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">{formatCurrency(kpis.totalRevenueMonth)}/mo avg</p>
+                    </div>
+                    <div className="bg-card border rounded-xl p-4">
+                      <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Payback</p>
+                      <p className={cn("text-lg font-bold tabular-nums",
+                        cumulativePayback !== null && cumulativePayback <= 3 ? "text-success" :
+                        cumulativePayback !== null && cumulativePayback <= 5 ? "text-warning" : "text-foreground"
+                      )}>
+                        {cumulativePayback !== null ? `${cumulativePayback.toFixed(1)} yrs` : ">5 yrs"}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground mt-1">Cumulative cash flow</p>
+                    </div>
+                    <div className="bg-card border rounded-xl p-4">
+                      <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Break-even Occ.</p>
+                      <p className={cn("text-lg font-bold tabular-nums", occAbove ? "text-success" : "text-warning")}>
+                        {beValid ? `${beVal.toFixed(0)}%` : "—"}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground mt-1">Current: {kpis.weightedOccupancy.toFixed(0)}%</p>
+                    </div>
+                    <div className="bg-card border rounded-xl p-4">
+                      <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">ROI</p>
+                      <div className="flex items-baseline gap-2">
+                        <p className={cn("text-lg font-bold tabular-nums", isSafeValid(kpis.roi) && kpis.roi.value! >= 15 ? "text-success" : "text-foreground")}>
+                          {isSafeValid(kpis.roi) ? `${kpis.roi.value!.toFixed(0)}%` : "—"}
+                        </p>
+                        <span className="text-[10px] text-muted-foreground">yr 1</span>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        {cumulativeROI !== null ? `${cumulativeROI.toFixed(0)}% cum. (5yr)` : "—"}
+                      </p>
+                    </div>
                   </div>
 
-                  {/* ── Investment Verdict (dominant) ── */}
+                  {/* ── SECTION 2: 5-Year Projection Chart ── */}
+                  <div className="bg-card border rounded-2xl p-6">
+                    <div className="flex items-center justify-between mb-5">
+                      <div>
+                        <h3 className="font-semibold text-sm">5-Year Projection</h3>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">Revenue & EBITDA · 5% annual growth assumed</p>
+                      </div>
+                      {scenario !== "base" && (
+                        <Badge variant="outline" className="text-[10px]">{scenario} scenario</Badge>
+                      )}
+                    </div>
+                    <ResponsiveContainer width="100%" height={240}>
+                      <BarChart data={fiveYearProjection} barCategoryGap="25%">
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 91%)" vertical={false} />
+                        <XAxis dataKey="year" tick={{ fontSize: 11, fill: "hsl(220 9% 46%)" }} axisLine={false} tickLine={false} />
+                        <YAxis tickFormatter={(v: number) => `€${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11, fill: "hsl(220 9% 46%)" }} axisLine={false} tickLine={false} />
+                        <RechartsTooltip
+                          content={({ active, payload, label }: any) => {
+                            if (!active || !payload) return null;
+                            return (
+                              <div className="bg-card border rounded-xl px-4 py-3 shadow-xl shadow-foreground/5">
+                                <p className="text-xs font-medium text-muted-foreground mb-2">{label}</p>
+                                {payload.map((entry: any, i: number) => (
+                                  <div key={i} className="flex items-center gap-2 text-sm">
+                                    <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
+                                    <span className="text-muted-foreground">{entry.name}:</span>
+                                    <span className="font-semibold">€{entry.value?.toLocaleString()}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            );
+                          }}
+                        />
+                        <Legend iconType="circle" iconSize={8} wrapperStyle={{ paddingTop: 12, fontSize: 12 }} />
+                        <Bar dataKey="revenue" name="Revenue" fill="hsl(217 91% 60%)" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="ebitda" name="EBITDA" fill="hsl(152 69% 41%)" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* ── SECTION 3: Highlights ── */}
+                  <div className="bg-card border rounded-2xl p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Sparkles className="h-4 w-4 text-primary" />
+                      <span className="text-xs font-semibold uppercase tracking-wide">Highlights</span>
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {highlights.map((h, i) => (
+                        <div key={i} className="flex items-start gap-2">
+                          <div className="h-1.5 w-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+                          <p className="text-xs leading-relaxed">{h}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ── SECTION 4: Investment Verdict (dominant) ── */}
                   {verdict && (
                     <div className={cn(
                       "border-2 rounded-2xl p-6 relative overflow-hidden",
-                      verdict.level === "strong" ? "border-success/40 bg-success/5" :
-                      verdict.level === "moderate" ? "border-warning/40 bg-warning/5" :
-                      verdict.level === "weak" ? "border-destructive/40 bg-destructive/5" :
-                      "border-border bg-muted/30"
+                      verdictColors[verdict.level]
                     )}>
                       <div className="flex items-start gap-5">
                         <div className={cn(
@@ -356,7 +445,7 @@ export default function Dashboard() {
                     </div>
                   )}
 
-                  {/* ── Bottom 3-column grid ── */}
+                  {/* ── SECTION 5-7: Drivers | Actions | Risk ── */}
                   <div className="grid gap-5 md:grid-cols-3">
                     {/* What Drives This Business */}
                     <div className="bg-card border rounded-2xl p-5">
