@@ -111,7 +111,7 @@ export const DEFAULT_INPUTS: ProjectInputs = {
   courtConstructionCost: 80000,
   facilityBuildout: 120000,
   equipmentCost: 20000,
-  monthlyOperatingCosts: 25000,
+  monthlyOperatingCosts: 12000 + 3000 + 2000 + 5000 + 2000 + 1000, // auto: sum of cost lines
   staffCosts: 12000,
   utilitiesCosts: 3000,
   maintenanceCosts: 2000,
@@ -128,7 +128,7 @@ export const DEFAULT_INPUTS: ProjectInputs = {
   avgClassPrice: 15,
   avgClassSize: 8,
   coachingCostPerHour: 25,
-  otherMonthlyRevenue: 3000,
+  otherMonthlyRevenue: 1500 + 2000 + 500, // auto: sum of revenue lines
   proshopRevenue: 1500,
   fAndBRevenue: 2000,
   membershipFees: 500,
