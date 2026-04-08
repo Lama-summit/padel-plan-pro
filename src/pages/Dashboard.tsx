@@ -144,44 +144,40 @@ export default function Dashboard() {
       <div className="min-h-screen bg-background flex flex-col">
         {/* ─── HEADER ─── */}
         <header className="border-b bg-card sticky top-0 z-10">
-          <div className="max-w-full mx-auto px-4 sm:px-6 py-3">
-            <div className="flex items-center gap-3 flex-wrap">
-              <Button variant="ghost" size="icon" className="rounded-xl h-8 w-8" onClick={() => navigate("/")}>
+          {/* Top row: project title */}
+          <div className="w-full px-8 pt-4 pb-2">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" className="rounded-xl h-8 w-8 flex-shrink-0" onClick={() => navigate("/")}>
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-
-              <div className="flex-1 min-w-0">
+              <div className="min-w-0">
                 <h1 className="text-base font-bold tracking-tight truncate">{project.name}</h1>
                 <p className="text-xs text-muted-foreground">{project.location}</p>
               </div>
+            </div>
+          </div>
 
-              {/* Version selector */}
-              <div className="flex items-center gap-1.5 bg-muted/50 rounded-xl px-2.5 py-1">
-                <GitBranch className="h-3 w-3 text-muted-foreground" />
-                <Select value={activeVersion.id} onValueChange={(v) => setActiveVersion(project.id, v)}>
-                  <SelectTrigger className="border-0 bg-transparent h-auto p-0 shadow-none text-xs font-medium min-w-[100px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {project.versions.map((v) => (
-                      <SelectItem key={v.id} value={v.id}>
-                        <div className="flex flex-col"><span>{v.name}</span><span className="text-xs text-muted-foreground">{new Date(v.createdAt).toLocaleDateString()}</span></div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+          {/* Bottom row: controls */}
+          <div className="w-full px-8 pb-3">
+            <div className="flex items-center gap-6">
+              {/* LEFT GROUP — Version management */}
+              <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-1.5 bg-muted/50 rounded-xl px-3 py-1.5">
+                  <GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Select value={activeVersion.id} onValueChange={(v) => setActiveVersion(project.id, v)}>
+                    <SelectTrigger className="border-0 bg-transparent h-auto p-0 shadow-none text-xs font-medium min-w-[100px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {project.versions.map((v) => (
+                        <SelectItem key={v.id} value={v.id}>
+                          <div className="flex flex-col"><span>{v.name}</span><span className="text-xs text-muted-foreground">{new Date(v.createdAt).toLocaleDateString()}</span></div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              {/* Scenario switcher */}
-              <div className="flex bg-muted rounded-xl p-0.5 gap-0.5">
-                {SCENARIOS.map((s) => (
-                  <button key={s.value} data-active={scenario === s.value} onClick={() => setScenario(s.value)}
-                    className={`px-3 py-1 text-xs rounded-lg transition-all font-medium text-muted-foreground hover:text-foreground ${s.color}`}>
-                    {s.label}
-                  </button>
-                ))}
-              </div>
+                <div className="w-px h-6 bg-border" />
 
-              {/* Action buttons */}
-              <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" className="gap-1.5 rounded-xl text-xs h-8" onClick={handleSave}>
                   <Save className="h-3.5 w-3.5" /> Save
                 </Button>
@@ -198,6 +194,22 @@ export default function Dashboard() {
                     </div>
                   </DialogContent>
                 </Dialog>
+              </div>
+
+              {/* CENTER — Scenario selector (visually independent) */}
+              <div className="mx-auto">
+                <div className="flex bg-muted rounded-xl p-0.5 gap-0.5">
+                  {SCENARIOS.map((s) => (
+                    <button key={s.value} data-active={scenario === s.value} onClick={() => setScenario(s.value)}
+                      className={`px-4 py-1.5 text-xs rounded-lg transition-all font-medium text-muted-foreground hover:text-foreground ${s.color}`}>
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* RIGHT GROUP — Secondary actions */}
+              <div className="flex items-center gap-2.5">
                 <Button variant="outline" size="sm" className="gap-1.5 rounded-xl text-xs h-8" onClick={handleExport}>
                   <Download className="h-3.5 w-3.5" /> Export
                 </Button>
