@@ -175,7 +175,6 @@ export const MARKET_PRESETS: Record<Exclude<MarketPreset, "custom">, MarketPrese
       staffCosts: 12000,
       rentOrMortgage: 5000,
       utilitiesCosts: 3000,
-      initialInvestment: 500000,
       courtType: "indoor",
     },
   },
