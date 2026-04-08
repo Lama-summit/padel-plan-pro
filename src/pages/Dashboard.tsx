@@ -604,60 +604,14 @@ export default function Dashboard() {
                 </TabsContent>
 
                 {/* ═══ INVESTMENT TAB ═══ */}
-                <TabsContent value="investment" className="mt-0 space-y-6 animate-fade-in">
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    <KPICard label="Total Investment" value={formatCurrency(kpis.totalInvestment)} icon={BarChart3} variant="default"
-                      subtitle={`Debt: ${formatCurrency(kpis.loanAmount)}`} />
-                    <KPICard label="Payback Period" value={kpis.ebitdaYear <= 0 ? "N/A" : formatSafeYears(kpis.paybackYears)} icon={Clock}
-                      variant={isSafeValid(kpis.paybackYears) ? (kpis.paybackYears.value! <= 3 ? "success" : kpis.paybackYears.value! <= 5 ? "warning" : "destructive") : "default"} />
-                    <KPICard label="Monthly Loan Payment" value={formatCurrency(kpis.loanPaymentMonth)} icon={Target} variant="default"
-                      subtitle={`${activeVersion.inputs.interestRate}% rate · ${activeVersion.inputs.loanTermYears}yr term`} />
-                  </div>
-
-                  {/* 3-scenario comparison table */}
-                  {allScenarioKPIs && (
-                    <div className="bg-card border rounded-2xl p-6">
-                      <h3 className="text-sm font-semibold mb-4">Investment Returns by Scenario</h3>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b">
-                              <th className="text-left py-2 text-xs text-muted-foreground font-medium">Metric</th>
-                              <th className="text-right py-2 text-xs text-muted-foreground font-medium">Pessimistic</th>
-                              <th className="text-right py-2 text-xs font-semibold">Base</th>
-                              <th className="text-right py-2 text-xs text-muted-foreground font-medium">Optimistic</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y">
-                            <tr>
-                              <td className="py-2 text-xs text-muted-foreground">Annual EBITDA</td>
-                              <td className="py-2 text-xs text-right tabular-nums">{formatCurrency(allScenarioKPIs.pessimistic.ebitdaYear)}</td>
-                              <td className="py-2 text-xs text-right tabular-nums font-semibold">{formatCurrency(allScenarioKPIs.base.ebitdaYear)}</td>
-                              <td className="py-2 text-xs text-right tabular-nums">{formatCurrency(allScenarioKPIs.optimistic.ebitdaYear)}</td>
-                            </tr>
-                            <tr>
-                              <td className="py-2 text-xs text-muted-foreground">Payback</td>
-                              <td className="py-2 text-xs text-right tabular-nums">{formatSafeYears(allScenarioKPIs.pessimistic.paybackYears)}</td>
-                              <td className="py-2 text-xs text-right tabular-nums font-semibold">{formatSafeYears(allScenarioKPIs.base.paybackYears)}</td>
-                              <td className="py-2 text-xs text-right tabular-nums">{formatSafeYears(allScenarioKPIs.optimistic.paybackYears)}</td>
-                            </tr>
-                            <tr>
-                              <td className="py-2 text-xs text-muted-foreground">ROI</td>
-                              <td className="py-2 text-xs text-right tabular-nums">{isSafeValid(allScenarioKPIs.pessimistic.roi) ? `${allScenarioKPIs.pessimistic.roi.value!.toFixed(1)}%` : "—"}</td>
-                              <td className="py-2 text-xs text-right tabular-nums font-semibold">{isSafeValid(allScenarioKPIs.base.roi) ? `${allScenarioKPIs.base.roi.value!.toFixed(1)}%` : "—"}</td>
-                              <td className="py-2 text-xs text-right tabular-nums">{isSafeValid(allScenarioKPIs.optimistic.roi) ? `${allScenarioKPIs.optimistic.roi.value!.toFixed(1)}%` : "—"}</td>
-                            </tr>
-                            <tr>
-                              <td className="py-2 text-xs text-muted-foreground">Net Cashflow/yr</td>
-                              <td className="py-2 text-xs text-right tabular-nums">{formatCurrency(allScenarioKPIs.pessimistic.netCashflowYear)}</td>
-                              <td className="py-2 text-xs text-right tabular-nums font-semibold">{formatCurrency(allScenarioKPIs.base.netCashflowYear)}</td>
-                              <td className="py-2 text-xs text-right tabular-nums">{formatCurrency(allScenarioKPIs.optimistic.netCashflowYear)}</td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  )}
+                <TabsContent value="investment" className="mt-0">
+                  <InvestmentTab
+                    inputs={activeVersion.inputs}
+                    kpis={kpis}
+                    allScenarioKPIs={allScenarioKPIs}
+                    onInputChange={handleDriverChange}
+                    readOnly={isReadOnly}
+                  />
                 </TabsContent>
 
                 {/* ═══ REVENUE MODEL TAB ═══ */}
