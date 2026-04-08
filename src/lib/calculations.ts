@@ -505,6 +505,16 @@ export function calculateKPIs(inputs: ProjectInputs, scenario: Scenario): KPIRes
 
   const weightedOccupancy = Math.min(100, Math.max(0, (peakOccInput * PEAK_RATIO + offPeakOccInput * OFFPEAK_RATIO) + m.occupancyOffset));
 
+  // ── Investor / financing metrics ──
+  const equityInvested = investment - safe(loanAmount);
+  const annualDebtPayment = safe(loanPaymentMonth) * MONTHS_PER_YEAR;
+  const totalInterestPaid = loanTerm > 0 ? (annualDebtPayment * loanTerm) - safe(loanAmount) : 0;
+  const cashFlowToEquity = ebitdaYear - annualDebtPayment;
+  const roiOnEquityRaw = safeDiv(cashFlowToEquity, equityInvested);
+  const roiOnEquity = makeSafeMetric(roiOnEquityRaw !== null ? roiOnEquityRaw * 100 : null, equityInvested > 0);
+  const paybackEquityRaw = cashFlowToEquity > 0 ? safeDiv(equityInvested, cashFlowToEquity) : null;
+  const paybackEquity = makeSafeMetric(paybackEquityRaw, cashFlowToEquity > 0 && equityInvested > 0);
+
   return {
     totalInvestment: investment, totalHoursMonth, peakHoursMonth, offPeakHoursMonth,
     courtRevenueMonth, otherRevenueMonth, totalRevenueMonth,
@@ -516,6 +526,8 @@ export function calculateKPIs(inputs: ProjectInputs, scenario: Scenario): KPIRes
     annualOtherRevenue: otherRevenueMonth * MONTHS_PER_YEAR,
     annualCosts: monthlyCosts * MONTHS_PER_YEAR,
     costBreakdown,
+    equityInvested, annualDebtPayment, totalInterestPaid, cashFlowToEquity,
+    roiOnEquity, paybackEquity,
   };
 }
 
