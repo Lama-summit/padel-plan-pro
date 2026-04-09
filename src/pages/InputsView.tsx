@@ -16,19 +16,27 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
   ArrowLeft,
   Save,
   Copy,
   Landmark,
   Clock,
-  GraduationCap,
-  Store,
   Wallet,
   Banknote,
   Lock,
   DollarSign,
+  Eye,
+  PieChart,
 } from "lucide-react";
 import { LucideIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const KEY_DRIVER_KEYS: Set<keyof ProjectInputs> = new Set([
   "numberOfCourts",
@@ -43,20 +51,16 @@ const KEY_DRIVER_KEYS: Set<keyof ProjectInputs> = new Set([
 type Category =
   | "investment"
   | "hours"
-  | "classes"
-  | "otherRevenue"
   | "operatingCosts"
-  | "detailedCosts"
-  | "financing";
+  | "financing"
+  | "policies";
 
 const CATEGORIES: { key: Category; label: string; icon: LucideIcon; description: string }[] = [
   { key: "investment", label: "Initial Investment", icon: Landmark, description: "Setup and construction costs" },
   { key: "hours", label: "Schedule & Peak", icon: Clock, description: "Operating schedule details" },
-  { key: "classes", label: "Classes / Coaching", icon: GraduationCap, description: "Lessons and coaching revenue" },
-  { key: "otherRevenue", label: "Other Revenue", icon: Store, description: "Pro shop, F&B, memberships" },
-  { key: "operatingCosts", label: "Operating Costs", icon: Wallet, description: "Monthly running expenses (basic mode)" },
-  { key: "detailedCosts", label: "Detailed Costs", icon: Wallet, description: "Structured fixed & variable costs" },
+  { key: "operatingCosts", label: "Operating Costs", icon: Wallet, description: "Monthly running expenses" },
   { key: "financing", label: "Financing", icon: Banknote, description: "Loans and interest" },
+  { key: "policies", label: "Policies", icon: PieChart, description: "EBITDA distribution policy" },
 ];
 
 interface FieldDef {
@@ -66,10 +70,9 @@ interface FieldDef {
   helper?: string;
   readonly?: boolean;
   slider?: { min: number; max: number; step: number };
-  useCurrency?: boolean; // dynamically replace suffix with currency symbol
 }
 
-function buildCategoryFields(sym: string): Record<Category, FieldDef[]> {
+function buildCategoryFields(sym: string): Record<Exclude<Category, "policies">, FieldDef[]> {
   return {
     investment: [
       { key: "initialInvestment", label: "Total Initial Investment", suffix: sym, helper: "Auto-calculated: (Court Cost × Courts) + Buildout + Equipment", readonly: true },
@@ -81,18 +84,6 @@ function buildCategoryFields(sym: string): Record<Category, FieldDef[]> {
       { key: "operatingDaysPerYear", label: "Operating Days / Year", suffix: "days" },
       { key: "peakHoursPerDay", label: "Peak Hours / Day", suffix: "hrs", slider: { min: 1, max: 10, step: 1 } },
     ],
-    classes: [
-      { key: "classesPerWeek", label: "Classes per Week", slider: { min: 0, max: 30, step: 1 } },
-      { key: "avgClassPrice", label: "Avg Class Price", suffix: sym },
-      { key: "avgClassSize", label: "Avg Class Size", suffix: "players" },
-      { key: "coachingCostPerHour", label: "Coaching Cost / Hour", suffix: sym },
-    ],
-    otherRevenue: [
-      { key: "otherMonthlyRevenue", label: "Total Other Revenue / Month", suffix: sym, helper: "Auto-calculated: Pro Shop + F&B + Memberships", readonly: true },
-      { key: "proshopRevenue", label: "Pro Shop Revenue / Month", suffix: sym },
-      { key: "fAndBRevenue", label: "F&B Revenue / Month", suffix: sym },
-      { key: "membershipFees", label: "Membership Fees / Month", suffix: sym },
-    ],
     operatingCosts: [
       { key: "monthlyOperatingCosts", label: "Total Monthly OpCosts", suffix: sym, helper: "Auto-calculated: fixed costs + variable costs (scales with usage)", readonly: true },
       { key: "staffCosts", label: "Staff Costs / Month", suffix: sym },
@@ -103,13 +94,6 @@ function buildCategoryFields(sym: string): Record<Category, FieldDef[]> {
       { key: "insuranceCosts", label: "Insurance / Month", suffix: sym },
       { key: "variableCostPerHour", label: "Variable Cost per Booking Hour", suffix: `${sym}/hr`, helper: "Scales with courts × occupancy × hours (e.g. consumables, extra energy)" },
     ],
-    detailedCosts: [
-      { key: "staffCostPerCourtHour", label: "Staff Cost / Court-Hour", suffix: sym, helper: "Scales with courts × hours" },
-      { key: "softwareManagementCost", label: "Software & Management", suffix: `${sym}/mo` },
-      { key: "energyCostPerHour", label: "Energy / Court-Hour", suffix: sym, helper: "Scales with operating hours" },
-      { key: "maintenanceCostPerUsage", label: "Maintenance / Booked Hour", suffix: sym, helper: "Scales with usage" },
-      { key: "cleaningCostPerDay", label: "Cleaning / Court / Day", suffix: sym },
-    ],
     financing: [
       { key: "debtPercentage", label: "Debt Percentage", suffix: "%", slider: { min: 0, max: 100, step: 5 }, helper: "% of investment financed by loan" },
       { key: "interestRate", label: "Interest Rate", suffix: "%", slider: { min: 0, max: 15, step: 0.25 } },
@@ -118,11 +102,20 @@ function buildCategoryFields(sym: string): Record<Category, FieldDef[]> {
   };
 }
 
+const DETAILED_COST_FIELDS = (sym: string): FieldDef[] => [
+  { key: "staffCostPerCourtHour", label: "Staff Cost / Court-Hour", suffix: sym, helper: "Scales with courts × hours" },
+  { key: "softwareManagementCost", label: "Software & Management", suffix: `${sym}/mo` },
+  { key: "energyCostPerHour", label: "Energy / Court-Hour", suffix: sym, helper: "Scales with operating hours" },
+  { key: "maintenanceCostPerUsage", label: "Maintenance / Booked Hour", suffix: sym, helper: "Scales with usage" },
+  { key: "cleaningCostPerDay", label: "Cleaning / Court / Day", suffix: sym },
+];
+
 export default function InputsView() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const { getProject, updateVersionInputs, duplicateVersion, updateProject } = useStore();
   const [activeCategory, setActiveCategory] = useState<Category>("investment");
+  const [detailedCostsOpen, setDetailedCostsOpen] = useState(false);
 
   const project = getProject(projectId!);
   if (!project) {
@@ -165,15 +158,38 @@ export default function InputsView() {
     updateVersionInputs(project.id, version.id, patch);
   };
 
+  const handleDistributionChange = (key: "distributionInvestorsPct" | "distributionFoundersPct" | "distributionReinvestmentPct", value: number) => {
+    const keys: ("distributionInvestorsPct" | "distributionFoundersPct" | "distributionReinvestmentPct")[] = [
+      "distributionInvestorsPct", "distributionFoundersPct", "distributionReinvestmentPct"
+    ];
+    const otherKeys = keys.filter(k => k !== key);
+    const currentOthersTotal = otherKeys.reduce((sum, k) => sum + (version.inputs[k] ?? 0), 0);
+    const newValue = Math.min(100, Math.max(0, value));
+    const remaining = 100 - newValue;
+
+    const patch: Partial<ProjectInputs> = { [key]: newValue };
+    if (currentOthersTotal > 0) {
+      for (const ok of otherKeys) {
+        patch[ok] = Math.round((version.inputs[ok] ?? 0) / currentOthersTotal * remaining);
+      }
+      // Fix rounding
+      const patchTotal = newValue + otherKeys.reduce((s, k) => s + (patch[k] as number), 0);
+      if (patchTotal !== 100) {
+        (patch as any)[otherKeys[0]] += (100 - patchTotal);
+      }
+    } else {
+      patch[otherKeys[0]] = remaining;
+      patch[otherKeys[1]] = 0;
+    }
+
+    updateVersionInputs(project.id, version.id, patch);
+  };
+
   const handleCurrencyChange = (newCurrency: CurrencyCode) => {
     updateProject(project.id, { currency: newCurrency });
   };
 
   const activeCat = CATEGORIES.find((c) => c.key === activeCategory)!;
-
-  const categoryFields = CATEGORY_FIELDS[activeCategory].filter(
-    (f) => !KEY_DRIVER_KEYS.has(f.key)
-  );
 
   const computeReadonly = (key: keyof ProjectInputs): number => {
     const i = version.inputs;
@@ -243,6 +259,69 @@ export default function InputsView() {
     );
   };
 
+  const renderPoliciesTab = () => {
+    const investors = version.inputs.distributionInvestorsPct ?? 40;
+    const founders = version.inputs.distributionFoundersPct ?? 30;
+    const reinvest = version.inputs.distributionReinvestmentPct ?? 30;
+
+    const sliders: { key: "distributionInvestorsPct" | "distributionFoundersPct" | "distributionReinvestmentPct"; label: string; value: number; color: string; barColor: string }[] = [
+      { key: "distributionInvestorsPct", label: "Investors", value: investors, color: "text-success", barColor: "bg-success" },
+      { key: "distributionFoundersPct", label: "Founders", value: founders, color: "text-primary", barColor: "bg-primary" },
+      { key: "distributionReinvestmentPct", label: "Reinvestment", value: reinvest, color: "text-warning", barColor: "bg-warning" },
+    ];
+
+    return (
+      <div className="space-y-6">
+        <div className="bg-card border rounded-2xl p-7">
+          <div className="flex items-center gap-3 mb-1">
+            <PieChart className="h-5 w-5 text-primary" />
+            <h2 className="font-bold text-lg">Distribution Policy</h2>
+          </div>
+          <p className="text-sm text-muted-foreground mb-6 ml-8">How annual EBITDA is distributed among stakeholders</p>
+
+          <div className="space-y-6">
+            {sliders.map((s) => (
+              <div key={s.key} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className={cn("text-sm font-semibold", s.color)}>{s.label}</Label>
+                  <span className={cn("text-lg font-bold tabular-nums", s.color)}>{s.value}%</span>
+                </div>
+                <Slider
+                  value={[s.value]}
+                  min={0}
+                  max={100}
+                  step={5}
+                  onValueChange={([v]) => handleDistributionChange(s.key, v)}
+                  className="py-1"
+                />
+                <div className="h-2.5 w-full bg-muted rounded-full overflow-hidden">
+                  <div
+                    className={cn("h-full rounded-full transition-all", s.barColor)}
+                    style={{ width: `${s.value}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+
+            <div className="flex items-center justify-between pt-4 border-t">
+              <span className="text-sm font-semibold">Total</span>
+              <span className={cn(
+                "text-lg font-bold tabular-nums",
+                investors + founders + reinvest === 100 ? "text-success" : "text-destructive"
+              )}>
+                {investors + founders + reinvest}%
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const categoryFields = activeCategory !== "policies"
+    ? CATEGORY_FIELDS[activeCategory].filter((f) => !KEY_DRIVER_KEYS.has(f.key))
+    : [];
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b bg-card sticky top-0 z-10">
@@ -254,7 +333,6 @@ export default function InputsView() {
             <h1 className="text-lg font-bold truncate">{project.name}</h1>
             <p className="text-sm text-muted-foreground">Editing: {version.name}</p>
           </div>
-          {/* Currency selector */}
           <div className="flex items-center gap-1.5 bg-muted/50 rounded-xl px-2 py-1">
             <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
             <Select value={currency} onValueChange={(v) => handleCurrencyChange(v as CurrencyCode)}>
@@ -325,20 +403,47 @@ export default function InputsView() {
                 </Select>
               </div>
 
-              <div className="bg-card border rounded-2xl p-7">
-                <div className="flex items-center gap-3 mb-1">
-                  <activeCat.icon className="h-5 w-5 text-primary" />
-                  <h2 className="font-bold text-lg">{activeCat.label}</h2>
-                </div>
-                <p className="text-sm text-muted-foreground mb-6 ml-8">{activeCat.description}</p>
-                {categoryFields.length > 0 ? (
-                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {categoryFields.map(renderField)}
+              {activeCategory === "policies" ? (
+                renderPoliciesTab()
+              ) : (
+                <div className="bg-card border rounded-2xl p-7">
+                  <div className="flex items-center gap-3 mb-1">
+                    <activeCat.icon className="h-5 w-5 text-primary" />
+                    <h2 className="font-bold text-lg">{activeCat.label}</h2>
                   </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">All inputs for this category are available in the Key Drivers panel →</p>
-                )}
-              </div>
+                  <p className="text-sm text-muted-foreground mb-6 ml-8">{activeCat.description}</p>
+                  {categoryFields.length > 0 ? (
+                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                      {categoryFields.map(renderField)}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">All inputs for this category are available in the Key Drivers panel →</p>
+                  )}
+
+                  {/* Detailed Costs sub-dialog inside Operating Costs */}
+                  {activeCategory === "operatingCosts" && (
+                    <div className="mt-6 pt-6 border-t">
+                      <Dialog open={detailedCostsOpen} onOpenChange={setDetailedCostsOpen}>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" className="gap-2 rounded-xl">
+                            <Eye className="h-4 w-4" /> View Detailed Costs
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-2xl">
+                          <DialogHeader>
+                            <DialogTitle>Detailed Cost Breakdown</DialogTitle>
+                          </DialogHeader>
+                          <p className="text-sm text-muted-foreground mb-4">Structured fixed & variable costs per court-hour</p>
+                          <div className="grid gap-6 sm:grid-cols-2">
+                            {DETAILED_COST_FIELDS(sym).map(renderField)}
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                      <p className="text-xs text-muted-foreground mt-2">View and edit per-hour cost breakdown used in detailed cost mode</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
