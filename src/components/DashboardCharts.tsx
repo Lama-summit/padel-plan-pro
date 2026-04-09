@@ -57,15 +57,15 @@ export function DashboardCharts({ monthlyData, kpis, currency = "EUR" }: Dashboa
   const fmtK = (v: number) => formatCurrencyAxis(v, currency);
 
   const revenueBreakdown = [
-    { name: "Court Rental", value: Math.round(kpis.annualCourtRevenue), color: "hsl(168 76% 36%)" },
-    { name: "Other Revenue", value: Math.round(kpis.annualOtherRevenue), color: "hsl(217 91% 60%)" },
-    { name: "Costs", value: Math.round(kpis.annualCosts), color: "hsl(0 72% 51%)" },
+    { name: "Court Rental", value: Math.round(kpis.annualCourtRevenue), color: "hsl(225 53% 22%)" },
+    { name: "Other Revenue", value: Math.round(kpis.annualOtherRevenue), color: "hsl(152 57% 24%)" },
+    { name: "Costs", value: Math.round(kpis.annualCosts), color: "hsl(353 78% 44%)" },
   ];
 
   const beVal = isSafeValid(kpis.breakEvenOccupancy) ? kpis.breakEvenOccupancy.value! : 0;
   const occupancyData = [
     { name: "Break-even", value: beVal, fill: "hsl(220 13% 80%)" },
-    { name: "Current", value: kpis.weightedOccupancy, fill: kpis.weightedOccupancy >= beVal ? "hsl(152 69% 41%)" : "hsl(0 72% 51%)" },
+    { name: "Current", value: kpis.weightedOccupancy, fill: kpis.weightedOccupancy >= beVal ? "hsl(152 57% 24%)" : "hsl(353 78% 44%)" },
   ];
 
   return (
@@ -81,8 +81,8 @@ export function DashboardCharts({ monthlyData, kpis, currency = "EUR" }: Dashboa
           <AreaChart data={monthlyData}>
             <defs>
               <linearGradient id="gradProfit" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(222 60% 32%)" stopOpacity={0.18} />
-                <stop offset="95%" stopColor="hsl(222 60% 32%)" stopOpacity={0} />
+                <stop offset="5%" stopColor="hsl(225 53% 22%)" stopOpacity={0.18} />
+                <stop offset="95%" stopColor="hsl(225 53% 22%)" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} vertical={false} />
@@ -90,9 +90,9 @@ export function DashboardCharts({ monthlyData, kpis, currency = "EUR" }: Dashboa
             <YAxis tickFormatter={fmtK} tick={{ fontSize: 12, fill: "hsl(220 9% 46%)" }} axisLine={false} tickLine={false} />
             <Tooltip content={<CustomTooltip currency={currency} />} />
             <Legend iconType="circle" iconSize={8} wrapperStyle={{ paddingTop: 16, fontSize: 13 }} />
-            <Area type="monotone" dataKey="revenue" name="Revenue" stroke="hsl(168 76% 36%)" strokeWidth={1.5} strokeOpacity={0.45} fill="none" dot={false} />
-            <Area type="monotone" dataKey="costs" name="Costs" stroke="hsl(0 72% 51%)" strokeWidth={1.5} strokeOpacity={0.35} fill="none" dot={false} strokeDasharray="6 3" />
-            <Area type="monotone" dataKey="profit" name="Profit" stroke="hsl(222 60% 32%)" strokeWidth={2.5} fill="url(#gradProfit)" dot={false} />
+            <Area type="monotone" dataKey="revenue" name="Revenue" stroke="hsl(225 53% 22%)" strokeWidth={1.5} strokeOpacity={0.45} fill="none" dot={false} />
+            <Area type="monotone" dataKey="costs" name="Costs" stroke="hsl(353 78% 44%)" strokeWidth={1.5} strokeOpacity={0.35} fill="none" dot={false} strokeDasharray="6 3" />
+            <Area type="monotone" dataKey="profit" name="Profit" stroke="hsl(152 57% 24%)" strokeWidth={2.5} fill="url(#gradProfit)" dot={false} />
             <ReferenceLine y={0} stroke="hsl(220 13% 80%)" strokeDasharray="4 4" strokeWidth={1.5} />
           </AreaChart>
         </ResponsiveContainer>
@@ -134,7 +134,7 @@ export function DashboardCharts({ monthlyData, kpis, currency = "EUR" }: Dashboa
                 <Cell key={index} fill={entry.fill} />
               ))}
             </Bar>
-            <ReferenceLine x={beVal} stroke="hsl(0 72% 51%)" strokeDasharray="4 4" strokeWidth={2} />
+            <ReferenceLine x={beVal} stroke="hsl(353 78% 44%)" strokeDasharray="4 4" strokeWidth={2} />
           </BarChart>
         </ResponsiveContainer>
       </div>

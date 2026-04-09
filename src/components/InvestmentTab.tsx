@@ -42,10 +42,10 @@ interface InvestmentTabProps {
 }
 
 const PIE_COLORS = [
-  "hsl(217 91% 60%)",
-  "hsl(152 69% 41%)",
+  "hsl(225 53% 22%)",
+  "hsl(152 57% 24%)",
   "hsl(38 92% 50%)",
-  "hsl(346 77% 50%)",
+  "hsl(353 78% 44%)",
   "hsl(262 83% 58%)",
   "hsl(190 80% 42%)",
 ];
