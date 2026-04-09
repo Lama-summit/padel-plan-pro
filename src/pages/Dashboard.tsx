@@ -396,59 +396,68 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {/* 5-Year Projection Chart */}
-                  <div className="bg-card border rounded-2xl p-6">
-                    <div className="flex items-center justify-between mb-5">
-                      <div>
-                        <h3 className="font-semibold text-sm">5-Year Projection</h3>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">Revenue & EBITDA · 5% annual growth assumed</p>
-                      </div>
-                      {scenario !== "base" && (
-                        <Badge variant="outline" className="text-[10px]">{scenario} scenario</Badge>
-                      )}
-                    </div>
-                    <ResponsiveContainer width="100%" height={240}>
-                      <BarChart data={fiveYearProjection} barCategoryGap="25%">
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 91%)" vertical={false} />
-                        <XAxis dataKey="year" tick={{ fontSize: 11, fill: "hsl(220 9% 46%)" }} axisLine={false} tickLine={false} />
-                        <YAxis tickFormatter={fmtAxis} tick={{ fontSize: 11, fill: "hsl(220 9% 46%)" }} axisLine={false} tickLine={false} />
-                        <RechartsTooltip
-                          content={({ active, payload, label }: any) => {
-                            if (!active || !payload) return null;
-                            return (
-                              <div className="bg-card border rounded-xl px-4 py-3 shadow-xl shadow-foreground/5">
-                                <p className="text-xs font-medium text-muted-foreground mb-2">{label}</p>
-                                {payload.map((entry: any, i: number) => (
-                                  <div key={i} className="flex items-center gap-2 text-sm">
-                                    <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
-                                    <span className="text-muted-foreground">{entry.name}:</span>
-                                    <span className="font-semibold">{fmtFull(entry.value)}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            );
-                          }}
-                        />
-                        <Legend iconType="circle" iconSize={8} wrapperStyle={{ paddingTop: 12, fontSize: 12 }} />
-                        <Bar dataKey="revenue" name="Revenue" fill="hsl(217 91% 60%)" radius={[4, 4, 0, 0]} />
-                        <Bar dataKey="ebitda" name="EBITDA" fill="hsl(152 69% 41%)" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  {/* Highlights */}
-                  <div className="bg-card border rounded-2xl p-5">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Sparkles className="h-4 w-4 text-primary" />
-                      <span className="text-xs font-semibold uppercase tracking-wide">Highlights</span>
-                    </div>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {highlights.map((h, i) => (
-                        <div key={i} className="flex items-start gap-2">
-                          <div className="h-1.5 w-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                          <p className="text-xs leading-relaxed">{h}</p>
+                  {/* Year 1 Projection + Highlights */}
+                  <div className="grid gap-5 lg:grid-cols-2">
+                    <div className="bg-card border rounded-2xl p-6">
+                      <div className="flex items-center justify-between mb-5">
+                        <div>
+                          <h3 className="font-semibold text-sm">Year 1 Projection</h3>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">Revenue & EBITDA</p>
                         </div>
-                      ))}
+                        {scenario !== "base" && (
+                          <Badge variant="outline" className="text-[10px]">{scenario} scenario</Badge>
+                        )}
+                      </div>
+                      <ResponsiveContainer width="100%" height={240}>
+                        <BarChart data={fiveYearProjection.slice(0, 1)} barCategoryGap="25%">
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 91%)" vertical={false} />
+                          <XAxis dataKey="year" tick={{ fontSize: 11, fill: "hsl(220 9% 46%)" }} axisLine={false} tickLine={false} />
+                          <YAxis tickFormatter={fmtAxis} tick={{ fontSize: 11, fill: "hsl(220 9% 46%)" }} axisLine={false} tickLine={false} />
+                          <RechartsTooltip
+                            content={({ active, payload, label }: any) => {
+                              if (!active || !payload) return null;
+                              return (
+                                <div className="bg-card border rounded-xl px-4 py-3 shadow-xl shadow-foreground/5">
+                                  <p className="text-xs font-medium text-muted-foreground mb-2">{label}</p>
+                                  {payload.map((entry: any, i: number) => (
+                                    <div key={i} className="flex items-center gap-2 text-sm">
+                                      <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
+                                      <span className="text-muted-foreground">{entry.name}:</span>
+                                      <span className="font-semibold">{fmtFull(entry.value)}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            }}
+                          />
+                          <Legend iconType="circle" iconSize={8} wrapperStyle={{ paddingTop: 12, fontSize: 12 }} />
+                          <Bar dataKey="revenue" name="Revenue" fill="hsl(225 53% 22%)" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="ebitda" name="EBITDA" fill="hsl(152 57% 24%)" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div className="bg-card border rounded-2xl p-6 flex flex-col">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Sparkles className="h-4 w-4 text-primary" />
+                        <h3 className="font-semibold text-sm">Highlights</h3>
+                      </div>
+                      <div className="space-y-3 flex-1">
+                        {[
+                          "Growing padel market with increasing demand across Europe",
+                          "Fast payback reduces investment risk significantly",
+                          "Scale advantages with larger facility → lower per-court operating costs",
+                          `High EBITDA margin (${marginVal !== null ? marginVal.toFixed(0) : "—"}%) indicates strong profitability`,
+                          "Multiple revenue streams available (courts, coaching, events, bar)",
+                        ].map((text, i) => (
+                          <div key={i} className="flex items-start gap-3">
+                            <div className="h-5 w-5 rounded-lg bg-success/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <CheckCircle className="h-3 w-3 text-success" />
+                            </div>
+                            <p className="text-xs leading-relaxed text-muted-foreground">{text}</p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
