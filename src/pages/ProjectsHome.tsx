@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStore } from "@/lib/store";
+import { useAuth } from "@/lib/auth";
 import { Plus, Search, MapPin, Calendar, FolderOpen, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,15 +22,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CURRENCY_OPTIONS, CURRENCIES, CurrencyCode } from "@/lib/currency";
+import { toast } from "sonner";
 
 export default function ProjectsHome() {
   const { projects, createProject } = useStore();
+  const { signOut } = useAuth();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newLocation, setNewLocation] = useState("");
   const [newCurrency, setNewCurrency] = useState<CurrencyCode>("EUR");
+  const [signingOut, setSigningOut] = useState(false);
 
   const filtered = projects.filter(
     (p) =>
@@ -47,6 +51,20 @@ export default function ProjectsHome() {
     navigate(`/project/${p.id}`);
   };
 
+  const handleSignOut = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      await signOut();
+      toast.success("Signed out successfully");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to sign out. Please try again.";
+      toast.error(message);
+    } finally {
+      setSigningOut(false);
+    }
+  };
+
   const statusColor = (s: string) => {
     if (s === "active") return "bg-success/10 text-success border-success/20";
     if (s === "draft") return "bg-warning/10 text-warning border-warning/20";
@@ -61,46 +79,51 @@ export default function ProjectsHome() {
             <h1 className="text-2xl font-bold tracking-tight text-foreground">PadelSim</h1>
             <p className="text-sm text-muted-foreground mt-0.5">Business Simulation & Planning</p>
           </div>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2 rounded-xl shadow-md shadow-primary/20">
-                <Plus className="h-4 w-4" />
-                Create Project
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>New Project</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 pt-2">
-                <div className="space-y-2">
-                  <Label>Project Name</Label>
-                  <Input placeholder="e.g. Padel Madrid Central" className="rounded-xl" value={newName} onChange={(e) => setNewName(e.target.value)} />
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleSignOut} className="rounded-xl" disabled={signingOut}>
+              {signingOut ? "Signing out..." : "Sign out"}
+            </Button>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2 rounded-xl shadow-md shadow-primary/20">
+                  <Plus className="h-4 w-4" />
+                  Create Project
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>New Project</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-2">
+                  <div className="space-y-2">
+                    <Label>Project Name</Label>
+                    <Input placeholder="e.g. Padel Madrid Central" className="rounded-xl" value={newName} onChange={(e) => setNewName(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Location</Label>
+                    <Input placeholder="e.g. Madrid, Spain" className="rounded-xl" value={newLocation} onChange={(e) => setNewLocation(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Currency</Label>
+                    <Select value={newCurrency} onValueChange={(v) => setNewCurrency(v as CurrencyCode)}>
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CURRENCY_OPTIONS.map((code) => (
+                          <SelectItem key={code} value={code}>
+                            <span className="font-medium">{CURRENCIES[code].symbol}</span>
+                            <span className="ml-2 text-muted-foreground">{CURRENCIES[code].name} ({code})</span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button className="w-full rounded-xl" onClick={handleCreate}>Create Project</Button>
                 </div>
-                <div className="space-y-2">
-                  <Label>Location</Label>
-                  <Input placeholder="e.g. Madrid, Spain" className="rounded-xl" value={newLocation} onChange={(e) => setNewLocation(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Currency</Label>
-                  <Select value={newCurrency} onValueChange={(v) => setNewCurrency(v as CurrencyCode)}>
-                    <SelectTrigger className="rounded-xl">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CURRENCY_OPTIONS.map((code) => (
-                        <SelectItem key={code} value={code}>
-                          <span className="font-medium">{CURRENCIES[code].symbol}</span>
-                          <span className="ml-2 text-muted-foreground">{CURRENCIES[code].name} ({code})</span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button className="w-full rounded-xl" onClick={handleCreate}>Create Project</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </header>
 
