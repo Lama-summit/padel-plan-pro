@@ -9,7 +9,7 @@ import {
   calculate5YearProjection, calculatePaybackCumulative, calculateCumulativeROI, generateHighlights,
   ExportData,
 } from "@/lib/calculations";
-import { Scenario, ProjectInputs, DEFAULT_INPUTS } from "@/lib/types";
+import { Scenario, ProjectInputs, DEFAULT_INPUTS, RevenueLineItem } from "@/lib/types";
 import { formatCurrency, formatCurrencyAxis, formatCurrencyFull, getCurrencySymbol, CURRENCIES, CURRENCY_OPTIONS, CurrencyCode } from "@/lib/currency";
 import { KPICard } from "@/components/KPICard";
 import { DashboardCharts } from "@/components/DashboardCharts";
@@ -40,7 +40,7 @@ import {
 } from "recharts";
 
 const SCENARIOS: { value: Scenario; label: string; color: string }[] = [
-  { value: "base", label: "Realistic", color: "data-[active=true]:bg-primary data-[active=true]:text-primary-foreground" },
+  { value: "base", label: "Realista", color: "data-[active=true]:bg-primary data-[active=true]:text-primary-foreground" },
   { value: "optimistic", label: "Optimistic", color: "data-[active=true]:bg-success data-[active=true]:text-success-foreground" },
   { value: "pessimistic", label: "Conservative", color: "data-[active=true]:bg-warning data-[active=true]:text-warning-foreground" },
 ];
@@ -114,10 +114,18 @@ export default function Dashboard() {
     toast.success("Version saved");
   };
 
-  const handleDriverChange = (key: keyof ProjectInputs, value: string | number | boolean) => {
+  const handleDriverChange = (key: keyof ProjectInputs, value: string | number | boolean | RevenueLineItem[]) => {
     if (isReadOnly) return;
     const BOOL_KEYS: (keyof ProjectInputs)[] = ["coachingEnabled", "tournamentsEnabled", "otherRevenueEnabled"];
-    let numVal = BOOL_KEYS.includes(key) ? value : key === "courtType" || key === "costMode" ? value as any : typeof value === "number" ? value : parseFloat(value as string) || 0;
+    let numVal = Array.isArray(value)
+      ? value
+      : BOOL_KEYS.includes(key)
+        ? value
+        : key === "courtType" || key === "costMode"
+          ? value as any
+          : typeof value === "number"
+            ? value
+            : parseFloat(value as string) || 0;
 
     if (key === "offPeakOccupancy" || key === "peakOccupancy") {
       numVal = Math.min(90, Math.max(10, numVal as number));
@@ -128,16 +136,14 @@ export default function Dashboard() {
 
     const INVEST_KEYS: (keyof ProjectInputs)[] = ["courtConstructionCost", "facilityBuildout", "equipmentCost", "numberOfCourts"];
     const OPEX_KEYS: (keyof ProjectInputs)[] = ["staffCosts", "utilitiesCosts", "maintenanceCosts", "rentOrMortgage", "marketingCosts", "insuranceCosts"];
-    const OTHER_REV_KEYS: (keyof ProjectInputs)[] = ["proshopRevenue", "fAndBRevenue", "membershipFees"];
-
     if (INVEST_KEYS.includes(key)) {
       patch.initialInvestment = (next.courtConstructionCost * next.numberOfCourts) + next.facilityBuildout + next.equipmentCost;
     }
     if (OPEX_KEYS.includes(key)) {
       patch.monthlyOperatingCosts = OPEX_KEYS.reduce((sum, k) => sum + (next[k] as number || 0), 0);
     }
-    if (OTHER_REV_KEYS.includes(key)) {
-      patch.otherMonthlyRevenue = OTHER_REV_KEYS.reduce((sum, k) => sum + (next[k] as number || 0), 0);
+    if (key === "otherRevenueItems" && Array.isArray(numVal)) {
+      patch.otherMonthlyRevenue = numVal.reduce((sum, item) => sum + ((item.monthlyRevenue || 0) - (item.monthlyCost || 0)), 0);
     }
 
     updateVersionInputs(project.id, activeVersion.id, patch);
@@ -145,7 +151,7 @@ export default function Dashboard() {
 
   const handleReset = () => {
     if (isReadOnly) return;
-    const driverKeys: (keyof ProjectInputs)[] = ["numberOfCourts", "openingHoursPerDay", "courtType", "offPeakPrice", "peakPrice", "offPeakOccupancy", "peakOccupancy"];
+    const driverKeys: (keyof ProjectInputs)[] = ["numberOfCourts", "openingHoursPerDay", "offPeakPrice", "peakPrice", "offPeakOccupancy", "peakOccupancy", "coachingEnabled", "coachingHoursPerDay", "coachingPricePerHour", "coachingCostShare"];
     const resetValues: Partial<ProjectInputs> = {};
     for (const k of driverKeys) (resetValues as any)[k] = DEFAULT_INPUTS[k];
     updateVersionInputs(project.id, activeVersion.id, resetValues);
@@ -276,7 +282,7 @@ export default function Dashboard() {
               {([
                 { value: "summary", label: "Executive Summary" },
                 { value: "investment", label: "Investment" },
-                { value: "revenue", label: "Revenue Model" },
+                { value: "revenue", label: "Revenues" },
                 { value: "roi", label: "ROI Analysis" },
                 { value: "sensitivity", label: "Sensitivity Analysis" },
               ] as { value: DashboardTab; label: string }[]).map((tab) => {
@@ -443,13 +449,7 @@ export default function Dashboard() {
                         <h3 className="font-semibold text-sm">Highlights</h3>
                       </div>
                       <div className="space-y-3 flex-1">
-                        {[
-                          "Growing padel market with increasing demand across Europe",
-                          "Fast payback reduces investment risk significantly",
-                          "Scale advantages with larger facility → lower per-court operating costs",
-                          `High EBITDA margin (${marginVal !== null ? marginVal.toFixed(0) : "—"}%) indicates strong profitability`,
-                          "Multiple revenue streams available (courts, coaching, events, bar)",
-                        ].map((text, i) => (
+                        {highlights.map((text, i) => (
                           <div key={i} className="flex items-start gap-3">
                             <div className="h-5 w-5 rounded-lg bg-success/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                               <CheckCircle className="h-3 w-3 text-success" />

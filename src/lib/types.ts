@@ -4,6 +4,13 @@ export type CostMode = "basic" | "detailed";
 
 export type MarketPreset = "premium" | "standard" | "lowcost" | "custom";
 
+export interface RevenueLineItem {
+  id: string;
+  name: string;
+  monthlyRevenue: number;
+  monthlyCost: number;
+}
+
 export interface ProjectInputs {
   // Courts & Capacity
   numberOfCourts: number;
@@ -56,6 +63,7 @@ export interface ProjectInputs {
 
   // Module A: Coaching / Classes
   coachingEnabled: boolean;
+  coachingHoursPerDay: number;    // hours/day allocated to coaching
   coachingPctOfHours: number;     // % of total court hours used for coaching
   coachingPricePerHour: number;   // avg price per coaching hour
   coachingCostShare: number;      // coach revenue share (% cost)
@@ -68,12 +76,19 @@ export interface ProjectInputs {
 
   // Module B: Tournaments / Events
   tournamentsEnabled: boolean;
+  tournamentsPerMonth: number;
+  tournamentRevenuePerEvent: number;
+  tournamentCostPerEvent: number;
+  eventsEnabled: boolean;
   eventsPerMonth: number;
   avgRevenuePerEvent: number;
   avgCostPerEvent: number;
+  eventRevenuePerEvent: number;
+  eventCostPerEvent: number;
 
   // Module C: Other Revenue
   otherRevenueEnabled: boolean;
+  otherRevenueItems: RevenueLineItem[];
   otherRevenueMode: "fixed" | "pctOfBookings" | "perBooking";
   otherMonthlyRevenue: number;
   otherRevenuePctOfBookings: number;
@@ -156,6 +171,7 @@ export const DEFAULT_INPUTS: ProjectInputs = {
 
   // Coaching module
   coachingEnabled: true,
+  coachingHoursPerDay: 4,
   coachingPctOfHours: 15,
   coachingPricePerHour: 60,
   coachingCostShare: 40,
@@ -168,12 +184,23 @@ export const DEFAULT_INPUTS: ProjectInputs = {
 
   // Tournaments module
   tournamentsEnabled: false,
+  tournamentsPerMonth: 2,
+  tournamentRevenuePerEvent: 1500,
+  tournamentCostPerEvent: 500,
+  eventsEnabled: false,
   eventsPerMonth: 2,
   avgRevenuePerEvent: 1500,
   avgCostPerEvent: 500,
+  eventRevenuePerEvent: 1200,
+  eventCostPerEvent: 450,
 
   // Other revenue module
   otherRevenueEnabled: true,
+  otherRevenueItems: [
+    { id: "rev-proshop", name: "Pro Shop", monthlyRevenue: 1500, monthlyCost: 0 },
+    { id: "rev-fb", name: "F&B", monthlyRevenue: 2000, monthlyCost: 0 },
+    { id: "rev-memberships", name: "Memberships", monthlyRevenue: 500, monthlyCost: 0 },
+  ],
   otherRevenueMode: "fixed",
   otherMonthlyRevenue: 4000,
   otherRevenuePctOfBookings: 10,
@@ -191,6 +218,54 @@ export const DEFAULT_INPUTS: ProjectInputs = {
   distributionFoundersPct: 30,
   distributionReinvestmentPct: 30,
 };
+
+export function createRevenueLineItem(
+  name = "New Revenue",
+  monthlyRevenue = 0,
+  monthlyCost = 0,
+  id?: string,
+): RevenueLineItem {
+  return {
+    id: id ?? `rev-${Math.random().toString(36).slice(2, 10)}`,
+    name,
+    monthlyRevenue,
+    monthlyCost,
+  };
+}
+
+export function normalizeProjectInputs(raw?: Partial<ProjectInputs> | null): ProjectInputs {
+  const source = raw ?? {};
+
+  const legacyOtherRevenueItems = [
+    createRevenueLineItem("Pro Shop", source.proshopRevenue ?? DEFAULT_INPUTS.proshopRevenue, 0, "rev-proshop"),
+    createRevenueLineItem("F&B", source.fAndBRevenue ?? DEFAULT_INPUTS.fAndBRevenue, 0, "rev-fb"),
+    createRevenueLineItem("Memberships", source.membershipFees ?? DEFAULT_INPUTS.membershipFees, 0, "rev-memberships"),
+  ].filter((item) => item.monthlyRevenue > 0 || item.monthlyCost > 0);
+
+  const nextOtherRevenueItems = Array.isArray(source.otherRevenueItems) && source.otherRevenueItems.length > 0
+    ? source.otherRevenueItems.map((item, index) => ({
+        id: item?.id ?? `rev-${index}`,
+        name: item?.name?.trim() || `Revenue ${index + 1}`,
+        monthlyRevenue: Number(item?.monthlyRevenue ?? 0) || 0,
+        monthlyCost: Number(item?.monthlyCost ?? 0) || 0,
+      }))
+    : legacyOtherRevenueItems.length > 0
+      ? legacyOtherRevenueItems
+      : DEFAULT_INPUTS.otherRevenueItems;
+
+  return {
+    ...DEFAULT_INPUTS,
+    ...source,
+    coachingHoursPerDay: Number(source.coachingHoursPerDay ?? DEFAULT_INPUTS.coachingHoursPerDay) || 0,
+    tournamentsPerMonth: Number(source.tournamentsPerMonth ?? source.eventsPerMonth ?? DEFAULT_INPUTS.tournamentsPerMonth) || 0,
+    tournamentRevenuePerEvent: Number(source.tournamentRevenuePerEvent ?? source.avgRevenuePerEvent ?? DEFAULT_INPUTS.tournamentRevenuePerEvent) || 0,
+    tournamentCostPerEvent: Number(source.tournamentCostPerEvent ?? source.avgCostPerEvent ?? DEFAULT_INPUTS.tournamentCostPerEvent) || 0,
+    eventsEnabled: Boolean(source.eventsEnabled ?? DEFAULT_INPUTS.eventsEnabled),
+    eventRevenuePerEvent: Number(source.eventRevenuePerEvent ?? DEFAULT_INPUTS.eventRevenuePerEvent) || 0,
+    eventCostPerEvent: Number(source.eventCostPerEvent ?? DEFAULT_INPUTS.eventCostPerEvent) || 0,
+    otherRevenueItems: nextOtherRevenueItems,
+  };
+}
 
 // ─── Market Presets ──────────────────────────────────────────
 export interface MarketPresetConfig {

@@ -64,7 +64,7 @@ export function generateExportText(data: ExportData): string {
     `  MODEL INPUTS`,
     `───────────────────────────────────────────`,
     ``,
-    `  Courts:              ${data.inputs.numberOfCourts} (${data.inputs.courtType})`,
+    `  Courts:              ${data.inputs.numberOfCourts}`,
     `  Hours/Day:           ${data.inputs.openingHoursPerDay}`,
     `  Peak Price:          ${sym}${data.inputs.peakPrice}/hr`,
     `  Off-Peak Price:      ${sym}${data.inputs.offPeakPrice}/hr`,

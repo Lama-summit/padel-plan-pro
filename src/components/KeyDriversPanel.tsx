@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { ProjectInputs, Scenario, SCENARIO_MULTIPLIERS, DEFAULT_INPUTS } from "@/lib/types";
-import { calculateDriverDeltas } from "@/lib/calculations";
+import { calculateDriverDeltas, calculateKPIs } from "@/lib/calculations";
 import { getCurrencySymbol } from "@/lib/currency";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import {
   LayoutGrid,
   Tag,
   BarChart3,
+  GraduationCap,
   PanelRightClose,
   PanelRightOpen,
   RotateCcw,
@@ -22,7 +23,7 @@ import { cn } from "@/lib/utils";
 
 interface KeyDriversPanelProps {
   inputs: ProjectInputs;
-  onChange: (key: keyof ProjectInputs, value: string | number) => void;
+  onChange: (key: keyof ProjectInputs, value: string | number | boolean) => void;
   onReset?: () => void;
   scenario?: Scenario;
   collapsed?: boolean;
@@ -48,6 +49,11 @@ export function KeyDriversPanel({
   const derivedOffPeak = Math.min(100, Math.max(0, inputs.offPeakOccupancy + offset));
   const derivedPeak = Math.min(100, Math.max(0, inputs.peakOccupancy + offset));
   const deltas = useMemo(() => calculateDriverDeltas(inputs, scenario), [inputs, scenario]);
+  const kpis = useMemo(() => calculateKPIs(inputs, "base"), [inputs]);
+  const maxCoachingHoursPerDay = useMemo(() => {
+    const weightedOcc = Math.min(100, Math.max(0, (inputs.peakOccupancy * 0.4) + (inputs.offPeakOccupancy * 0.6)));
+    return Math.max(0, inputs.numberOfCourts * inputs.openingHoursPerDay * (1 - weightedOcc / 100));
+  }, [inputs]);
 
   if (collapsed) {
     return (
@@ -108,25 +114,6 @@ export function KeyDriversPanel({
             delta={deltas.openingHoursPerDay}
             disabled={readOnly}
           />
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Court Type</Label>
-            <div className="flex bg-muted rounded-lg p-0.5 gap-0.5">
-              {(["indoor", "outdoor", "mixed"] as const).map((type) => (
-                <button
-                  key={type}
-                  onClick={() => !readOnly && onChange("courtType", type)}
-                  disabled={readOnly}
-                  className={cn(
-                    "flex-1 px-2 py-1.5 text-xs rounded-md transition-all font-medium capitalize",
-                    inputs.courtType === type ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground",
-                    readOnly && "opacity-60 cursor-not-allowed"
-                  )}
-                >
-                  {type}
-                </button>
-              ))}
-            </div>
-          </div>
         </DriverSection>
 
         <DriverSection icon={Tag} label="Pricing" hint="Impacts margin">
@@ -176,8 +163,72 @@ export function KeyDriversPanel({
             );
           })()}
         </DriverSection>
+
+        <DriverSection icon={GraduationCap} label="Coaching" hint="Uses spare capacity">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-muted-foreground">Enable Coaching</Label>
+              <Button
+                variant={inputs.coachingEnabled ? "default" : "outline"}
+                size="sm"
+                className="h-7 rounded-lg px-3 text-[11px]"
+                onClick={() => !readOnly && onChange("coachingEnabled", !inputs.coachingEnabled)}
+                disabled={readOnly}
+              >
+                {inputs.coachingEnabled ? "On" : "Off"}
+              </Button>
+            </div>
+          </div>
+
+          {inputs.coachingEnabled && (
+            <>
+              <CompactSlider
+                label="Coaching Hours / Day"
+                value={Math.min(inputs.coachingHoursPerDay, maxCoachingHoursPerDay)}
+                min={0}
+                max={Math.max(0, Number(maxCoachingHoursPerDay.toFixed(1)))}
+                step={0.5}
+                suffix="hrs"
+                onChange={(v) => onChange("coachingHoursPerDay", v)}
+                disabled={readOnly}
+              />
+              <CompactNumber
+                label="Price per Coaching Hour"
+                value={inputs.coachingPricePerHour}
+                suffix={`${sym}/hr`}
+                onChange={(v) => onChange("coachingPricePerHour", v)}
+                disabled={readOnly}
+              />
+              <CompactSlider
+                label="Coach Cost Share"
+                value={inputs.coachingCostShare}
+                min={0}
+                max={80}
+                step={5}
+                suffix="%"
+                onChange={(v) => onChange("coachingCostShare", v)}
+                disabled={readOnly}
+              />
+              <div className="mt-1 rounded-lg bg-muted/60 border border-border px-2.5 py-2 space-y-1.5">
+                <StatLine label="Revenue" value={`${sym}${Math.round(kpis.revenueBreakdown.coachingRevenue).toLocaleString()}/yr`} />
+                <StatLine label="Costs" value={`${sym}${Math.round(kpis.revenueBreakdown.coachingCost).toLocaleString()}/yr`} />
+                <StatLine label="Add-on EBITDA" value={`${sym}${Math.round(kpis.revenueBreakdown.coachingNet).toLocaleString()}/yr`} />
+                <StatLine label="Max Available" value={`${maxCoachingHoursPerDay.toFixed(1)} hrs/day`} />
+              </div>
+            </>
+          )}
+        </DriverSection>
       </div>
     </aside>
+  );
+}
+
+function StatLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-[11px] text-muted-foreground">{label}</span>
+      <span className="text-[11px] font-semibold text-foreground tabular-nums">{value}</span>
+    </div>
   );
 }
 

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { Project, ProjectVersion, DEFAULT_INPUTS } from "./types";
+import { Project, ProjectVersion, DEFAULT_INPUTS, normalizeProjectInputs } from "./types";
 
 function generateId() {
   return Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
@@ -10,7 +10,17 @@ function createVersion(name: string): ProjectVersion {
     id: generateId(),
     name,
     createdAt: new Date().toISOString(),
-    inputs: { ...DEFAULT_INPUTS },
+    inputs: normalizeProjectInputs({ ...DEFAULT_INPUTS }),
+  };
+}
+
+function normalizeProject(project: Project): Project {
+  return {
+    ...project,
+    versions: project.versions.map((version) => ({
+      ...version,
+      inputs: normalizeProjectInputs(version.inputs),
+    })),
   };
 }
 
@@ -81,9 +91,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [projects, setProjects] = useState<Project[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : SAMPLE_PROJECTS;
+      return saved ? JSON.parse(saved).map(normalizeProject) : SAMPLE_PROJECTS.map(normalizeProject);
     } catch {
-      return SAMPLE_PROJECTS;
+      return SAMPLE_PROJECTS.map(normalizeProject);
     }
   });
 
@@ -141,7 +151,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           id: generateId(),
           name,
           createdAt: new Date().toISOString(),
-          inputs: { ...current.inputs },
+          inputs: normalizeProjectInputs({ ...current.inputs }),
         };
         return { ...p, versions: [...p.versions, dup], activeVersionId: dup.id, updatedAt: new Date().toISOString() };
       })
@@ -158,7 +168,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           id: generateId(),
           name: `${source.name} (copy)`,
           createdAt: new Date().toISOString(),
-          inputs: { ...source.inputs },
+          inputs: normalizeProjectInputs({ ...source.inputs }),
         };
         return { ...p, versions: [...p.versions, dup], activeVersionId: dup.id, updatedAt: new Date().toISOString() };
       })
@@ -181,7 +191,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             ...p,
             updatedAt: new Date().toISOString(),
             versions: p.versions.map((v) =>
-              v.id === versionId ? { ...v, inputs: { ...v.inputs, ...inputs } } : v
+              v.id === versionId ? { ...v, inputs: normalizeProjectInputs({ ...v.inputs, ...inputs }) } : v
             ),
           };
         })

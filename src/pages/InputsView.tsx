@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useStore } from "@/lib/store";
-import { ProjectInputs, CostMode } from "@/lib/types";
+import { ProjectInputs, CostMode, RevenueLineItem } from "@/lib/types";
 import { getCurrencySymbol, CURRENCIES, CURRENCY_OPTIONS, CurrencyCode } from "@/lib/currency";
 import { KeyDriversPanel } from "@/components/KeyDriversPanel";
 import { Button } from "@/components/ui/button";
@@ -45,7 +45,10 @@ const KEY_DRIVER_KEYS: Set<keyof ProjectInputs> = new Set([
   "peakPrice",
   "offPeakOccupancy",
   "peakOccupancy",
-  "courtType",
+  "coachingEnabled",
+  "coachingHoursPerDay",
+  "coachingPricePerHour",
+  "coachingCostShare",
 ]);
 
 type Category =
@@ -132,8 +135,16 @@ export default function InputsView() {
 
   const version = project.versions.find((v) => v.id === project.activeVersionId) || project.versions[0];
 
-  const handleChange = (key: keyof ProjectInputs, value: string | number) => {
-    let numVal = key === "courtType" ? value as any : typeof value === "number" ? value : parseFloat(value) || 0;
+  const handleChange = (key: keyof ProjectInputs, value: string | number | boolean | RevenueLineItem[]) => {
+    let numVal = Array.isArray(value)
+      ? value
+      : key === "courtType"
+        ? value as any
+        : typeof value === "boolean"
+          ? value
+          : typeof value === "number"
+            ? value
+            : parseFloat(value) || 0;
 
     if (key === "offPeakOccupancy" || key === "peakOccupancy") {
       numVal = Math.min(90, Math.max(10, numVal as number));
@@ -142,7 +153,6 @@ export default function InputsView() {
     const next = { ...version.inputs, ...patch };
 
     const OPEX_KEYS: (keyof ProjectInputs)[] = ["staffCosts", "utilitiesCosts", "maintenanceCosts", "rentOrMortgage", "marketingCosts", "insuranceCosts"];
-    const OTHER_REV_KEYS: (keyof ProjectInputs)[] = ["proshopRevenue", "fAndBRevenue", "membershipFees"];
     const INVEST_KEYS: (keyof ProjectInputs)[] = ["courtConstructionCost", "facilityBuildout", "equipmentCost", "numberOfCourts"];
 
     if (INVEST_KEYS.includes(key)) {
@@ -151,8 +161,8 @@ export default function InputsView() {
     if (OPEX_KEYS.includes(key)) {
       patch.monthlyOperatingCosts = OPEX_KEYS.reduce((sum, k) => sum + (next[k] as number || 0), 0);
     }
-    if (OTHER_REV_KEYS.includes(key)) {
-      patch.otherMonthlyRevenue = OTHER_REV_KEYS.reduce((sum, k) => sum + (next[k] as number || 0), 0);
+    if (key === "otherRevenueItems" && Array.isArray(numVal)) {
+      patch.otherMonthlyRevenue = numVal.reduce((sum, item) => sum + ((item.monthlyRevenue || 0) - (item.monthlyCost || 0)), 0);
     }
 
     updateVersionInputs(project.id, version.id, patch);
@@ -201,7 +211,7 @@ export default function InputsView() {
         const bookedHrs = i.numberOfCourts * i.openingHoursPerDay * weightedOcc * 30;
         return fixed + (i.variableCostPerHour * bookedHrs);
       }
-      case "otherMonthlyRevenue": return (i.proshopRevenue + i.fAndBRevenue + i.membershipFees);
+      case "otherMonthlyRevenue": return i.otherRevenueItems.reduce((sum, item) => sum + item.monthlyRevenue - item.monthlyCost, 0);
       default: return i[key] as number;
     }
   };
