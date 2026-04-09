@@ -152,7 +152,7 @@ export function InvestmentTab({ inputs, kpis, onInputChange, readOnly, currency 
     <span className={cn(
       "inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full",
       matches
-        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+        ? "bg-success/10 text-success"
         : "bg-warning/10 text-warning"
     )}>
       {matches ? <CheckCircle2 className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
