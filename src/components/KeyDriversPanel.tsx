@@ -87,7 +87,7 @@ export function KeyDriversPanel({
         {readOnly && (
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/60 border border-border">
             <Info className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-            <p className="text-[11px] text-muted-foreground leading-snug">Derived from Base scenario</p>
+            <p className="text-[11px] text-muted-foreground leading-snug">Derived from Realista scenario</p>
           </div>
         )}
 

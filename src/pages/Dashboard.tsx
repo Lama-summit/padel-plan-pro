@@ -40,9 +40,9 @@ import {
 } from "recharts";
 
 const SCENARIOS: { value: Scenario; label: string; color: string }[] = [
-  { value: "base", label: "Base", color: "data-[active=true]:bg-primary data-[active=true]:text-primary-foreground" },
+  { value: "base", label: "Realista", color: "data-[active=true]:bg-primary data-[active=true]:text-primary-foreground" },
   { value: "optimistic", label: "Optimistic", color: "data-[active=true]:bg-success data-[active=true]:text-success-foreground" },
-  { value: "pessimistic", label: "Pessimistic", color: "data-[active=true]:bg-warning data-[active=true]:text-warning-foreground" },
+  { value: "pessimistic", label: "Conservative", color: "data-[active=true]:bg-warning data-[active=true]:text-warning-foreground" },
 ];
 
 type DashboardTab = "summary" | "investment" | "revenue" | "roi" | "sensitivity";
@@ -305,11 +305,11 @@ export default function Dashboard() {
           <div className="bg-muted/40 border-b px-8 py-2 flex items-center gap-3 text-xs text-muted-foreground flex-shrink-0">
             <Info className="h-3.5 w-3.5 flex-shrink-0" />
             <span>
-              Derived from Base — Occupancy {scenario === "optimistic" ? "+10" : "−10"} pp · Pricing {scenario === "optimistic" ? "+5" : "−5"}% · OPEX {scenario === "optimistic" ? "−5" : "+5"}% · CAPEX {scenario === "optimistic" ? "−5" : "+10"}%
+              Derived from Realista — Occupancy {scenario === "optimistic" ? "+10" : "−10"} pp · Pricing {scenario === "optimistic" ? "+5" : "−5"}% · OPEX {scenario === "optimistic" ? "−5" : "+5"}% · CAPEX {scenario === "optimistic" ? "−5" : "+10"}%
             </span>
             {scenarioDelta && scenarioDelta.ebitdaPctChange !== null && (
               <Badge variant="outline" className="ml-auto text-[10px] py-0">
-                EBITDA {fmtDelta(scenarioDelta.ebitdaPctChange)} vs Base
+                EBITDA {fmtDelta(scenarioDelta.ebitdaPctChange)} vs Realista
               </Badge>
             )}
           </div>
