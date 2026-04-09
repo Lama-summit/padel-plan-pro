@@ -13,19 +13,17 @@ interface Props {
 function getCellColor(ebitda: number, min: number, max: number): string {
   const range = max - min;
   if (range === 0) return "bg-muted";
-  const ratio = (ebitda - min) / range; // 0 = worst, 1 = best
+  const ratio = (ebitda - min) / range;
   if (ebitda < 0) {
-    // Red shades for negative
     const intensity = Math.min(1, Math.abs(ebitda) / Math.max(Math.abs(min), 1));
-    if (intensity > 0.6) return "bg-red-600 text-white";
-    if (intensity > 0.3) return "bg-red-400 text-white";
-    return "bg-red-200 text-red-900";
+    if (intensity > 0.6) return "bg-destructive text-white";
+    if (intensity > 0.3) return "bg-destructive/70 text-white";
+    return "bg-destructive/20 text-destructive";
   }
-  // Green shades for positive
-  if (ratio > 0.75) return "bg-emerald-600 text-white";
-  if (ratio > 0.5) return "bg-emerald-400 text-white";
-  if (ratio > 0.25) return "bg-emerald-200 text-emerald-900";
-  return "bg-amber-100 text-amber-900";
+  if (ratio > 0.75) return "bg-success text-white";
+  if (ratio > 0.5) return "bg-success/70 text-white";
+  if (ratio > 0.25) return "bg-success/30 text-success";
+  return "bg-warning/20 text-warning";
 }
 
 export function SensitivityMatrix({ inputs, scenario, currency }: Props) {
@@ -89,15 +87,15 @@ export function SensitivityMatrix({ inputs, scenario, currency }: Props) {
 
       <div className="flex items-center gap-4 text-[10px] text-muted-foreground pt-1">
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded bg-red-400" />
+          <div className="w-3 h-3 rounded bg-destructive/70" />
           <span>Negative EBITDA</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded bg-amber-100 border border-amber-200" />
+          <div className="w-3 h-3 rounded bg-warning/20 border border-warning/30" />
           <span>Low</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded bg-emerald-400" />
+          <div className="w-3 h-3 rounded bg-success/70" />
           <span>High</span>
         </div>
         <div className="flex items-center gap-1.5">

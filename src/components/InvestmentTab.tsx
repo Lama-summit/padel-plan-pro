@@ -42,10 +42,10 @@ interface InvestmentTabProps {
 }
 
 const PIE_COLORS = [
-  "hsl(217 91% 60%)",
-  "hsl(152 69% 41%)",
+  "hsl(225 53% 22%)",
+  "hsl(152 57% 24%)",
   "hsl(38 92% 50%)",
-  "hsl(346 77% 50%)",
+  "hsl(353 78% 44%)",
   "hsl(262 83% 58%)",
   "hsl(190 80% 42%)",
 ];
@@ -152,7 +152,7 @@ export function InvestmentTab({ inputs, kpis, onInputChange, readOnly, currency 
     <span className={cn(
       "inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full",
       matches
-        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+        ? "bg-success/10 text-success"
         : "bg-warning/10 text-warning"
     )}>
       {matches ? <CheckCircle2 className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}

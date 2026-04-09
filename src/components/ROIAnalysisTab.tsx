@@ -170,12 +170,12 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors, currency = "
             <Legend iconType="circle" iconSize={8} wrapperStyle={{ paddingTop: 12, fontSize: 12 }} />
             <Bar dataKey="netCashFlow" name="Net Cash Flow" radius={[4, 4, 0, 0]}>
               {cashFlow.map((entry, i) => (
-                <Cell key={i} fill={entry.netCashFlow >= 0 ? "hsl(152 69% 41%)" : "hsl(0 72% 51%)"} />
+                <Cell key={i} fill={entry.netCashFlow >= 0 ? "hsl(152 57% 24%)" : "hsl(353 78% 44%)"} />
               ))}
             </Bar>
             <Line
               dataKey="cumulative" name="Cumulative" type="monotone"
-              stroke="hsl(217 91% 60%)" strokeWidth={2.5} dot={{ r: 4, fill: "hsl(217 91% 60%)" }}
+              stroke="hsl(225 53% 22%)" strokeWidth={2.5} dot={{ r: 4, fill: "hsl(225 53% 22%)" }}
             />
           </ComposedChart>
         </ResponsiveContainer>

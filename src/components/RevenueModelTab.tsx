@@ -45,8 +45,8 @@ interface RevenueModelTabProps {
 }
 
 const PIE_COLORS = [
-  "hsl(217 91% 60%)",
-  "hsl(152 69% 41%)",
+  "hsl(225 53% 22%)",
+  "hsl(152 57% 24%)",
   "hsl(38 92% 50%)",
   "hsl(280 67% 55%)",
 ];
@@ -205,8 +205,8 @@ export function RevenueModelTab({
                   );
                 }}
               />
-              <Bar dataKey="revenue" name="Revenue" fill="hsl(217 91% 60%)" radius={[4, 4, 0, 0]} fillOpacity={0.3} />
-              <Bar dataKey="ebitda" name="EBITDA" fill="hsl(152 69% 41%)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="revenue" name="Revenue" fill="hsl(225 53% 22%)" radius={[4, 4, 0, 0]} fillOpacity={0.3} />
+              <Bar dataKey="ebitda" name="EBITDA" fill="hsl(152 57% 24%)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
