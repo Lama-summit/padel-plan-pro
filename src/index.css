@@ -15,7 +15,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    --primary: 222 60% 22%;
+    --primary: 225 53% 22%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 215 20% 94%;
@@ -24,42 +24,42 @@
     --muted: 220 14% 96%;
     --muted-foreground: 220 9% 46%;
 
-    --accent: 168 76% 36%;
+    --accent: 152 57% 24%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 353 78% 44%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 220 13% 91%;
     --input: 220 13% 87%;
-    --ring: 222 60% 22%;
+    --ring: 225 53% 22%;
 
     --radius: 0.75rem;
 
     /* Semantic status tokens */
-    --success: 152 69% 41%;
+    --success: 152 57% 24%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
-    --info: 217 91% 60%;
+    --info: 225 53% 22%;
     --info-foreground: 0 0% 100%;
 
     /* Chart palette */
-    --chart-1: 168 76% 36%;
-    --chart-2: 222 60% 32%;
+    --chart-1: 225 53% 22%;
+    --chart-2: 152 57% 24%;
     --chart-3: 38 92% 50%;
     --chart-4: 262 52% 47%;
-    --chart-5: 0 72% 51%;
+    --chart-5: 353 78% 44%;
 
     /* Sidebar */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 222 60% 22%;
+    --sidebar-primary: 225 53% 22%;
     --sidebar-primary-foreground: 210 40% 98%;
     --sidebar-accent: 220 14% 96%;
     --sidebar-accent-foreground: 222 47% 11%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 222 60% 22%;
+    --sidebar-ring: 225 53% 22%;
   }
 }
 
@@ -85,15 +85,15 @@
   }
 
   .gradient-primary {
-    background: linear-gradient(135deg, hsl(222 60% 22%), hsl(222 60% 35%));
+    background: linear-gradient(135deg, hsl(225 53% 22%), hsl(225 53% 32%));
   }
 
   .gradient-accent {
-    background: linear-gradient(135deg, hsl(168 76% 36%), hsl(168 56% 46%));
+    background: linear-gradient(135deg, hsl(152 57% 24%), hsl(152 50% 34%));
   }
 
   .gradient-success {
-    background: linear-gradient(135deg, hsl(152 69% 41%), hsl(152 55% 50%));
+    background: linear-gradient(135deg, hsl(152 57% 24%), hsl(152 50% 34%));
   }
 
   .section-title {
