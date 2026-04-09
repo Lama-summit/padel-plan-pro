@@ -214,6 +214,31 @@ export function InvestmentTab({ inputs, kpis, onInputChange, readOnly, currency 
                     data={capexPieData} dataKey="value" nameKey="name"
                     cx="50%" cy="50%" innerRadius={50} outerRadius={80}
                     strokeWidth={2} stroke="hsl(var(--card))"
+                    label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }: any) => {
+                      const RADIAN = Math.PI / 180;
+                      const pctVal = (percent * 100).toFixed(1);
+                      if (percent < 0.05) {
+                        // Small segment: render label outside with leader line
+                        const radius = outerRadius + 20;
+                        const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                        const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                        return (
+                          <text x={x} y={y} fill="hsl(220 9% 46%)" textAnchor={x > cx ? "start" : "end"} dominantBaseline="central" fontSize={10} fontWeight={600}>
+                            {pctVal}%
+                          </text>
+                        );
+                      }
+                      // Normal: render inside segment
+                      const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                      const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                      const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                      return (
+                        <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={10} fontWeight={700}>
+                          {pctVal}%
+                        </text>
+                      );
+                    }}
+                    labelLine={false}
                   >
                     {capexPieData.map((_, i) => (
                       <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
