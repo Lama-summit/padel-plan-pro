@@ -40,7 +40,7 @@ import {
 } from "recharts";
 
 const SCENARIOS: { value: Scenario; label: string; color: string }[] = [
-  { value: "base", label: "Realista", color: "data-[active=true]:bg-primary data-[active=true]:text-primary-foreground" },
+  { value: "base", label: "Realistic", color: "data-[active=true]:bg-primary data-[active=true]:text-primary-foreground" },
   { value: "optimistic", label: "Optimistic", color: "data-[active=true]:bg-success data-[active=true]:text-success-foreground" },
   { value: "pessimistic", label: "Conservative", color: "data-[active=true]:bg-warning data-[active=true]:text-warning-foreground" },
 ];
