@@ -86,6 +86,11 @@ export interface ProjectInputs {
   debtPercentage: number;
   interestRate: number;
   loanTermYears: number;
+
+  // Distribution Policy
+  distributionInvestorsPct: number;
+  distributionFoundersPct: number;
+  distributionReinvestmentPct: number;
 }
 
 export interface ProjectVersion {
@@ -180,6 +185,11 @@ export const DEFAULT_INPUTS: ProjectInputs = {
   debtPercentage: 60,
   interestRate: 5,
   loanTermYears: 10,
+
+  // Distribution Policy
+  distributionInvestorsPct: 40,
+  distributionFoundersPct: 30,
+  distributionReinvestmentPct: 30,
 };
 
 // ─── Market Presets ──────────────────────────────────────────
