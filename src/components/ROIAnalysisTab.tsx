@@ -319,22 +319,22 @@ function KPIMetric({ icon: Icon, label, value, color, subtitle }: {
     success: "text-success",
     warning: "text-warning",
     destructive: "text-destructive",
-    muted: "text-foreground",
+    muted: "text-primary",
   };
   const iconBg = {
     success: "bg-success/10 text-success",
     warning: "bg-warning/10 text-warning",
     destructive: "bg-destructive/10 text-destructive",
-    muted: "bg-muted text-muted-foreground",
+    muted: "bg-primary/10 text-primary",
   };
 
   return (
-    <div className="bg-card border rounded-2xl p-5">
+    <div className="bg-card border rounded-xl p-5">
       <div className={cn("h-9 w-9 rounded-xl flex items-center justify-center mb-3", iconBg[color])}>
         <Icon className="h-4 w-4" />
       </div>
       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">{label}</p>
-      <p className={cn("text-2xl font-bold tabular-nums tracking-tight", colorMap[color])}>{value}</p>
+      <p className={cn("text-2xl font-extrabold tabular-nums tracking-tight", colorMap[color])}>{value}</p>
       <p className="text-[10px] text-muted-foreground mt-1">{subtitle}</p>
     </div>
   );

@@ -210,10 +210,10 @@ export function KeyDriversPanel({
                 disabled={readOnly}
               />
               <div className="mt-1 rounded-lg bg-muted/60 border border-border px-2.5 py-2 space-y-1.5">
-                <StatLine label="Revenue" value={`${sym}${Math.round(kpis.revenueBreakdown.coachingRevenue).toLocaleString()}/yr`} />
-                <StatLine label="Costs" value={`${sym}${Math.round(kpis.revenueBreakdown.coachingCost).toLocaleString()}/yr`} />
-                <StatLine label="Add-on EBITDA" value={`${sym}${Math.round(kpis.revenueBreakdown.coachingNet).toLocaleString()}/yr`} />
-                <StatLine label="Max Available" value={`${maxCoachingHoursPerDay.toFixed(1)} hrs/day`} />
+                <StatLine label="Revenue" value={`${sym}${Math.round(kpis.revenueBreakdown.coachingRevenue).toLocaleString()}/yr`} color="text-primary" />
+                <StatLine label="Costs" value={`${sym}${Math.round(kpis.revenueBreakdown.coachingCost).toLocaleString()}/yr`} color="text-destructive" />
+                <StatLine label="Add-on EBITDA" value={`${sym}${Math.round(kpis.revenueBreakdown.coachingNet).toLocaleString()}/yr`} color={kpis.revenueBreakdown.coachingNet >= 0 ? "text-success" : "text-destructive"} />
+                <StatLine label="Max Available" value={`${maxCoachingHoursPerDay.toFixed(1)} hrs/day`} color="text-foreground" />
               </div>
             </>
           )}
@@ -223,11 +223,11 @@ export function KeyDriversPanel({
   );
 }
 
-function StatLine({ label, value }: { label: string; value: string }) {
+function StatLine({ label, value, color = "text-foreground" }: { label: string; value: string; color?: string }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <span className="text-[11px] text-muted-foreground">{label}</span>
-      <span className="text-[11px] font-semibold text-foreground tabular-nums">{value}</span>
+      <span className={cn("text-[11px] font-semibold tabular-nums", color)}>{value}</span>
     </div>
   );
 }
