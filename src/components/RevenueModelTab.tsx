@@ -109,11 +109,11 @@ export function RevenueModelTab({
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <MetricCard label="Total Annual Revenue" value={fmt(rb.totalRevenue)} hint={`${fmt(kpis.totalRevenueMonth)}/mo`} />
+        <MetricCard label="Total Annual Revenue" value={fmt(rb.totalRevenue)} hint={`${fmt(kpis.totalRevenueMonth)}/mo`} color="text-primary" />
         <MetricCard label="Total EBITDA" value={fmt(rb.totalEbitda)} hint={`${fmt(rb.totalEbitda / 12)}/mo`} color={rb.totalEbitda >= 0 ? "text-success" : "text-destructive"} />
         <MetricCard label="EBITDA Margin" value={`${ebitdaMargin.toFixed(1)}%`} hint={ebitdaMargin >= 20 ? "Healthy" : ebitdaMargin >= 0 ? "Low margin" : "Negative"} color={ebitdaMargin >= 20 ? "text-success" : ebitdaMargin >= 0 ? "text-warning" : "text-destructive"} />
-        <MetricCard label="Add-on EBITDA" value={fmt(rb.addOnEbitda)} hint={`${rb.addOnPct.toFixed(1)}% of total`} color="text-success" />
-        <MetricCard label="Court Bookings" value={fmt(rb.courtRevenue)} hint={`${rb.totalRevenue > 0 ? ((rb.courtRevenue / rb.totalRevenue) * 100).toFixed(1) : "0.0"}% of revenue`} color="text-[hsl(217_91%_60%)]" />
+        <MetricCard label="Add-on EBITDA" value={fmt(rb.addOnEbitda)} hint={`${rb.addOnPct.toFixed(1)}% of total`} color={rb.addOnEbitda >= 0 ? "text-success" : "text-destructive"} />
+        <MetricCard label="Court Bookings" value={fmt(rb.courtRevenue)} hint={`${rb.totalRevenue > 0 ? ((rb.courtRevenue / rb.totalRevenue) * 100).toFixed(1) : "0.0"}% of revenue`} color="text-primary" />
       </div>
 
       {rb.totalEbitda < 0 && (
@@ -212,9 +212,9 @@ export function RevenueModelTab({
 
       <ModuleCard icon={Lock} title="Core Bookings" subtitle="Read-only base business from courts, occupancy and pricing" enabled alwaysOn>
         <div className="grid gap-4 sm:grid-cols-3">
-          <ReadOnlyMetric label="Monthly Revenue" value={fmt(kpis.courtRevenueMonth)} />
-          <ReadOnlyMetric label="Annual Revenue" value={fmt(rb.courtRevenue)} />
-          <ReadOnlyMetric label="Capacity Used" value={`${rb.bookingHoursPct.toFixed(0)}%`} size="sm" />
+          <ReadOnlyMetric label="Monthly Revenue" value={fmt(kpis.courtRevenueMonth)} color="text-primary" />
+          <ReadOnlyMetric label="Annual Revenue" value={fmt(rb.courtRevenue)} color="text-primary" />
+          <ReadOnlyMetric label="Capacity Used" value={`${rb.bookingHoursPct.toFixed(0)}%`} size="sm" color="text-primary" />
         </div>
         <p className="text-[11px] text-muted-foreground mt-3">
           {inputs.numberOfCourts} courts × {inputs.openingHoursPerDay}h/day × {kpis.weightedOccupancy.toFixed(0)}% avg occ
@@ -225,8 +225,8 @@ export function RevenueModelTab({
         {inputs.coachingEnabled && (
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-4">
-              <ReadOnlyMetric label="Hours / Day" value={`${inputs.coachingHoursPerDay.toFixed(1)} hrs`} />
-              <ReadOnlyMetric label="Revenue" value={fmt(rb.coachingRevenue)} />
+              <ReadOnlyMetric label="Hours / Day" value={`${inputs.coachingHoursPerDay.toFixed(1)} hrs`} color="text-primary" />
+              <ReadOnlyMetric label="Revenue" value={fmt(rb.coachingRevenue)} color="text-primary" />
               <ReadOnlyMetric label="Costs" value={fmt(rb.coachingCost)} color="text-destructive" />
               <ReadOnlyMetric label="Add-on EBITDA" value={fmt(rb.coachingNet)} color={rb.coachingNet >= 0 ? "text-success" : "text-destructive"} />
             </div>
@@ -374,7 +374,7 @@ function ModuleMetrics({
   const fmt = (val: number) => formatCurrency(val, currency);
   return (
     <div className="grid gap-3 sm:grid-cols-3 bg-muted/30 rounded-xl p-4">
-      <ReadOnlyMetric label="Revenue" value={fmt(revenue)} size="sm" />
+      <ReadOnlyMetric label="Revenue" value={fmt(revenue)} size="sm" color="text-primary" />
       <ReadOnlyMetric label="Costs" value={costs > 0 ? `-${fmt(costs)}` : fmt(0)} size="sm" color={costs > 0 ? "text-destructive" : "text-muted-foreground"} />
       <ReadOnlyMetric label="Add-on EBITDA" value={fmt(ebitda)} size="sm" color={ebitda >= 0 ? "text-success" : "text-destructive"} />
     </div>
@@ -421,21 +421,21 @@ function ModuleCard({
   );
 }
 
-function MetricCard({ label, value, hint, color = "text-foreground" }: { label: string; value: string; hint: string; color?: string }) {
+function MetricCard({ label, value, hint, color = "text-primary" }: { label: string; value: string; hint: string; color?: string }) {
   return (
-    <div className="bg-card border rounded-xl p-4">
+    <div className="bg-card border rounded-xl p-5">
       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">{label}</p>
-      <p className={cn("text-lg font-bold tabular-nums", color)}>{value}</p>
+      <p className={cn("text-2xl font-extrabold tabular-nums", color)}>{value}</p>
       <p className="text-[10px] text-muted-foreground mt-1">{hint}</p>
     </div>
   );
 }
 
-function ReadOnlyMetric({ label, value, size = "md", color = "text-foreground" }: { label: string; value: string; size?: "sm" | "md"; color?: string }) {
+function ReadOnlyMetric({ label, value, size = "md", color = "text-primary" }: { label: string; value: string; size?: "sm" | "md"; color?: string }) {
   return (
     <div>
       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-0.5">{label}</p>
-      <p className={cn("font-bold tabular-nums", size === "sm" ? "text-sm" : "text-lg", color)}>{value}</p>
+      <p className={cn("font-extrabold tabular-nums", size === "sm" ? "text-sm" : "text-2xl", color)}>{value}</p>
     </div>
   );
 }
