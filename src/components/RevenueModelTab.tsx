@@ -212,9 +212,9 @@ export function RevenueModelTab({
 
       <ModuleCard icon={Lock} title="Core Bookings" subtitle="Read-only base business from courts, occupancy and pricing" enabled alwaysOn>
         <div className="grid gap-4 sm:grid-cols-3">
-          <ReadOnlyMetric label="Monthly Revenue" value={fmt(kpis.courtRevenueMonth)} />
-          <ReadOnlyMetric label="Annual Revenue" value={fmt(rb.courtRevenue)} />
-          <ReadOnlyMetric label="Capacity Used" value={`${rb.bookingHoursPct.toFixed(0)}%`} size="sm" />
+          <ReadOnlyMetric label="Monthly Revenue" value={fmt(kpis.courtRevenueMonth)} color="text-primary" />
+          <ReadOnlyMetric label="Annual Revenue" value={fmt(rb.courtRevenue)} color="text-primary" />
+          <ReadOnlyMetric label="Capacity Used" value={`${rb.bookingHoursPct.toFixed(0)}%`} size="sm" color="text-primary" />
         </div>
         <p className="text-[11px] text-muted-foreground mt-3">
           {inputs.numberOfCourts} courts × {inputs.openingHoursPerDay}h/day × {kpis.weightedOccupancy.toFixed(0)}% avg occ
@@ -225,8 +225,8 @@ export function RevenueModelTab({
         {inputs.coachingEnabled && (
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-4">
-              <ReadOnlyMetric label="Hours / Day" value={`${inputs.coachingHoursPerDay.toFixed(1)} hrs`} />
-              <ReadOnlyMetric label="Revenue" value={fmt(rb.coachingRevenue)} />
+              <ReadOnlyMetric label="Hours / Day" value={`${inputs.coachingHoursPerDay.toFixed(1)} hrs`} color="text-primary" />
+              <ReadOnlyMetric label="Revenue" value={fmt(rb.coachingRevenue)} color="text-primary" />
               <ReadOnlyMetric label="Costs" value={fmt(rb.coachingCost)} color="text-destructive" />
               <ReadOnlyMetric label="Add-on EBITDA" value={fmt(rb.coachingNet)} color={rb.coachingNet >= 0 ? "text-success" : "text-destructive"} />
             </div>
