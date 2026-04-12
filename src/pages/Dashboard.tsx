@@ -331,21 +331,24 @@ export default function Dashboard() {
                 <TabsContent value="summary" className="mt-0 space-y-6 animate-fade-in">
 
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                    <div className="bg-card border-2 border-foreground/10 rounded-xl p-5">
+                    {/* CAPEX — dato neutro → azul corporativo */}
+                    <div className="bg-card border rounded-xl p-5">
                       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Total CAPEX</p>
-                      <p className="text-2xl font-extrabold tabular-nums">{fmt(kpis.totalInvestment)}</p>
+                      <p className="text-2xl font-extrabold tabular-nums text-primary">{fmt(kpis.totalInvestment)}</p>
                       <p className="text-[10px] text-muted-foreground mt-1">Debt: {fmt(kpis.loanAmount)}</p>
                     </div>
-                    <div className="bg-card border-2 border-foreground/10 rounded-xl p-5">
+                    {/* EBITDA — beneficio/pérdida → verde/rojo */}
+                    <div className="bg-card border rounded-xl p-5">
                       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Year 1 EBITDA</p>
                       <p className={cn("text-2xl font-extrabold tabular-nums", kpis.ebitdaYear >= 0 ? "text-success" : "text-destructive")}>{fmt(kpis.ebitdaYear)}</p>
                       <p className="text-[10px] text-muted-foreground mt-1">{marginVal !== null ? `${marginVal.toFixed(0)}% margin` : "—"}</p>
                     </div>
-                    <div className="bg-card border-2 border-foreground/10 rounded-xl p-5">
+                    {/* Payback — beneficio si bueno, naranja si límite, rojo si malo */}
+                    <div className="bg-card border rounded-xl p-5">
                       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Payback</p>
                       <p className={cn("text-2xl font-extrabold tabular-nums",
                         cumulativePayback !== null && cumulativePayback <= 3 ? "text-success" :
-                        cumulativePayback !== null && cumulativePayback <= 5 ? "text-warning" : "text-foreground"
+                        cumulativePayback !== null && cumulativePayback <= 5 ? "text-warning" : "text-destructive"
                       )}>
                         {cumulativePayback !== null
                           ? cumulativePayback < 1 ? "<1 year" : `${(Math.round(cumulativePayback * 2) / 2).toFixed(1)} yrs`
@@ -353,13 +356,14 @@ export default function Dashboard() {
                       </p>
                       <p className="text-[10px] text-muted-foreground mt-1">Cumulative cash flow</p>
                     </div>
-
-                    <div className="bg-card border rounded-xl p-4">
+                    {/* Revenue — dato neutro → azul corporativo */}
+                    <div className="bg-card border rounded-xl p-5">
                       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Year 1 Revenue</p>
-                      <p className="text-lg font-bold tabular-nums text-muted-foreground">{fmt(kpis.totalRevenueYear)}</p>
+                      <p className="text-2xl font-extrabold tabular-nums text-primary">{fmt(kpis.totalRevenueYear)}</p>
                       <p className="text-[10px] text-muted-foreground mt-1">{fmt(kpis.totalRevenueMonth)}/mo avg</p>
                     </div>
-                    <div className="bg-card border rounded-xl p-4">
+                    {/* Break-even — siempre naranja (umbral/límite) */}
+                    <div className="bg-card border rounded-xl p-5">
                       <div className="flex items-center gap-1">
                         <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Break-even Occ.</p>
                         <Tooltip>
@@ -371,15 +375,19 @@ export default function Dashboard() {
                           </TooltipContent>
                         </Tooltip>
                       </div>
-                      <p className={cn("text-lg font-bold tabular-nums", occAbove ? "text-success" : "text-warning")}>
+                      <p className="text-2xl font-extrabold tabular-nums text-warning">
                         {beValid ? `${beVal.toFixed(0)}%` : "—"}
                       </p>
                       <p className="text-[10px] text-muted-foreground mt-1">Current: {kpis.weightedOccupancy.toFixed(0)}%</p>
                     </div>
-                    <div className="bg-card border rounded-xl p-4">
+                    {/* ROI — beneficio → verde si bueno, naranja si medio, rojo si malo */}
+                    <div className="bg-card border rounded-xl p-5">
                       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">ROI</p>
                       <div className="flex items-baseline gap-2">
-                        <p className={cn("text-lg font-bold tabular-nums", isSafeValid(kpis.roi) && kpis.roi.value! >= 15 ? "text-success" : "text-muted-foreground")}>
+                        <p className={cn("text-2xl font-extrabold tabular-nums",
+                          isSafeValid(kpis.roi) && kpis.roi.value! >= 15 ? "text-success" :
+                          isSafeValid(kpis.roi) && kpis.roi.value! >= 0 ? "text-warning" : "text-destructive"
+                        )}>
                           {isSafeValid(kpis.roi) ? `${kpis.roi.value!.toFixed(0)}%` : "—"}
                         </p>
                         <span className="text-[10px] text-muted-foreground">yr 1</span>
