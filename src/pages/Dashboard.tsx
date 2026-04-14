@@ -36,7 +36,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
-  ResponsiveContainer, Legend,
+  ResponsiveContainer, Legend, ReferenceLine,
 } from "recharts";
 
 const SCENARIOS: { value: Scenario; label: string; color: string }[] = [
@@ -447,6 +447,7 @@ export default function Dashboard() {
                           <Legend iconType="circle" iconSize={8} wrapperStyle={{ paddingTop: 12, fontSize: 12 }} />
                           <Bar dataKey="revenue" name="Revenue" fill="hsl(225 53% 22%)" radius={[4, 4, 0, 0]} />
                           <Bar dataKey="ebitda" name="EBITDA" fill="hsl(152 57% 24%)" radius={[4, 4, 0, 0]} />
+                          <ReferenceLine y={kpis.totalInvestment + kpis.annualCosts} stroke="hsl(353 78% 44%)" strokeDasharray="6 4" strokeWidth={2} label={{ value: `Total Cost: ${fmtFull(kpis.totalInvestment + kpis.annualCosts)}`, position: "top", fontSize: 10, fill: "hsl(353 78% 44%)", fontWeight: 600 }} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
