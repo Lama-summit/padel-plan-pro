@@ -371,7 +371,7 @@ export default function Dashboard() {
                             <Info className="h-3 w-3 text-muted-foreground/60 -mt-1 cursor-help" />
                           </TooltipTrigger>
                           <TooltipContent side="top" className="max-w-[220px] text-[11px] leading-snug">
-                            Occupancy required to recover initial investment (CAPEX) plus first-year operating costs (OPEX)
+                            Minimum occupancy at which revenue covers all operating costs (EBITDA ≥ 0)
                           </TooltipContent>
                         </Tooltip>
                       </div>
