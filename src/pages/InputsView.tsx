@@ -255,9 +255,9 @@ export default function InputsView() {
     const total = investors + founders + reinvest;
 
     const sliders: { key: "distributionInvestorsPct" | "distributionFoundersPct" | "distributionReinvestmentPct"; label: string; value: number; color: string; rangeClass: string; thumbClass: string }[] = [
-      { key: "distributionInvestorsPct", label: "Investors", value: investors, color: "text-success", rangeClass: "[&_[data-radix-slider-range]]:bg-success", thumbClass: "[&_[data-radix-slider-thumb]]:border-success" },
-      { key: "distributionFoundersPct", label: "Founders", value: founders, color: "text-primary", rangeClass: "[&_[data-radix-slider-range]]:bg-primary", thumbClass: "[&_[data-radix-slider-thumb]]:border-primary" },
-      { key: "distributionReinvestmentPct", label: "Reinvestment", value: reinvest, color: "text-warning", rangeClass: "[&_[data-radix-slider-range]]:bg-warning", thumbClass: "[&_[data-radix-slider-thumb]]:border-warning" },
+      { key: "distributionInvestorsPct", label: "Investors", value: investors, color: "text-success", rangeClass: "bg-success", thumbClass: "border-success" },
+      { key: "distributionFoundersPct", label: "Founders", value: founders, color: "text-primary", rangeClass: "bg-primary", thumbClass: "border-primary" },
+      { key: "distributionReinvestmentPct", label: "Reinvestment", value: reinvest, color: "text-warning", rangeClass: "bg-warning", thumbClass: "border-warning" },
     ];
 
     return (
@@ -291,7 +291,9 @@ export default function InputsView() {
                   max={100}
                   step={5}
                   onValueChange={([v]) => handleDistributionChange(s.key, v)}
-                  className={cn("py-1", s.rangeClass, s.thumbClass)}
+                  className="py-1"
+                  rangeClassName={s.rangeClass}
+                  thumbClassName={s.thumbClass}
                 />
               </div>
             ))}
