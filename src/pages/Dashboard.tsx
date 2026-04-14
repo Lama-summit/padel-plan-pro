@@ -36,7 +36,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
-  ResponsiveContainer, Legend, ReferenceLine,
+  ResponsiveContainer, Legend, ReferenceLine, Cell,
 } from "recharts";
 
 const SCENARIOS: { value: Scenario; label: string; color: string }[] = [
@@ -681,55 +681,131 @@ export default function Dashboard() {
 
                 {/* ═══ SENSITIVITY ANALYSIS TAB ═══ */}
                 <TabsContent value="sensitivity" className="mt-0 space-y-6 animate-fade-in">
-                  <div className="grid gap-5 md:grid-cols-2">
+                  {/* ── Scenario Comparison ── */}
+                  {allScenarioKPIs && (
                     <div className="bg-card border rounded-2xl p-6">
                       <div className="flex items-center gap-2 mb-5">
-                        <Zap className="h-4 w-4 text-accent-foreground" />
-                        <span className="text-sm font-semibold">Top Drivers by EBITDA Impact</span>
+                        <BarChart3 className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-semibold">Scenario Comparison</span>
                       </div>
-                      <div className="space-y-4">
-                        {sensitivity.map((s, i) => {
-                          const maxImpact = sensitivity[0]?.ebitdaImpact || 1;
-                          return (
-                            <div key={s.key} className="space-y-1.5">
-                              <div className="flex items-center gap-3">
-                                <span className="text-xs font-bold text-muted-foreground w-5">{i + 1}.</span>
-                                <span className="text-sm flex-1">{s.label}</span>
-                                <span className="text-xs font-semibold tabular-nums text-success">
-                                  {s.ebitdaImpact >= 1000 ? `${sym}${(s.ebitdaImpact / 1000).toFixed(0)}K` : `${sym}${s.ebitdaImpact.toFixed(0)}`}
-                                </span>
-                              </div>
-                              <div className="ml-8 h-1.5 bg-muted rounded-full overflow-hidden">
-                                <div className="h-full bg-accent rounded-full transition-all" style={{ width: `${(s.ebitdaImpact / maxImpact) * 100}%` }} />
-                              </div>
-                            </div>
-                          );
-                        })}
+                      <div className="grid gap-6 md:grid-cols-2">
+                        {/* Occupancy chart */}
+                        <div>
+                          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-3">Weighted Occupancy (%)</p>
+                          <ResponsiveContainer width="100%" height={180}>
+                            <BarChart data={[
+                              { name: "Conservative", value: allScenarioKPIs.pessimistic.weightedOccupancy },
+                              { name: "Realista", value: allScenarioKPIs.base.weightedOccupancy },
+                              { name: "Optimistic", value: allScenarioKPIs.optimistic.weightedOccupancy },
+                            ]} barCategoryGap="25%">
+                              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 91%)" vertical={false} />
+                              <XAxis dataKey="name" tick={{ fontSize: 10, fill: "hsl(220 9% 46%)" }} axisLine={false} tickLine={false} />
+                              <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: "hsl(220 9% 46%)" }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `${v}%`} />
+                              <RechartsTooltip content={({ active, payload }: any) => {
+                                if (!active || !payload?.[0]) return null;
+                                return (
+                                  <div className="bg-card border rounded-lg px-3 py-2 shadow-lg text-xs">
+                                    <p className="font-medium">{payload[0].payload.name}</p>
+                                    <p className="tabular-nums font-semibold">{payload[0].value.toFixed(1)}%</p>
+                                  </div>
+                                );
+                              }} />
+                              <Bar dataKey="value" radius={[4, 4, 0, 0]} label={{ position: "top", fontSize: 10, fontWeight: 700, formatter: (v: number) => `${v.toFixed(0)}%` }}>
+                                <Cell fill="hsl(353 78% 44%)" />
+                                <Cell fill="hsl(225 53% 22%)" />
+                                <Cell fill="hsl(152 57% 24%)" />
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                        {/* EBITDA chart */}
+                        <div>
+                          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-3">Annual EBITDA</p>
+                          <ResponsiveContainer width="100%" height={180}>
+                            <BarChart data={[
+                              { name: "Conservative", value: allScenarioKPIs.pessimistic.ebitdaYear },
+                              { name: "Realista", value: allScenarioKPIs.base.ebitdaYear },
+                              { name: "Optimistic", value: allScenarioKPIs.optimistic.ebitdaYear },
+                            ]} barCategoryGap="25%">
+                              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 91%)" vertical={false} />
+                              <XAxis dataKey="name" tick={{ fontSize: 10, fill: "hsl(220 9% 46%)" }} axisLine={false} tickLine={false} />
+                              <YAxis tick={{ fontSize: 10, fill: "hsl(220 9% 46%)" }} axisLine={false} tickLine={false} tickFormatter={fmtAxis} />
+                              <RechartsTooltip content={({ active, payload }: any) => {
+                                if (!active || !payload?.[0]) return null;
+                                return (
+                                  <div className="bg-card border rounded-lg px-3 py-2 shadow-lg text-xs">
+                                    <p className="font-medium">{payload[0].payload.name}</p>
+                                    <p className="tabular-nums font-semibold">{fmtFull(payload[0].value)}</p>
+                                  </div>
+                                );
+                              }} />
+                              <Bar dataKey="value" radius={[4, 4, 0, 0]} label={{ position: "top", fontSize: 10, fontWeight: 700, formatter: (v: number) => fmtAxis(v) }}>
+                                <Cell fill="hsl(353 78% 44%)" />
+                                <Cell fill="hsl(225 53% 22%)" />
+                                <Cell fill="hsl(152 57% 24%)" />
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
                       </div>
                     </div>
+                  )}
 
-                    <div className="bg-card border rounded-2xl p-6">
-                      <div className="flex items-center gap-2 mb-5">
-                        <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-semibold">Driver Impact Detail</span>
+                  {/* ── EBITDA Variable Impact ── */}
+                  {(() => {
+                    const baseEbitda = allScenarioKPIs?.base.ebitdaYear ?? 0;
+                    const sortedDeltas = Object.values(driverDeltas).sort((a, b) => Math.abs(b.ebitdaImpact) - Math.abs(a.ebitdaImpact));
+                    const maxAbsImpact = sortedDeltas.length > 0 ? Math.abs(sortedDeltas[0].ebitdaImpact) : 1;
+                    return (
+                      <div className="bg-card border rounded-2xl p-6">
+                        <div className="flex items-center gap-2 mb-5">
+                          <Zap className="h-4 w-4 text-accent-foreground" />
+                          <span className="text-sm font-semibold">EBITDA Variable Impact</span>
+                          <span className="text-[10px] text-muted-foreground ml-1">Marginal change per driver</span>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b">
+                                <th className="text-left py-2 text-xs text-muted-foreground font-medium">Variable</th>
+                                <th className="text-left py-2 text-xs text-muted-foreground font-medium">Change</th>
+                                <th className="text-right py-2 text-xs text-muted-foreground font-medium">EBITDA Impact</th>
+                                <th className="text-right py-2 text-xs text-muted-foreground font-medium">% Variation</th>
+                                <th className="text-left py-2 text-xs text-muted-foreground font-medium pl-4 w-[200px]">Sensitivity</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y">
+                              {sortedDeltas.map((d) => {
+                                const pctVar = baseEbitda !== 0 ? (d.ebitdaImpact / baseEbitda) * 100 : 0;
+                                const barWidth = maxAbsImpact > 0 ? (Math.abs(d.ebitdaImpact) / maxAbsImpact) * 100 : 0;
+                                const isPositive = d.ebitdaImpact >= 0;
+                                return (
+                                  <tr key={d.key}>
+                                    <td className="py-2.5 text-xs font-medium">{d.label}</td>
+                                    <td className="py-2.5 text-xs text-muted-foreground">{d.unit}</td>
+                                    <td className={cn("py-2.5 text-xs text-right tabular-nums font-semibold", isPositive ? "text-success" : "text-destructive")}>
+                                      {d.ebitdaImpact >= 0 ? "+" : ""}{fmt(d.ebitdaImpact)}
+                                    </td>
+                                    <td className={cn("py-2.5 text-xs text-right tabular-nums font-semibold", isPositive ? "text-success" : "text-destructive")}>
+                                      {pctVar >= 0 ? "+" : ""}{pctVar.toFixed(1)}%
+                                    </td>
+                                    <td className="py-2.5 pl-4">
+                                      <div className="h-2 bg-muted rounded-full overflow-hidden w-full">
+                                        <div
+                                          className={cn("h-full rounded-full transition-all", isPositive ? "bg-success" : "bg-destructive")}
+                                          style={{ width: `${barWidth}%` }}
+                                        />
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
-                      <div className="space-y-3">
-                        {Object.values(driverDeltas).map((d) => (
-                          <div key={d.key} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
-                            <span className="text-xs text-muted-foreground">{d.label}</span>
-                            <div className="flex items-center gap-3">
-                              <span className={cn("text-xs font-medium tabular-nums", d.annualRevenueImpact > 0 ? "text-success" : d.annualRevenueImpact < 0 ? "text-destructive" : "text-muted-foreground")}>
-                                Rev: {d.annualRevenueImpact >= 0 ? "+" : ""}{fmt(d.annualRevenueImpact)}
-                              </span>
-                              <span className={cn("text-xs font-medium tabular-nums", d.ebitdaImpact > 0 ? "text-success" : d.ebitdaImpact < 0 ? "text-destructive" : "text-muted-foreground")}>
-                                EBITDA: {d.ebitdaImpact >= 0 ? "+" : ""}{fmt(d.ebitdaImpact)}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
+                    );
+                  })()}
 
                   {activeVersion && (
                     <SensitivityMatrix
