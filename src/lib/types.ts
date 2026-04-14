@@ -11,6 +11,20 @@ export interface RevenueLineItem {
   monthlyCost: number;
 }
 
+export interface InvestorEntry {
+  id: string;
+  name: string;
+  investment: number;
+}
+
+export interface TimelinePhase {
+  id: string;
+  phase: string;
+  monthRange: string;
+  description: string;
+  amount: number;
+}
+
 export interface ProjectInputs {
   // Courts & Capacity
   numberOfCourts: number;
@@ -106,6 +120,12 @@ export interface ProjectInputs {
   distributionInvestorsPct: number;
   distributionFoundersPct: number;
   distributionReinvestmentPct: number;
+
+  // Equity Structure
+  investors: InvestorEntry[];
+
+  // Investment Timeline
+  timelinePhases: TimelinePhase[];
 }
 
 export interface ProjectVersion {
@@ -217,6 +237,18 @@ export const DEFAULT_INPUTS: ProjectInputs = {
   distributionInvestorsPct: 40,
   distributionFoundersPct: 30,
   distributionReinvestmentPct: 30,
+
+  // Equity Structure
+  investors: [
+    { id: "inv-lead", name: "Lead Investor", investment: 0 },
+  ],
+
+  // Investment Timeline
+  timelinePhases: [
+    { id: "phase-1", phase: "Planning & Permits", monthRange: "1-2", description: "Permits, design, legal", amount: 0 },
+    { id: "phase-2", phase: "Construction", monthRange: "3-6", description: "Court building & facility", amount: 0 },
+    { id: "phase-3", phase: "Equipment & Setup", monthRange: "7-8", description: "Equipment, furnishing, testing", amount: 0 },
+  ],
 };
 
 export function createRevenueLineItem(
@@ -264,6 +296,22 @@ export function normalizeProjectInputs(raw?: Partial<ProjectInputs> | null): Pro
     eventRevenuePerEvent: Number(source.eventRevenuePerEvent ?? DEFAULT_INPUTS.eventRevenuePerEvent) || 0,
     eventCostPerEvent: Number(source.eventCostPerEvent ?? DEFAULT_INPUTS.eventCostPerEvent) || 0,
     otherRevenueItems: nextOtherRevenueItems,
+    investors: Array.isArray(source.investors) && source.investors.length > 0
+      ? source.investors.map((inv, i) => ({
+          id: inv?.id ?? `inv-${i}`,
+          name: inv?.name?.trim() || (i === 0 ? "Lead Investor" : `Investor ${i}`),
+          investment: Number(inv?.investment ?? 0) || 0,
+        }))
+      : DEFAULT_INPUTS.investors,
+    timelinePhases: Array.isArray(source.timelinePhases) && source.timelinePhases.length > 0
+      ? source.timelinePhases.map((p, i) => ({
+          id: p?.id ?? `phase-${i}`,
+          phase: p?.phase?.trim() || `Phase ${i + 1}`,
+          monthRange: p?.monthRange ?? "",
+          description: p?.description ?? "",
+          amount: Number(p?.amount ?? 0) || 0,
+        }))
+      : DEFAULT_INPUTS.timelinePhases,
   };
 }
 

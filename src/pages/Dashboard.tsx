@@ -9,7 +9,7 @@ import {
   calculate5YearProjection, calculatePaybackCumulative, calculateCumulativeROI, generateHighlights,
   ExportData,
 } from "@/lib/calculations";
-import { Scenario, ProjectInputs, DEFAULT_INPUTS, RevenueLineItem } from "@/lib/types";
+import { Scenario, ProjectInputs, DEFAULT_INPUTS, RevenueLineItem, InvestorEntry, TimelinePhase } from "@/lib/types";
 import { formatCurrency, formatCurrencyAxis, formatCurrencyFull, getCurrencySymbol, CURRENCIES, CURRENCY_OPTIONS, CurrencyCode } from "@/lib/currency";
 import { KPICard } from "@/components/KPICard";
 import { DashboardCharts } from "@/components/DashboardCharts";
@@ -114,7 +114,7 @@ export default function Dashboard() {
     toast.success("Version saved");
   };
 
-  const handleDriverChange = (key: keyof ProjectInputs, value: string | number | boolean | RevenueLineItem[]) => {
+  const handleDriverChange = (key: keyof ProjectInputs, value: string | number | boolean | RevenueLineItem[] | InvestorEntry[] | TimelinePhase[]) => {
     if (isReadOnly) return;
     const BOOL_KEYS: (keyof ProjectInputs)[] = ["coachingEnabled", "tournamentsEnabled", "otherRevenueEnabled"];
     let numVal = Array.isArray(value)
@@ -656,6 +656,26 @@ export default function Dashboard() {
                     kpis={kpis}
                     scenario={scenario}
                     currency={currency}
+                    investors={(() => {
+                      const FOUNDERS_PCT = 25;
+                      const INVESTORS_PCT = 75;
+                      const savedInvestors = activeVersion.inputs.investors;
+                      const othersTotal = savedInvestors.slice(1).reduce((s, inv) => s + inv.investment, 0);
+                      const leadAmount = Math.max(0, kpis.totalInvestment - othersTotal);
+                      const adjusted = savedInvestors.map((inv, i) =>
+                        i === 0 ? { ...inv, investment: leadAmount } : inv
+                      );
+                      return [
+                        { name: "Founders", investment: 0, equityPct: FOUNDERS_PCT },
+                        ...adjusted.map(inv => ({
+                          name: inv.name,
+                          investment: inv.investment,
+                          equityPct: kpis.totalInvestment > 0
+                            ? (inv.investment / kpis.totalInvestment) * INVESTORS_PCT
+                            : 0,
+                        })),
+                      ];
+                    })()}
                   />
                 </TabsContent>
 

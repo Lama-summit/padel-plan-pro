@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback } from "react";
-import { ProjectInputs } from "@/lib/types";
+import { useMemo, useCallback } from "react";
+import { ProjectInputs, InvestorEntry, TimelinePhase } from "@/lib/types";
 import { KPIResult } from "@/lib/calculations";
 import { formatCurrency, getCurrencySymbol } from "@/lib/currency";
 import { Input } from "@/components/ui/input";
@@ -14,20 +14,6 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip,
 } from "recharts";
 
-interface Investor {
-  id: string;
-  name: string;
-  investment: number;
-}
-
-interface TimelinePhase {
-  id: string;
-  phase: string;
-  monthRange: string;
-  description: string;
-  amount: number;
-}
-
 interface InvestmentTabProps {
   inputs: ProjectInputs;
   kpis: KPIResult;
@@ -36,7 +22,7 @@ interface InvestmentTabProps {
     optimistic: KPIResult;
     pessimistic: KPIResult;
   } | null;
-  onInputChange: (key: keyof ProjectInputs, value: string | number) => void;
+  onInputChange: (key: keyof ProjectInputs, value: string | number | InvestorEntry[] | TimelinePhase[]) => void;
   readOnly: boolean;
   currency?: string;
 }
@@ -64,9 +50,7 @@ export function InvestmentTab({ inputs, kpis, onInputChange, readOnly, currency 
   const sym = getCurrencySymbol(currency);
   const totalCapex = kpis.totalInvestment;
 
-  const [investors, setInvestors] = useState<Investor[]>(() => [
-    { id: uid(), name: "Lead Investor", investment: 0 },
-  ]);
+  const investors = inputs.investors;
 
   const investorsWithAdjusted = useMemo(() => {
     const othersTotal = investors.slice(1).reduce((s, inv) => s + inv.investment, 0);
@@ -79,11 +63,7 @@ export function InvestmentTab({ inputs, kpis, onInputChange, readOnly, currency 
   const totalInvestorContribution = investorsWithAdjusted.reduce((s, inv) => s + inv.investment, 0);
   const contributionMatches = Math.abs(totalInvestorContribution - totalCapex) < 1;
 
-  const [phases, setPhases] = useState<TimelinePhase[]>([
-    { id: uid(), phase: "Planning & Permits", monthRange: "1-2", description: "Permits, design, legal", amount: 0 },
-    { id: uid(), phase: "Construction", monthRange: "3-6", description: "Court building & facility", amount: 0 },
-    { id: uid(), phase: "Equipment & Setup", monthRange: "7-8", description: "Equipment, furnishing, testing", amount: 0 },
-  ]);
+  const phases = inputs.timelinePhases;
   const timelineTotal = phases.reduce((s, p) => s + p.amount, 0);
   const timelineMatches = Math.abs(timelineTotal - totalCapex) < 1;
   const timelineHasValues = timelineTotal > 0;
@@ -103,50 +83,52 @@ export function InvestmentTab({ inputs, kpis, onInputChange, readOnly, currency 
   }));
 
   const updateInvestor = useCallback((id: string, field: "name" | "investment", val: string | number) => {
-    setInvestors(prev => prev.map(inv =>
+    const next = investors.map(inv =>
       inv.id === id ? { ...inv, [field]: field === "investment" ? (typeof val === "number" ? val : parseFloat(val) || 0) : val } : inv
-    ));
-  }, []);
+    );
+    onInputChange("investors", next);
+  }, [investors, onInputChange]);
 
   const addInvestor = useCallback(() => {
-    setInvestors(prev => [...prev, { id: uid(), name: `Investor ${prev.length}`, investment: 0 }]);
-  }, []);
+    const next = [...investors, { id: uid(), name: `Investor ${investors.length}`, investment: 0 }];
+    onInputChange("investors", next);
+  }, [investors, onInputChange]);
 
   const removeInvestor = useCallback((id: string) => {
-    setInvestors(prev => {
-      if (prev.length <= 1) return prev;
-      const idx = prev.findIndex(inv => inv.id === id);
-      if (idx === 0) return prev;
-      return prev.filter(inv => inv.id !== id);
-    });
-  }, []);
+    if (investors.length <= 1) return;
+    const idx = investors.findIndex(inv => inv.id === id);
+    if (idx === 0) return;
+    onInputChange("investors", investors.filter(inv => inv.id !== id));
+  }, [investors, onInputChange]);
 
   const updatePhase = useCallback((id: string, field: keyof TimelinePhase, val: string | number) => {
-    setPhases(prev => prev.map(p =>
+    const next = phases.map(p =>
       p.id === id ? { ...p, [field]: field === "amount" ? (typeof val === "number" ? val : parseFloat(val) || 0) : val } : p
-    ));
-  }, []);
+    );
+    onInputChange("timelinePhases", next);
+  }, [phases, onInputChange]);
 
   const addPhase = useCallback(() => {
-    setPhases(prev => [...prev, { id: uid(), phase: "New Phase", monthRange: "", description: "", amount: 0 }]);
-  }, []);
+    const next = [...phases, { id: uid(), phase: "New Phase", monthRange: "", description: "", amount: 0 }];
+    onInputChange("timelinePhases", next);
+  }, [phases, onInputChange]);
 
   const removePhase = useCallback((id: string) => {
-    setPhases(prev => prev.length > 1 ? prev.filter(p => p.id !== id) : prev);
-  }, []);
+    if (phases.length <= 1) return;
+    onInputChange("timelinePhases", phases.filter(p => p.id !== id));
+  }, [phases, onInputChange]);
 
   const autoFillTimeline = useCallback(() => {
-    setPhases(prev => {
-      const count = prev.length;
-      if (count === 0) return prev;
-      const base = Math.floor(totalCapex / count);
-      const remainder = totalCapex - base * count;
-      return prev.map((p, i) => ({
-        ...p,
-        amount: base + (i === 0 ? remainder : 0),
-      }));
-    });
-  }, [totalCapex]);
+    const count = phases.length;
+    if (count === 0) return;
+    const base = Math.floor(totalCapex / count);
+    const remainder = totalCapex - base * count;
+    const next = phases.map((p, i) => ({
+      ...p,
+      amount: base + (i === 0 ? remainder : 0),
+    }));
+    onInputChange("timelinePhases", next);
+  }, [phases, totalCapex, onInputChange]);
 
   const MatchBadge = ({ matches, label }: { matches: boolean; label?: string }) => (
     <span className={cn(
