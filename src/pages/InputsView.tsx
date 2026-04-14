@@ -23,6 +23,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertTriangle,
   ArrowLeft,
   Save,
   Copy,
@@ -169,30 +170,8 @@ export default function InputsView() {
   };
 
   const handleDistributionChange = (key: "distributionInvestorsPct" | "distributionFoundersPct" | "distributionReinvestmentPct", value: number) => {
-    const keys: ("distributionInvestorsPct" | "distributionFoundersPct" | "distributionReinvestmentPct")[] = [
-      "distributionInvestorsPct", "distributionFoundersPct", "distributionReinvestmentPct"
-    ];
-    const otherKeys = keys.filter(k => k !== key);
-    const currentOthersTotal = otherKeys.reduce((sum, k) => sum + (version.inputs[k] ?? 0), 0);
     const newValue = Math.min(100, Math.max(0, value));
-    const remaining = 100 - newValue;
-
-    const patch: Partial<ProjectInputs> = { [key]: newValue };
-    if (currentOthersTotal > 0) {
-      for (const ok of otherKeys) {
-        patch[ok] = Math.round((version.inputs[ok] ?? 0) / currentOthersTotal * remaining);
-      }
-      // Fix rounding
-      const patchTotal = newValue + otherKeys.reduce((s, k) => s + (patch[k] as number), 0);
-      if (patchTotal !== 100) {
-        (patch as any)[otherKeys[0]] += (100 - patchTotal);
-      }
-    } else {
-      patch[otherKeys[0]] = remaining;
-      patch[otherKeys[1]] = 0;
-    }
-
-    updateVersionInputs(project.id, version.id, patch);
+    updateVersionInputs(project.id, version.id, { [key]: newValue });
   };
 
   const handleCurrencyChange = (newCurrency: CurrencyCode) => {
@@ -273,21 +252,31 @@ export default function InputsView() {
     const investors = version.inputs.distributionInvestorsPct ?? 40;
     const founders = version.inputs.distributionFoundersPct ?? 30;
     const reinvest = version.inputs.distributionReinvestmentPct ?? 30;
+    const total = investors + founders + reinvest;
 
-    const sliders: { key: "distributionInvestorsPct" | "distributionFoundersPct" | "distributionReinvestmentPct"; label: string; value: number; color: string; barColor: string }[] = [
-      { key: "distributionInvestorsPct", label: "Investors", value: investors, color: "text-success", barColor: "bg-success" },
-      { key: "distributionFoundersPct", label: "Founders", value: founders, color: "text-primary", barColor: "bg-primary" },
-      { key: "distributionReinvestmentPct", label: "Reinvestment", value: reinvest, color: "text-warning", barColor: "bg-warning" },
+    const sliders: { key: "distributionInvestorsPct" | "distributionFoundersPct" | "distributionReinvestmentPct"; label: string; value: number; color: string; rangeClass: string; thumbClass: string }[] = [
+      { key: "distributionInvestorsPct", label: "Investors", value: investors, color: "text-success", rangeClass: "[&_[data-radix-slider-range]]:bg-success", thumbClass: "[&_[data-radix-slider-thumb]]:border-success" },
+      { key: "distributionFoundersPct", label: "Founders", value: founders, color: "text-primary", rangeClass: "[&_[data-radix-slider-range]]:bg-primary", thumbClass: "[&_[data-radix-slider-thumb]]:border-primary" },
+      { key: "distributionReinvestmentPct", label: "Reinvestment", value: reinvest, color: "text-warning", rangeClass: "[&_[data-radix-slider-range]]:bg-warning", thumbClass: "[&_[data-radix-slider-thumb]]:border-warning" },
     ];
 
     return (
       <div className="space-y-6">
-        <div className="bg-card border rounded-2xl p-7">
+        <div className="bg-card border rounded-2xl p-7 relative">
           <div className="flex items-center gap-3 mb-1">
             <PieChart className="h-5 w-5 text-primary" />
             <h2 className="font-bold text-lg">Distribution Policy</h2>
           </div>
           <p className="text-sm text-muted-foreground mb-6 ml-8">How annual EBITDA is distributed among stakeholders</p>
+
+          {total !== 100 && (
+            <div className="absolute top-6 right-7 flex items-center gap-1.5 bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-1.5">
+              <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
+              <span className="text-xs font-medium text-destructive">
+                Total is {total}% — must equal 100%
+              </span>
+            </div>
+          )}
 
           <div className="space-y-6">
             {sliders.map((s) => (
@@ -302,14 +291,8 @@ export default function InputsView() {
                   max={100}
                   step={5}
                   onValueChange={([v]) => handleDistributionChange(s.key, v)}
-                  className="py-1"
+                  className={cn("py-1", s.rangeClass, s.thumbClass)}
                 />
-                <div className="h-2.5 w-full bg-muted rounded-full overflow-hidden">
-                  <div
-                    className={cn("h-full rounded-full transition-all", s.barColor)}
-                    style={{ width: `${s.value}%` }}
-                  />
-                </div>
               </div>
             ))}
 
@@ -317,9 +300,9 @@ export default function InputsView() {
               <span className="text-sm font-semibold">Total</span>
               <span className={cn(
                 "text-lg font-bold tabular-nums",
-                investors + founders + reinvest === 100 ? "text-success" : "text-destructive"
+                total === 100 ? "text-success" : "text-destructive"
               )}>
-                {investors + founders + reinvest}%
+                {total}%
               </span>
             </div>
           </div>
