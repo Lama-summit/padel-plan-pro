@@ -21,7 +21,7 @@ export function generateExportText(data: ExportData): string {
     `Project:     ${data.projectName}`,
     `Location:    ${data.location}`,
     `Version:     ${data.versionName}`,
-    `Scenario:    ${{ base: "Realista", optimistic: "Optimistic", pessimistic: "Conservative" }[data.scenario]}`,
+    `Scenario:    ${{ base: "Realistic", optimistic: "Optimistic", pessimistic: "Conservative" }[data.scenario]}`,
     `Currency:    ${currency}`,
     `Date:        ${data.date}`,
     ``,

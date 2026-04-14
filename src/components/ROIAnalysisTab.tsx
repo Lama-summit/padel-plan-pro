@@ -190,7 +190,7 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors, currency = "
           <span className="text-[10px] text-muted-foreground">Returns are based on operating cash flow over 5 years</span>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[600px]">
             <thead>
               <tr className="border-b">
                 {["Year", "Revenue", "OPEX", "EBITDA", "Initial Investment", "Net Cash Flow", "Cumulative"].map(h => (
@@ -223,7 +223,7 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors, currency = "
       </div>
 
       <div className="bg-card border rounded-2xl p-6">
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-primary" />
             <h3 className="text-sm font-semibold">Investor Returns (5-Year)</h3>
@@ -231,7 +231,8 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors, currency = "
           <span className="text-[10px] text-muted-foreground">Returns distributed proportionally to equity ownership</span>
         </div>
 
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[650px]">
           <thead>
             <tr className="border-b">
               <th className="text-left py-2 text-xs text-muted-foreground font-medium">Investor</th>
@@ -299,6 +300,7 @@ export function ROIAnalysisTab({ inputs, kpis, scenario, investors, currency = "
             </tr>
           </tfoot>
         </table>
+        </div>
 
         {cumCashFlow5Y < 0 && (
           <div className="flex items-center gap-2 text-warning bg-warning/5 border border-warning/20 rounded-lg px-3 py-2 mt-3">
@@ -334,7 +336,7 @@ function KPIMetric({ icon: Icon, label, value, color, subtitle }: {
         <Icon className="h-4 w-4" />
       </div>
       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">{label}</p>
-      <p className={cn("text-2xl font-extrabold tabular-nums tracking-tight", colorMap[color])}>{value}</p>
+      <p className={cn("text-xl md:text-2xl font-extrabold tabular-nums tracking-tight", colorMap[color])}>{value}</p>
       <p className="text-[10px] text-muted-foreground mt-1">{subtitle}</p>
     </div>
   );

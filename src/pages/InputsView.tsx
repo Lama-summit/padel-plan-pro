@@ -22,6 +22,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -35,6 +36,7 @@ import {
   DollarSign,
   Eye,
   PieChart,
+  SlidersHorizontal,
 } from "lucide-react";
 import { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -119,6 +121,7 @@ export default function InputsView() {
   const navigate = useNavigate();
   const { getProject, updateVersionInputs, duplicateVersion, updateProject } = useStore();
   const [activeCategory, setActiveCategory] = useState<Category>("investment");
+  const [keyDriversOpen, setKeyDriversOpen] = useState(false);
   const [detailedCostsOpen, setDetailedCostsOpen] = useState(false);
 
   const project = getProject(projectId!);
@@ -320,13 +323,13 @@ export default function InputsView() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b bg-card sticky top-0 z-10">
-        <div className="max-w-full mx-auto px-6 py-4 flex items-center gap-4 flex-wrap">
+        <div className="max-w-full mx-auto px-4 md:px-6 py-3 md:py-4 flex items-center gap-3 md:gap-4 flex-wrap">
           <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => navigate(`/project/${project.id}`)}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-bold truncate">{project.name}</h1>
-            <p className="text-sm text-muted-foreground">Editing: {version.name}</p>
+            <h1 className="text-base md:text-lg font-bold truncate">{project.name}</h1>
+            <p className="text-xs md:text-sm text-muted-foreground">Editing: {version.name}</p>
           </div>
           <div className="flex items-center gap-1.5 bg-muted/50 rounded-xl px-2 py-1">
             <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
@@ -347,21 +350,24 @@ export default function InputsView() {
             className="gap-2 rounded-xl"
             onClick={() => duplicateVersion(project.id, version.id)}
           >
-            <Copy className="h-4 w-4" /> Duplicate
+            <Copy className="h-4 w-4" /> <span className="hidden sm:inline">Duplicate</span>
           </Button>
           <Button
             size="sm"
             className="gap-2 rounded-xl"
             onClick={() => navigate(`/project/${project.id}`)}
           >
-            <Save className="h-4 w-4" /> Save & Back
+            <Save className="h-4 w-4" /> <span className="hidden sm:inline">Save & Back</span>
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1.5 rounded-xl lg:hidden" onClick={() => setKeyDriversOpen(true)}>
+            <SlidersHorizontal className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Drivers</span>
           </Button>
         </div>
       </header>
 
       <div className="flex flex-1 overflow-hidden">
         <div className="flex-1 overflow-y-auto">
-          <div className="max-w-5xl mx-auto px-6 py-8 flex gap-8 animate-fade-in">
+          <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-8 flex gap-4 md:gap-8 animate-fade-in">
             <aside className="w-56 flex-shrink-0 hidden lg:block">
               <nav className="space-y-1 sticky top-24">
                 <p className="section-title px-3 mb-3">Categories</p>
@@ -447,9 +453,24 @@ export default function InputsView() {
           inputs={version.inputs}
           onChange={handleChange}
           currency={currency}
-          className="hidden lg:flex lg:flex-col sticky top-0 h-screen"
+          className="hidden lg:flex lg:flex-col w-[300px] sticky top-0 h-screen"
         />
       </div>
+
+      {/* Mobile Key Drivers drawer */}
+      <Sheet open={keyDriversOpen} onOpenChange={setKeyDriversOpen}>
+        <SheetContent side="right" className="w-[320px] sm:w-[380px] p-0 overflow-y-auto">
+          <SheetHeader className="px-5 pt-5 pb-0">
+            <SheetTitle>Key Drivers</SheetTitle>
+          </SheetHeader>
+          <KeyDriversPanel
+            inputs={version.inputs}
+            onChange={handleChange}
+            currency={currency}
+            className="flex flex-col border-0"
+          />
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

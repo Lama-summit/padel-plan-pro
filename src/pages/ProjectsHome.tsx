@@ -74,9 +74,9 @@ export default function ProjectsHome() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
-        <div className="max-w-6xl mx-auto px-6 py-6 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 md:px-6 py-4 md:py-6 flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">PadelSim</h1>
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">PadelSim</h1>
             <p className="text-sm text-muted-foreground mt-0.5">Business Simulation & Planning</p>
           </div>
           <div className="flex items-center gap-2">
@@ -87,7 +87,7 @@ export default function ProjectsHome() {
               <DialogTrigger asChild>
                 <Button className="gap-2 rounded-xl shadow-md shadow-primary/20">
                   <Plus className="h-4 w-4" />
-                  Create Project
+                  <span className="hidden sm:inline">Create Project</span>
                 </Button>
               </DialogTrigger>
               <DialogContent>
@@ -127,7 +127,7 @@ export default function ProjectsHome() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
+      <main className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-8">
         <div className="relative mb-8 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input

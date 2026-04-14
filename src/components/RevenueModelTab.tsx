@@ -291,7 +291,7 @@ export function RevenueModelTab({
           <h3 className="text-sm font-semibold">Total Revenue & EBITDA Summary</h3>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[500px]">
             <thead>
               <tr className="border-b">
                 <th className="text-left py-2 text-xs text-muted-foreground font-medium">Source</th>
@@ -447,7 +447,7 @@ function MetricCard({ label, value, hint, color = "text-primary" }: { label: str
   return (
     <div className="bg-card border rounded-xl p-5">
       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">{label}</p>
-      <p className={cn("text-2xl font-extrabold tabular-nums", color)}>{value}</p>
+      <p className={cn("text-xl md:text-2xl font-extrabold tabular-nums", color)}>{value}</p>
       <p className="text-[10px] text-muted-foreground mt-1">{hint}</p>
     </div>
   );

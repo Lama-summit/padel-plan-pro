@@ -24,13 +24,14 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   ArrowLeft, Plus, Settings, TrendingUp, TrendingDown, PieChart, Target, Clock,
   BarChart3, GitBranch, AlertTriangle, Info, Lightbulb, Zap, Download,
-  Shield, Gauge, Save, CheckCircle, Sparkles, DollarSign,
+  Shield, Gauge, Save, CheckCircle, Sparkles, DollarSign, SlidersHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -40,7 +41,7 @@ import {
 } from "recharts";
 
 const SCENARIOS: { value: Scenario; label: string; color: string }[] = [
-  { value: "base", label: "Realista", color: "data-[active=true]:bg-primary data-[active=true]:text-primary-foreground" },
+  { value: "base", label: "Realistic", color: "data-[active=true]:bg-primary data-[active=true]:text-primary-foreground" },
   { value: "optimistic", label: "Optimistic", color: "data-[active=true]:bg-success data-[active=true]:text-success-foreground" },
   { value: "pessimistic", label: "Conservative", color: "data-[active=true]:bg-warning data-[active=true]:text-warning-foreground" },
 ];
@@ -56,6 +57,7 @@ export default function Dashboard() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState<DashboardTab>("summary");
+  const [keyDriversOpen, setKeyDriversOpen] = useState(false);
 
   const project = getProject(projectId!);
   const activeVersion = useMemo(
@@ -192,7 +194,7 @@ export default function Dashboard() {
     <TooltipProvider>
       <div className="h-screen bg-background flex flex-col overflow-hidden">
         <header className="border-b bg-card flex-shrink-0 z-10">
-          <div className="w-full px-8 pt-4 pb-2">
+          <div className="w-full px-4 md:px-8 pt-4 pb-2">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon" className="rounded-xl h-8 w-8 flex-shrink-0" onClick={() => navigate("/")}>
                 <ArrowLeft className="h-4 w-4" />
@@ -218,9 +220,9 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="w-full px-8 pb-3">
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2.5">
+          <div className="w-full px-4 md:px-8 pb-3">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-6">
+              <div className="flex items-center gap-2 flex-wrap">
                 <div className="flex items-center gap-1.5 bg-muted/50 rounded-xl px-3 py-1.5">
                   <GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
                   <Select value={activeVersion.id} onValueChange={(v) => setActiveVersion(project.id, v)}>
@@ -238,11 +240,11 @@ export default function Dashboard() {
                 <div className="w-px h-6 bg-border" />
 
                 <Button variant="outline" size="sm" className="gap-1.5 rounded-xl text-xs h-8" onClick={handleSave}>
-                  <Save className="h-3.5 w-3.5" /> Save
+                  <Save className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Save</span>
                 </Button>
                 <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button size="sm" className="gap-1.5 rounded-xl text-xs h-8"><Plus className="h-3.5 w-3.5" /> New Version</Button>
+                    <Button size="sm" className="gap-1.5 rounded-xl text-xs h-8"><Plus className="h-3.5 w-3.5" /> <span className="hidden sm:inline">New Version</span></Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader><DialogTitle>New Version</DialogTitle></DialogHeader>
@@ -255,7 +257,7 @@ export default function Dashboard() {
                 </Dialog>
               </div>
 
-              <div className="mx-auto">
+              <div className="order-first md:order-none md:mx-auto">
                 <div className="flex bg-muted rounded-xl p-0.5 gap-0.5">
                   {SCENARIOS.map((s) => (
                     <button key={s.value} data-active={scenario === s.value} onClick={() => setScenario(s.value)}
@@ -266,19 +268,22 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2 ml-auto">
                 <Button variant="outline" size="sm" className="gap-1.5 rounded-xl text-xs h-8" onClick={handleExport}>
-                  <Download className="h-3.5 w-3.5" /> Export
+                  <Download className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Export</span>
                 </Button>
                 <Button variant="outline" size="sm" className="gap-1.5 rounded-xl text-xs h-8" onClick={() => navigate(`/project/${project.id}/inputs`)}>
-                  <Settings className="h-3.5 w-3.5" /> All Inputs
+                  <Settings className="h-3.5 w-3.5" /> <span className="hidden sm:inline">All Inputs</span>
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1.5 rounded-xl text-xs h-8 lg:hidden" onClick={() => setKeyDriversOpen(true)}>
+                  <SlidersHorizontal className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Drivers</span>
                 </Button>
               </div>
             </div>
           </div>
 
-          <div className="bg-muted/40 px-8 pt-2 pb-0 relative">
-            <div className="flex items-end gap-1.5">
+          <div className="bg-muted/40 px-4 md:px-8 pt-2 pb-0 relative">
+            <div className="flex items-end gap-1.5 overflow-x-auto scrollbar-hide">
               {([
                 { value: "summary", label: "Executive Summary" },
                 { value: "investment", label: "Investment" },
@@ -292,7 +297,7 @@ export default function Dashboard() {
                     key={tab.value}
                     onClick={() => setActiveTab(tab.value)}
                     className={cn(
-                      "relative px-5 py-2.5 text-xs font-medium transition-all rounded-t-xl",
+                      "relative px-3 md:px-5 py-2.5 text-xs font-medium transition-all rounded-t-xl whitespace-nowrap flex-shrink-0",
                       isActive
                         ? "bg-background text-foreground shadow-[0_-2px_6px_rgba(0,0,0,0.05)] z-10 -mb-px"
                         : "bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted/90 -mb-px"
@@ -308,14 +313,14 @@ export default function Dashboard() {
         </header>
 
         {isReadOnly && derivedInfo && (
-          <div className="bg-muted/40 border-b px-8 py-2 flex items-center gap-3 text-xs text-muted-foreground flex-shrink-0">
+          <div className="bg-muted/40 border-b px-4 md:px-8 py-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground flex-shrink-0">
             <Info className="h-3.5 w-3.5 flex-shrink-0" />
             <span>
-              Derived from Realista — Occupancy {scenario === "optimistic" ? "+10" : "−10"} pp · Pricing {scenario === "optimistic" ? "+5" : "−5"}% · OPEX {scenario === "optimistic" ? "−5" : "+5"}% · CAPEX {scenario === "optimistic" ? "−5" : "+10"}%
+              Derived from Realistic — Occupancy {scenario === "optimistic" ? "+10" : "−10"} pp · Pricing {scenario === "optimistic" ? "+5" : "−5"}% · OPEX {scenario === "optimistic" ? "−5" : "+5"}% · CAPEX {scenario === "optimistic" ? "−5" : "+10"}%
             </span>
             {scenarioDelta && scenarioDelta.ebitdaPctChange !== null && (
               <Badge variant="outline" className="ml-auto text-[10px] py-0">
-                EBITDA {fmtDelta(scenarioDelta.ebitdaPctChange)} vs Realista
+                EBITDA {fmtDelta(scenarioDelta.ebitdaPctChange)} vs Realistic
               </Badge>
             )}
           </div>
@@ -325,7 +330,7 @@ export default function Dashboard() {
           <main className="flex-1 overflow-y-auto">
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as DashboardTab)} className="flex flex-col flex-1">
 
-              <div className="px-8 py-6 max-w-6xl mx-auto w-full">
+              <div className="px-4 md:px-8 py-4 md:py-6 max-w-6xl mx-auto w-full">
 
                 {/* ═══ EXECUTIVE SUMMARY TAB ═══ */}
                 <TabsContent value="summary" className="mt-0 space-y-6 animate-fade-in">
@@ -334,19 +339,19 @@ export default function Dashboard() {
                     {/* CAPEX — dato neutro → azul corporativo */}
                     <div className="bg-card border rounded-xl p-5">
                       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Total CAPEX</p>
-                      <p className="text-2xl font-extrabold tabular-nums text-primary">{fmt(kpis.totalInvestment)}</p>
+                      <p className="text-xl md:text-2xl font-extrabold tabular-nums text-primary">{fmt(kpis.totalInvestment)}</p>
                       <p className="text-[10px] text-muted-foreground mt-1">Debt: {fmt(kpis.loanAmount)}</p>
                     </div>
                     {/* EBITDA — beneficio/pérdida → verde/rojo */}
                     <div className="bg-card border rounded-xl p-5">
                       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Year 1 EBITDA</p>
-                      <p className={cn("text-2xl font-extrabold tabular-nums", kpis.ebitdaYear >= 0 ? "text-success" : "text-destructive")}>{fmt(kpis.ebitdaYear)}</p>
+                      <p className={cn("text-xl md:text-2xl font-extrabold tabular-nums", kpis.ebitdaYear >= 0 ? "text-success" : "text-destructive")}>{fmt(kpis.ebitdaYear)}</p>
                       <p className="text-[10px] text-muted-foreground mt-1">{marginVal !== null ? `${marginVal.toFixed(0)}% margin` : "—"}</p>
                     </div>
                     {/* Payback — beneficio si bueno, naranja si límite, rojo si malo */}
                     <div className="bg-card border rounded-xl p-5">
                       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Payback</p>
-                      <p className={cn("text-2xl font-extrabold tabular-nums",
+                      <p className={cn("text-xl md:text-2xl font-extrabold tabular-nums",
                         cumulativePayback !== null && cumulativePayback <= 3 ? "text-success" :
                         cumulativePayback !== null && cumulativePayback <= 5 ? "text-warning" : "text-destructive"
                       )}>
@@ -359,7 +364,7 @@ export default function Dashboard() {
                     {/* Revenue — dato neutro → azul corporativo */}
                     <div className="bg-card border rounded-xl p-5">
                       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Year 1 Revenue</p>
-                      <p className="text-2xl font-extrabold tabular-nums text-primary">{fmt(kpis.totalRevenueYear)}</p>
+                      <p className="text-xl md:text-2xl font-extrabold tabular-nums text-primary">{fmt(kpis.totalRevenueYear)}</p>
                       <p className="text-[10px] text-muted-foreground mt-1">{fmt(kpis.totalRevenueMonth)}/mo avg</p>
                     </div>
                     {/* Break-even — siempre naranja (umbral/límite) */}
@@ -375,7 +380,7 @@ export default function Dashboard() {
                           </TooltipContent>
                         </Tooltip>
                       </div>
-                      <p className="text-2xl font-extrabold tabular-nums text-warning">
+                      <p className="text-xl md:text-2xl font-extrabold tabular-nums text-warning">
                         {beValid ? `${beVal.toFixed(0)}%` : "—"}
                       </p>
                       <p className="text-[10px] text-muted-foreground mt-1">Current: {kpis.weightedOccupancy.toFixed(0)}%</p>
@@ -384,7 +389,7 @@ export default function Dashboard() {
                     <div className="bg-card border rounded-xl p-5">
                       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">ROI</p>
                       <div className="flex items-baseline gap-2">
-                        <p className={cn("text-2xl font-extrabold tabular-nums",
+                        <p className={cn("text-xl md:text-2xl font-extrabold tabular-nums",
                           isSafeValid(kpis.roi) && kpis.roi.value! >= 15 ? "text-success" :
                           isSafeValid(kpis.roi) && kpis.roi.value! >= 0 ? "text-warning" : "text-destructive"
                         )}>
@@ -476,7 +481,7 @@ export default function Dashboard() {
                       "border-2 rounded-2xl p-6 relative overflow-hidden",
                       verdictColors[verdict.level]
                     )}>
-                      <div className="flex items-start gap-5">
+                      <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-5">
                         <div className={cn(
                           "h-14 w-14 rounded-xl flex items-center justify-center flex-shrink-0",
                           verdictIconColors[verdict.level]
@@ -494,7 +499,7 @@ export default function Dashboard() {
                           )}>{verdict.label}</p>
                           <p className="text-xs text-muted-foreground leading-relaxed max-w-lg">{verdict.interpretation}</p>
                         </div>
-                        <div className="flex-shrink-0 grid grid-cols-3 gap-4 text-center">
+                        <div className="w-full sm:w-auto grid grid-cols-3 gap-4 text-center">
                           <div>
                             <p className="text-[10px] text-muted-foreground font-medium mb-0.5">Payback</p>
                             <p className="text-sm font-bold tabular-nums">{verdict.metrics.payback}</p>
@@ -530,19 +535,19 @@ export default function Dashboard() {
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                       <div className="bg-muted/30 rounded-xl p-5">
                         <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Equity Invested</p>
-                        <p className="text-2xl font-extrabold tabular-nums text-primary">{fmt(kpis.equityInvested)}</p>
+                        <p className="text-xl md:text-2xl font-extrabold tabular-nums text-primary">{fmt(kpis.equityInvested)}</p>
                         <p className="text-[10px] text-muted-foreground mt-1">{(100 - activeVersion.inputs.debtPercentage).toFixed(0)}% of CAPEX</p>
                       </div>
                       <div className="bg-muted/30 rounded-xl p-5">
                         <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Annual Cash Flow</p>
-                        <p className={cn("text-2xl font-extrabold tabular-nums", kpis.cashFlowToEquity >= 0 ? "text-success" : "text-destructive")}>
+                        <p className={cn("text-xl md:text-2xl font-extrabold tabular-nums", kpis.cashFlowToEquity >= 0 ? "text-success" : "text-destructive")}>
                           {fmt(kpis.cashFlowToEquity)}
                         </p>
                         <p className="text-[10px] text-muted-foreground mt-1">EBITDA − Debt Service</p>
                       </div>
                       <div className="bg-muted/30 rounded-xl p-5">
                         <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">ROI on Equity</p>
-                        <p className={cn("text-2xl font-extrabold tabular-nums",
+                        <p className={cn("text-xl md:text-2xl font-extrabold tabular-nums",
                           isSafeValid(kpis.roiOnEquity) && kpis.roiOnEquity.value! >= 15 ? "text-success" :
                           isSafeValid(kpis.roiOnEquity) && kpis.roiOnEquity.value! >= 0 ? "text-warning" : "text-destructive"
                         )}>
@@ -552,7 +557,7 @@ export default function Dashboard() {
                       </div>
                       <div className="bg-muted/30 rounded-xl p-5">
                         <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Payback (Equity)</p>
-                        <p className={cn("text-2xl font-extrabold tabular-nums",
+                        <p className={cn("text-xl md:text-2xl font-extrabold tabular-nums",
                           isSafeValid(kpis.paybackEquity) && kpis.paybackEquity.value! <= 3 ? "text-success" :
                           isSafeValid(kpis.paybackEquity) && kpis.paybackEquity.value! <= 5 ? "text-warning" : "text-destructive"
                         )}>
@@ -695,7 +700,7 @@ export default function Dashboard() {
                           <ResponsiveContainer width="100%" height={180}>
                             <BarChart data={[
                               { name: "Conservative", value: allScenarioKPIs.pessimistic.weightedOccupancy },
-                              { name: "Realista", value: allScenarioKPIs.base.weightedOccupancy },
+                              { name: "Realistic", value: allScenarioKPIs.base.weightedOccupancy },
                               { name: "Optimistic", value: allScenarioKPIs.optimistic.weightedOccupancy },
                             ]} barCategoryGap="25%">
                               <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 91%)" vertical={false} />
@@ -724,7 +729,7 @@ export default function Dashboard() {
                           <ResponsiveContainer width="100%" height={180}>
                             <BarChart data={[
                               { name: "Conservative", value: allScenarioKPIs.pessimistic.ebitdaYear },
-                              { name: "Realista", value: allScenarioKPIs.base.ebitdaYear },
+                              { name: "Realistic", value: allScenarioKPIs.base.ebitdaYear },
                               { name: "Optimistic", value: allScenarioKPIs.optimistic.ebitdaYear },
                             ]} barCategoryGap="25%">
                               <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 91%)" vertical={false} />
@@ -824,9 +829,25 @@ export default function Dashboard() {
             scenario={scenario} collapsed={panelCollapsed} onToggle={() => setPanelCollapsed((p) => !p)}
             readOnly={isReadOnly}
             currency={currency}
-            className="hidden lg:flex lg:flex-col h-full overflow-y-auto"
+            className="hidden lg:flex lg:flex-col w-[300px] h-full overflow-y-auto"
           />
         </div>
+
+        {/* Mobile Key Drivers drawer */}
+        <Sheet open={keyDriversOpen} onOpenChange={setKeyDriversOpen}>
+          <SheetContent side="right" className="w-[320px] sm:w-[380px] p-0 overflow-y-auto">
+            <SheetHeader className="px-5 pt-5 pb-0">
+              <SheetTitle>Key Drivers</SheetTitle>
+            </SheetHeader>
+            <KeyDriversPanel
+              inputs={activeVersion.inputs} onChange={handleDriverChange} onReset={handleReset}
+              scenario={scenario} collapsed={false} onToggle={() => setKeyDriversOpen(false)}
+              readOnly={isReadOnly}
+              currency={currency}
+              className="flex flex-col border-0"
+            />
+          </SheetContent>
+        </Sheet>
       </div>
     </TooltipProvider>
   );

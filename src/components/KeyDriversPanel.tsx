@@ -67,7 +67,7 @@ export function KeyDriversPanel({
   }
 
   return (
-    <aside className={cn("w-[300px] flex-shrink-0 bg-card border-l overflow-y-auto transition-all duration-300", className)}>
+    <aside className={cn("flex-shrink-0 bg-card border-l overflow-y-auto transition-all duration-300", className)}>
       <div className="p-5 space-y-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -93,7 +93,7 @@ export function KeyDriversPanel({
         {readOnly && (
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/60 border border-border">
             <Info className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-            <p className="text-[11px] text-muted-foreground leading-snug">Derived from Realista scenario</p>
+            <p className="text-[11px] text-muted-foreground leading-snug">Derived from Realistic scenario</p>
           </div>
         )}
 

@@ -153,7 +153,7 @@ export function InvestmentTab({ inputs, kpis, onInputChange, readOnly, currency 
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
-          <div>
+          <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">
@@ -281,6 +281,7 @@ export function InvestmentTab({ inputs, kpis, onInputChange, readOnly, currency 
           <MatchBadge matches={contributionMatches} label={contributionMatches ? "Fully funded" : "Investment mismatch"} />
         </div>
 
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b">
@@ -364,6 +365,7 @@ export function InvestmentTab({ inputs, kpis, onInputChange, readOnly, currency 
             </tr>
           </tfoot>
         </table>
+        </div>
 
         {!contributionMatches && (
           <div className="flex items-center gap-2 text-warning bg-warning/5 border border-warning/20 rounded-lg px-3 py-2 mt-3">
@@ -382,14 +384,14 @@ export function InvestmentTab({ inputs, kpis, onInputChange, readOnly, currency 
 
       {/* INVESTMENT TIMELINE */}
       <div className="bg-card border rounded-2xl p-6">
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-primary" />
             <h3 className="text-sm font-semibold">Investment Timeline</h3>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" className="gap-1.5 text-xs h-8" onClick={autoFillTimeline} disabled={readOnly}>
-              <Wand2 className="h-3.5 w-3.5" /> Auto-fill from CAPEX
+              <Wand2 className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Auto-fill from CAPEX</span><span className="sm:hidden">Auto-fill</span>
             </Button>
             <Button variant="outline" size="sm" className="gap-1.5 rounded-xl text-xs h-8" onClick={addPhase} disabled={readOnly}>
               <Plus className="h-3.5 w-3.5" /> Add Phase
@@ -407,7 +409,8 @@ export function InvestmentTab({ inputs, kpis, onInputChange, readOnly, currency 
           </div>
         )}
 
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[500px]">
           <thead>
             <tr className="border-b">
               <th className="text-left py-2 text-xs text-muted-foreground font-medium">Phase</th>
@@ -454,6 +457,7 @@ export function InvestmentTab({ inputs, kpis, onInputChange, readOnly, currency 
             </tr>
           </tfoot>
         </table>
+        </div>
       </div>
     </div>
   );
