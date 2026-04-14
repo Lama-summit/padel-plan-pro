@@ -574,11 +574,14 @@ export function calculateKPIs(inputs: ProjectInputs, scenario: Scenario): KPIRes
   const paybackRaw = ebitdaYear > 0 ? safeDiv(investment, ebitdaYear) : null;
   const paybackYears = makeSafeMetric(paybackRaw, ebitdaYear > 0);
 
-  // Break-even occupancy: minimum occupancy where EBITDA >= 0
-  // (revenue covers all operating costs). Uses binary search since
-  // costs may have variable components that change with occupancy.
+  // Break-even occupancy: minimum occupancy where Year 1 revenue covers
+  // the full initial investment (CAPEX) plus all operating costs (OPEX).
+  // Since EBITDA = Revenue − OPEX, the condition Revenue ≥ CAPEX + OPEX
+  // simplifies to EBITDA ≥ CAPEX. The target is a fixed number (investment)
+  // so it does not shift when occupancy inputs change.
   const breakEvenOccupancy = (() => {
     if (courts <= 0 || hoursPerDay <= 0) return makeSafeMetric(null, false);
+    const target = investment;
 
     // Compute annual EBITDA at a given UNIFORM occupancy %
     const ebitdaAtOcc = (occPct: number): number => {
@@ -594,12 +597,12 @@ export function calculateKPIs(inputs: ProjectInputs, scenario: Scenario): KPIRes
 
     let lo = 0, hi = 100;
 
-    if (ebitdaAtOcc(100) < 0) return makeSafeMetric(100, true);
-    if (ebitdaAtOcc(0) >= 0) return makeSafeMetric(0, true);
+    if (ebitdaAtOcc(100) < target) return makeSafeMetric(100, true);
+    if (ebitdaAtOcc(0) >= target) return makeSafeMetric(0, true);
 
     for (let i = 0; i < 50; i++) {
       const mid = (lo + hi) / 2;
-      if (ebitdaAtOcc(mid) >= 0) {
+      if (ebitdaAtOcc(mid) >= target) {
         hi = mid;
       } else {
         lo = mid;

@@ -371,7 +371,7 @@ export default function Dashboard() {
                             <Info className="h-3 w-3 text-muted-foreground/60 -mt-1 cursor-help" />
                           </TooltipTrigger>
                           <TooltipContent side="top" className="max-w-[220px] text-[11px] leading-snug">
-                            Minimum occupancy at which revenue covers all operating costs (EBITDA ≥ 0)
+                            Occupancy needed so Year 1 revenue covers the full initial investment plus all operating costs
                           </TooltipContent>
                         </Tooltip>
                       </div>
