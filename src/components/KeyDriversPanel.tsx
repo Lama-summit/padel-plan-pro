@@ -186,11 +186,12 @@ export function KeyDriversPanel({
                 label="Coaching Hours / Day"
                 value={Math.min(inputs.coachingHoursPerDay, maxCoachingHoursPerDay)}
                 min={0}
-                max={Math.max(0, Number(maxCoachingHoursPerDay.toFixed(1)))}
-                step={0.5}
+                max={Math.max(0, Math.floor(maxCoachingHoursPerDay))}
+                step={1}
                 suffix="hrs"
                 onChange={(v) => onChange("coachingHoursPerDay", v)}
                 disabled={readOnly}
+                editable
               />
               <CompactNumber
                 label="Price per Coaching Hour"
@@ -282,19 +283,38 @@ function DriverSection({ icon: Icon, label, hint, children }: {
   );
 }
 
-function CompactSlider({ label, value, min, max, step, suffix, onChange, delta, disabled }: {
+function CompactSlider({ label, value, min, max, step, suffix, onChange, delta, disabled, editable }: {
   label: string; value: number; min: number; max: number; step: number; suffix?: string;
   onChange: (v: number) => void; delta?: { annualRevenueImpact: number; ebitdaImpact: number; paybackImpact: number | null };
-  disabled?: boolean;
+  disabled?: boolean; editable?: boolean;
 }) {
   return (
     <div className={cn("space-y-1.5", disabled && "opacity-60")}>
       <div className="flex items-center justify-between">
         <Label className="text-xs text-muted-foreground">{label}</Label>
-        <span className="text-sm font-bold tabular-nums">
-          {value}
-          {suffix && <span className="text-[10px] text-muted-foreground ml-0.5 font-medium">{suffix}</span>}
-        </span>
+        {editable && !disabled ? (
+          <div className="flex items-center gap-1">
+            <Input
+              type="number"
+              min={min}
+              max={max}
+              step={step}
+              value={value}
+              onChange={(e) => {
+                const raw = parseInt(e.target.value, 10);
+                if (isNaN(raw)) return;
+                onChange(Math.min(max, Math.max(min, raw)));
+              }}
+              className="h-6 w-12 text-sm font-bold tabular-nums text-right px-1.5 rounded-md"
+            />
+            {suffix && <span className="text-[10px] text-muted-foreground font-medium">{suffix}</span>}
+          </div>
+        ) : (
+          <span className="text-sm font-bold tabular-nums">
+            {value}
+            {suffix && <span className="text-[10px] text-muted-foreground ml-0.5 font-medium">{suffix}</span>}
+          </span>
+        )}
       </div>
       <Slider value={[value]} min={min} max={max} step={step} onValueChange={([v]) => !disabled && onChange(v)} disabled={disabled} className="py-0.5" />
       {!disabled && <DeltaIndicator delta={delta} />}
