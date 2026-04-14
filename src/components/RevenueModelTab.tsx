@@ -177,7 +177,7 @@ export function RevenueModelTab({
                   outerRadius={78}
                   strokeWidth={2}
                   stroke="hsl(var(--card))"
-                  labelLine
+                  labelLine={false}
                   label={(props: any) => revenuePieLabel(props, rb.totalRevenue)}
                 >
                   {pieData.map((entry, index) => (
@@ -326,25 +326,47 @@ export function RevenueModelTab({
 
 function revenuePieLabel(props: any, total: number) {
   const { cx, cy, midAngle, innerRadius, outerRadius, percent } = props;
+  const RADIAN = Math.PI / 180;
   const pct = total > 0 ? percent * 100 : 0;
-  if (pct < 7) {
-    const radius = outerRadius + 18;
-    const x = cx + radius * Math.cos(-midAngle * Math.PI / 180);
-    const y = cy + radius * Math.sin(-midAngle * Math.PI / 180);
+  if (pct < 1) return null;
+
+  // Large segments: label inside the donut ring
+  if (pct >= 8) {
+    const radius = innerRadius + (outerRadius - innerRadius) / 2;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
     return (
-      <text x={x} y={y} fill="hsl(220 9% 46%)" textAnchor={x > cx ? "start" : "end"} dominantBaseline="central" fontSize={11} fontWeight={600}>
+      <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={700}>
         {pct.toFixed(0)}%
       </text>
     );
   }
 
-  const radius = innerRadius + (outerRadius - innerRadius) / 2;
-  const x = cx + radius * Math.cos(-midAngle * Math.PI / 180);
-  const y = cy + radius * Math.sin(-midAngle * Math.PI / 180);
+  // Small segments: label outside with elbow connector
+  const cos = Math.cos(-midAngle * RADIAN);
+  const sin = Math.sin(-midAngle * RADIAN);
+
+  const sx = cx + outerRadius * cos;
+  const sy = cy + outerRadius * sin;
+  const mx = cx + (outerRadius + 16) * cos;
+  const my = cy + (outerRadius + 16) * sin;
+  const ex = mx + (cos >= 0 ? 14 : -14);
+  const ey = my;
+  const textAnchor = cos >= 0 ? "start" : "end";
+  const textX = ex + (cos >= 0 ? 4 : -4);
+
   return (
-    <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={700}>
-      {pct.toFixed(0)}%
-    </text>
+    <g>
+      <path
+        d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`}
+        stroke="hsl(220 9% 66%)"
+        fill="none"
+        strokeWidth={1}
+      />
+      <text x={textX} y={ey} fill="hsl(220 9% 46%)" textAnchor={textAnchor} dominantBaseline="central" fontSize={11} fontWeight={600}>
+        {pct.toFixed(0)}%
+      </text>
+    </g>
   );
 }
 

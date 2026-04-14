@@ -773,38 +773,39 @@ export interface SensitivityMatrix {
 
 export function calculateSensitivityMatrix(inputs: ProjectInputs, scenario: Scenario): SensitivityMatrix {
   const occupancyLevels = [10, 20, 30, 40, 50, 60, 70, 80, 90];
+  const priceLevels = [20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120];
 
-  // Build price levels around weighted average of peak/off-peak
-  const basePrice = safe(inputs.peakPrice);
-  const multipliers = [-0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3];
-  const priceLevels = multipliers.map(m => Math.round(basePrice * (1 + m)));
-
-  // Current base occupancy (weighted)
-  const baseOcc = Math.round(
-    safe(inputs.peakOccupancy) * 0.4 + safe(inputs.offPeakOccupancy) * 0.6
+  // Base-case highlight: closest cell to current weighted average price & occupancy
+  const weightedAvgPrice = Math.round(
+    safe(inputs.peakPrice) * PEAK_RATIO + safe(inputs.offPeakPrice) * OFFPEAK_RATIO
   );
+  const weightedAvgOcc = Math.round(
+    safe(inputs.peakOccupancy) * PEAK_RATIO + safe(inputs.offPeakOccupancy) * OFFPEAK_RATIO
+  );
+  const closestOccIdx = occupancyLevels.reduce((bestIdx, level, idx) =>
+    Math.abs(level - weightedAvgOcc) < Math.abs(occupancyLevels[bestIdx] - weightedAvgOcc) ? idx : bestIdx, 0);
+  const closestPriceIdx = priceLevels.reduce((bestIdx, level, idx) =>
+    Math.abs(level - weightedAvgPrice) < Math.abs(priceLevels[bestIdx] - weightedAvgPrice) ? idx : bestIdx, 0);
 
   let minEbitda = Infinity;
   let maxEbitda = -Infinity;
 
-  const cells: SensitivityMatrixCell[][] = occupancyLevels.map(occ => {
-    return priceLevels.map(price => {
-      // Override both peak and off-peak occupancy uniformly
-      // Scale off-peak price proportionally to peak price change
-      const priceRatio = basePrice > 0 ? price / basePrice : 1;
+  const cells: SensitivityMatrixCell[][] = occupancyLevels.map((occ, ri) => {
+    return priceLevels.map((price, ci) => {
+      // Uniform price & occupancy: no peak/off-peak split
       const tweaked: ProjectInputs = {
         ...inputs,
         peakOccupancy: occ,
         offPeakOccupancy: occ,
         peakPrice: price,
-        offPeakPrice: Math.round(safe(inputs.offPeakPrice) * priceRatio),
+        offPeakPrice: price,
       };
       const result = calculateKPIs(tweaked, scenario);
       const ebitda = result.ebitdaYear;
       if (ebitda < minEbitda) minEbitda = ebitda;
       if (ebitda > maxEbitda) maxEbitda = ebitda;
 
-      const isBase = occ === baseOcc && price === basePrice;
+      const isBase = ri === closestOccIdx && ci === closestPriceIdx;
       return { occupancy: occ, price, ebitda, isBase };
     });
   });

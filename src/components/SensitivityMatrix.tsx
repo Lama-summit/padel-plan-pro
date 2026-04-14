@@ -40,7 +40,7 @@ export function SensitivityMatrix({ inputs, scenario, currency }: Props) {
       <div>
         <h3 className="text-sm font-semibold">EBITDA Sensitivity Matrix</h3>
         <p className="text-xs text-muted-foreground mt-1">
-          Annual EBITDA across fixed occupancy and peak-price axes. Capacity changes come from open hours and available courts; base case highlighted.
+          Annual EBITDA for a given average price and occupancy level. Independent of peak/off-peak settings; base case highlighted.
         </p>
       </div>
 
@@ -49,7 +49,7 @@ export function SensitivityMatrix({ inputs, scenario, currency }: Props) {
           <thead>
             <tr>
               <th className="p-2 text-left text-muted-foreground font-medium border-b border-r">
-                <span className="block text-[10px] uppercase tracking-wider">Occ \ Price</span>
+                <span className="block text-[10px] uppercase tracking-wider">Occ \ Avg Price</span>
               </th>
               {matrix.priceLevels.map((price) => (
                 <th

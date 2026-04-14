@@ -116,7 +116,7 @@ export default function Dashboard() {
 
   const handleDriverChange = (key: keyof ProjectInputs, value: string | number | boolean | RevenueLineItem[] | InvestorEntry[] | TimelinePhase[]) => {
     if (isReadOnly) return;
-    const BOOL_KEYS: (keyof ProjectInputs)[] = ["coachingEnabled", "tournamentsEnabled", "otherRevenueEnabled"];
+    const BOOL_KEYS: (keyof ProjectInputs)[] = ["coachingEnabled", "tournamentsEnabled", "eventsEnabled", "otherRevenueEnabled"];
     let numVal = Array.isArray(value)
       ? value
       : BOOL_KEYS.includes(key)
