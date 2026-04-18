@@ -70,11 +70,11 @@ export function RevenueModelTab({
   }, [rb]);
 
   const barData = useMemo(() => ([
-    { name: "Bookings", revenue: rb.courtRevenue, costs: 0, ebitda: rb.courtRevenue },
-    { name: "Coaching", revenue: rb.coachingRevenue, costs: rb.coachingCost, ebitda: rb.coachingNet },
-    { name: "Tournaments", revenue: rb.tournamentsRevenue, costs: rb.tournamentsCost, ebitda: rb.tournamentsNet },
-    { name: "Events", revenue: rb.eventsRevenue, costs: rb.eventsCost, ebitda: rb.eventsNet },
-    { name: "Other", revenue: rb.otherRevenue, costs: rb.otherCost, ebitda: rb.otherNet },
+    { name: "Bookings", revenue: rb.courtRevenue, costs: rb.courtDirectCost + rb.courtAllocatedIndirect, ebitda: rb.courtEbitda },
+    { name: "Coaching", revenue: rb.coachingRevenue, costs: rb.coachingCost + rb.coachingAllocatedIndirect, ebitda: rb.coachingEbitda },
+    { name: "Tournaments", revenue: rb.tournamentsRevenue, costs: rb.tournamentsCost + rb.tournamentsAllocatedIndirect, ebitda: rb.tournamentsEbitda },
+    { name: "Events", revenue: rb.eventsRevenue, costs: rb.eventsCost + rb.eventsAllocatedIndirect, ebitda: rb.eventsEbitda },
+    { name: "Other", revenue: rb.otherRevenue, costs: rb.otherCost + rb.otherAllocatedIndirect, ebitda: rb.otherEbitda },
   ].filter((item) => item.revenue > 0 || item.costs > 0)), [rb]);
 
   const ebitdaMargin = rb.totalRevenue > 0 ? (rb.totalEbitda / rb.totalRevenue) * 100 : 0;
@@ -211,11 +211,12 @@ export function RevenueModelTab({
       </div>
 
       <ModuleCard icon={Lock} title="Core Bookings" subtitle="Read-only base business from courts, occupancy and pricing" enabled alwaysOn>
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-3 mb-3">
           <ReadOnlyMetric label="Monthly Revenue" value={fmt(kpis.courtRevenueMonth)} color="text-primary" />
           <ReadOnlyMetric label="Annual Revenue" value={fmt(rb.courtRevenue)} color="text-primary" />
           <ReadOnlyMetric label="Capacity Used" value={`${rb.bookingHoursPct.toFixed(0)}%`} size="sm" color="text-primary" />
         </div>
+        <ModuleMetrics revenue={rb.courtRevenue} directCost={rb.courtDirectCost} allocatedIndirect={rb.courtAllocatedIndirect} ebitda={rb.courtEbitda} ebitdaMargin={rb.courtEbitdaMargin} currency={currency} />
         <p className="text-[11px] text-muted-foreground mt-3">
           {inputs.numberOfCourts} courts × {inputs.openingHoursPerDay}h/day × {kpis.weightedOccupancy.toFixed(0)}% avg occ
         </p>
@@ -224,13 +225,12 @@ export function RevenueModelTab({
       <ModuleCard icon={GraduationCap} title="Coaching" subtitle="Configured from Key Drivers and summarized here" enabled={inputs.coachingEnabled} onToggle={(value) => onInputChange("coachingEnabled", value)} readOnly={readOnly}>
         {inputs.coachingEnabled && (
           <div className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 mb-3">
               <ReadOnlyMetric label="Hours / Day" value={`${inputs.coachingHoursPerDay.toFixed(1)} hrs`} color="text-primary" />
-              <ReadOnlyMetric label="Revenue" value={fmt(rb.coachingRevenue)} color="text-primary" />
-              <ReadOnlyMetric label="Costs" value={fmt(rb.coachingCost)} color="text-destructive" />
-              <ReadOnlyMetric label="Add-on EBITDA" value={fmt(rb.coachingNet)} color={rb.coachingNet >= 0 ? "text-success" : "text-destructive"} />
+              <ReadOnlyMetric label="Capacity Used" value={`${rb.coachingHoursPct.toFixed(0)}%`} size="sm" color="text-primary" />
             </div>
-            <p className="text-[11px] text-muted-foreground">Use Key Drivers to adjust coaching hours/day, price per hour and coach cost share.</p>
+            <ModuleMetrics revenue={rb.coachingRevenue} directCost={rb.coachingCost} allocatedIndirect={rb.coachingAllocatedIndirect} ebitda={rb.coachingEbitda} ebitdaMargin={rb.coachingEbitdaMargin} currency={currency} />
+            <p className="text-[11px] text-muted-foreground mt-3">Use Key Drivers to adjust coaching hours/day, price per hour and coach cost share.</p>
           </div>
         )}
       </ModuleCard>
@@ -254,7 +254,7 @@ export function RevenueModelTab({
               <Plus className="h-4 w-4" />
               Add revenue line
             </Button>
-            <ModuleMetrics revenue={rb.otherRevenue} costs={rb.otherCost} ebitda={rb.otherNet} currency={currency} />
+            <ModuleMetrics revenue={rb.otherRevenue} directCost={rb.otherCost} allocatedIndirect={rb.otherAllocatedIndirect} ebitda={rb.otherEbitda} ebitdaMargin={rb.otherEbitdaMargin} currency={currency} />
           </div>
         )}
       </ModuleCard>
@@ -267,7 +267,7 @@ export function RevenueModelTab({
               <NumberField label="Revenue / Tournament" value={inputs.tournamentRevenuePerEvent} suffix={sym} onChange={(value) => onInputChange("tournamentRevenuePerEvent", value)} disabled={readOnly} />
               <NumberField label="Cost / Tournament" value={inputs.tournamentCostPerEvent} suffix={sym} onChange={(value) => onInputChange("tournamentCostPerEvent", value)} disabled={readOnly} />
             </div>
-            <ModuleMetrics revenue={rb.tournamentsRevenue} costs={rb.tournamentsCost} ebitda={rb.tournamentsNet} currency={currency} />
+            <ModuleMetrics revenue={rb.tournamentsRevenue} directCost={rb.tournamentsCost} allocatedIndirect={rb.tournamentsAllocatedIndirect} ebitda={rb.tournamentsEbitda} ebitdaMargin={rb.tournamentsEbitdaMargin} currency={currency} />
           </div>
         )}
       </ModuleCard>
@@ -280,7 +280,7 @@ export function RevenueModelTab({
               <NumberField label="Revenue / Event" value={inputs.eventRevenuePerEvent} suffix={sym} onChange={(value) => onInputChange("eventRevenuePerEvent", value)} disabled={readOnly} />
               <NumberField label="Cost / Event" value={inputs.eventCostPerEvent} suffix={sym} onChange={(value) => onInputChange("eventCostPerEvent", value)} disabled={readOnly} />
             </div>
-            <ModuleMetrics revenue={rb.eventsRevenue} costs={rb.eventsCost} ebitda={rb.eventsNet} currency={currency} />
+            <ModuleMetrics revenue={rb.eventsRevenue} directCost={rb.eventsCost} allocatedIndirect={rb.eventsAllocatedIndirect} ebitda={rb.eventsEbitda} ebitdaMargin={rb.eventsEbitdaMargin} currency={currency} />
           </div>
         )}
       </ModuleCard>
@@ -288,33 +288,35 @@ export function RevenueModelTab({
       <div className="bg-card border-2 border-primary/20 rounded-2xl p-6">
         <div className="flex items-center gap-2 mb-4">
           <TrendingUp className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-semibold">Total Revenue & EBITDA Summary</h3>
+          <h3 className="text-sm font-semibold">P&L by Business Line</h3>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[500px]">
+          <table className="w-full text-sm min-w-[700px]">
             <thead>
               <tr className="border-b">
                 <th className="text-left py-2 text-xs text-muted-foreground font-medium">Source</th>
                 <th className="text-right py-2 text-xs text-muted-foreground font-medium">Revenue</th>
-                <th className="text-right py-2 text-xs text-muted-foreground font-medium">Costs</th>
+                <th className="text-right py-2 text-xs text-muted-foreground font-medium">Direct Costs</th>
+                <th className="text-right py-2 text-xs text-muted-foreground font-medium">Indirect (alloc.)</th>
                 <th className="text-right py-2 text-xs text-muted-foreground font-medium">EBITDA</th>
-                <th className="text-right py-2 text-xs text-muted-foreground font-medium">% Rev</th>
+                <th className="text-right py-2 text-xs text-muted-foreground font-medium">Margin</th>
               </tr>
             </thead>
             <tbody className="divide-y">
-              <SummaryRow label="Court Bookings" revenue={rb.courtRevenue} costs={0} ebitda={rb.courtRevenue} total={rb.totalRevenue} currency={currency} />
-              {inputs.coachingEnabled && <SummaryRow label="Coaching" revenue={rb.coachingRevenue} costs={rb.coachingCost} ebitda={rb.coachingNet} total={rb.totalRevenue} currency={currency} highlight />}
-              {inputs.tournamentsEnabled && <SummaryRow label="Tournaments" revenue={rb.tournamentsRevenue} costs={rb.tournamentsCost} ebitda={rb.tournamentsNet} total={rb.totalRevenue} currency={currency} highlight />}
-              {inputs.eventsEnabled && <SummaryRow label="Events" revenue={rb.eventsRevenue} costs={rb.eventsCost} ebitda={rb.eventsNet} total={rb.totalRevenue} currency={currency} highlight />}
-              {inputs.otherRevenueEnabled && <SummaryRow label="Other Revenues" revenue={rb.otherRevenue} costs={rb.otherCost} ebitda={rb.otherNet} total={rb.totalRevenue} currency={currency} highlight />}
+              <SummaryRow label="Court Bookings" revenue={rb.courtRevenue} directCost={rb.courtDirectCost} indirectCost={rb.courtAllocatedIndirect} ebitda={rb.courtEbitda} margin={rb.courtEbitdaMargin} currency={currency} />
+              {inputs.coachingEnabled && <SummaryRow label="Coaching" revenue={rb.coachingRevenue} directCost={rb.coachingCost} indirectCost={rb.coachingAllocatedIndirect} ebitda={rb.coachingEbitda} margin={rb.coachingEbitdaMargin} currency={currency} highlight />}
+              {inputs.tournamentsEnabled && <SummaryRow label="Tournaments" revenue={rb.tournamentsRevenue} directCost={rb.tournamentsCost} indirectCost={rb.tournamentsAllocatedIndirect} ebitda={rb.tournamentsEbitda} margin={rb.tournamentsEbitdaMargin} currency={currency} highlight />}
+              {inputs.eventsEnabled && <SummaryRow label="Events" revenue={rb.eventsRevenue} directCost={rb.eventsCost} indirectCost={rb.eventsAllocatedIndirect} ebitda={rb.eventsEbitda} margin={rb.eventsEbitdaMargin} currency={currency} highlight />}
+              {inputs.otherRevenueEnabled && <SummaryRow label="Other Revenues" revenue={rb.otherRevenue} directCost={rb.otherCost} indirectCost={rb.otherAllocatedIndirect} ebitda={rb.otherEbitda} margin={rb.otherEbitdaMargin} currency={currency} highlight />}
             </tbody>
             <tfoot>
               <tr className="border-t-2">
                 <td className="py-3 text-xs font-bold">Total</td>
                 <td className="py-3 text-xs text-right tabular-nums font-bold">{fmt(rb.totalRevenue)}</td>
-                <td className="py-3 text-xs text-right tabular-nums font-bold text-destructive">-{fmt(rb.coachingCost + rb.tournamentsCost + rb.eventsCost + rb.otherCost)}</td>
-                <td className="py-3 text-xs text-right tabular-nums font-bold text-success">{fmt(rb.courtRevenue + rb.coachingNet + rb.tournamentsNet + rb.eventsNet + rb.otherNet)}</td>
-                <td className="py-3 text-xs text-right tabular-nums font-bold">100%</td>
+                <td className="py-3 text-xs text-right tabular-nums font-bold text-destructive">{rb.totalDirectCosts > 0 ? `-${fmt(rb.totalDirectCosts)}` : "—"}</td>
+                <td className="py-3 text-xs text-right tabular-nums font-bold text-destructive">{rb.totalIndirectCosts > 0 ? `-${fmt(rb.totalIndirectCosts)}` : "—"}</td>
+                <td className={cn("py-3 text-xs text-right tabular-nums font-bold", rb.totalEbitda >= 0 ? "text-success" : "text-destructive")}>{fmt(rb.totalEbitda)}</td>
+                <td className={cn("py-3 text-xs text-right tabular-nums font-bold", rb.totalEbitda >= 0 ? "text-success" : "text-destructive")}>{rb.totalRevenue > 0 ? `${(rb.totalEbitda / rb.totalRevenue * 100).toFixed(1)}%` : "—"}</td>
               </tr>
             </tfoot>
           </table>
@@ -384,21 +386,27 @@ function WarningCard({ title, body }: { title: string; body: string }) {
 
 function ModuleMetrics({
   revenue,
-  costs,
+  directCost,
+  allocatedIndirect,
   ebitda,
+  ebitdaMargin,
   currency,
 }: {
   revenue: number;
-  costs: number;
+  directCost: number;
+  allocatedIndirect: number;
   ebitda: number;
+  ebitdaMargin: number;
   currency: string;
 }) {
   const fmt = (val: number) => formatCurrency(val, currency);
   return (
-    <div className="grid gap-3 sm:grid-cols-3 bg-muted/30 rounded-xl p-4">
+    <div className="grid gap-3 sm:grid-cols-5 bg-muted/30 rounded-xl p-4">
       <ReadOnlyMetric label="Revenue" value={fmt(revenue)} size="sm" color="text-primary" />
-      <ReadOnlyMetric label="Costs" value={costs > 0 ? `-${fmt(costs)}` : fmt(0)} size="sm" color={costs > 0 ? "text-destructive" : "text-muted-foreground"} />
-      <ReadOnlyMetric label="Add-on EBITDA" value={fmt(ebitda)} size="sm" color={ebitda >= 0 ? "text-success" : "text-destructive"} />
+      <ReadOnlyMetric label="Direct Costs" value={directCost > 0 ? `-${fmt(directCost)}` : "—"} size="sm" color={directCost > 0 ? "text-destructive" : "text-muted-foreground"} />
+      <ReadOnlyMetric label="Indirect (alloc.)" value={allocatedIndirect > 0 ? `-${fmt(allocatedIndirect)}` : "—"} size="sm" color={allocatedIndirect > 0 ? "text-destructive" : "text-muted-foreground"} />
+      <ReadOnlyMetric label="EBITDA" value={fmt(ebitda)} size="sm" color={ebitda >= 0 ? "text-success" : "text-destructive"} />
+      <ReadOnlyMetric label="EBITDA Margin" value={`${ebitdaMargin.toFixed(1)}%`} size="sm" color={ebitdaMargin >= 0 ? "text-success" : "text-destructive"} />
     </div>
   );
 }
@@ -483,16 +491,18 @@ function TextField({ label, value, onChange, disabled }: { label: string; value:
   );
 }
 
-function SummaryRow({ label, revenue, costs, ebitda, total, currency, highlight }: { label: string; revenue: number; costs: number; ebitda: number; total: number; currency: string; highlight?: boolean }) {
+function SummaryRow({ label, revenue, directCost, indirectCost, ebitda, margin, currency, highlight }: {
+  label: string; revenue: number; directCost: number; indirectCost: number; ebitda: number; margin: number; currency: string; highlight?: boolean;
+}) {
   const fmt = (val: number) => formatCurrency(val, currency);
-  const pct = total > 0 ? ((revenue / total) * 100).toFixed(1) : "0.0";
   return (
     <tr className={highlight ? "bg-muted/20" : ""}>
       <td className="py-2.5 text-xs font-medium">{label}</td>
       <td className="py-2.5 text-xs text-right tabular-nums">{fmt(revenue)}</td>
-      <td className="py-2.5 text-xs text-right tabular-nums text-destructive">{costs > 0 ? `-${fmt(costs)}` : "—"}</td>
+      <td className="py-2.5 text-xs text-right tabular-nums text-destructive">{directCost > 0 ? `-${fmt(directCost)}` : "—"}</td>
+      <td className="py-2.5 text-xs text-right tabular-nums text-muted-foreground">{indirectCost > 0 ? `-${fmt(indirectCost)}` : "—"}</td>
       <td className={cn("py-2.5 text-xs text-right tabular-nums font-semibold", ebitda >= 0 ? "text-success" : "text-destructive")}>{fmt(ebitda)}</td>
-      <td className="py-2.5 text-xs text-right tabular-nums text-muted-foreground">{pct}%</td>
+      <td className={cn("py-2.5 text-xs text-right tabular-nums font-semibold", margin >= 0 ? "text-success" : "text-destructive")}>{margin.toFixed(1)}%</td>
     </tr>
   );
 }

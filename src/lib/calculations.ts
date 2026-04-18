@@ -73,22 +73,47 @@ function calculateCostBreakdown(inputs: ProjectInputs, totalHoursMonth: number, 
 // ─── KPI result ──────────────────────────────────────────────
 export interface RevenueBreakdown {
   courtRevenue: number;
+  courtDirectCost: number;
+  courtAllocatedIndirect: number;
+  courtEbitda: number;
+  courtEbitdaMargin: number;
+
   coachingRevenue: number;
   coachingCost: number;
   coachingNet: number;
+  coachingAllocatedIndirect: number;
+  coachingEbitda: number;
+  coachingEbitdaMargin: number;
+
   tournamentsRevenue: number;
   tournamentsCost: number;
   tournamentsNet: number;
+  tournamentsAllocatedIndirect: number;
+  tournamentsEbitda: number;
+  tournamentsEbitdaMargin: number;
+
   eventsRevenue: number;
   eventsCost: number;
   eventsNet: number;
+  eventsAllocatedIndirect: number;
+  eventsEbitda: number;
+  eventsEbitdaMargin: number;
+
+  // Legacy aliases
   tournamentRevenue: number;
   tournamentCost: number;
   tournamentNet: number;
+
   otherRevenue: number;
   otherCost: number;
   otherNet: number;
+  otherAllocatedIndirect: number;
+  otherEbitda: number;
+  otherEbitdaMargin: number;
+
   totalRevenue: number;
+  totalDirectCosts: number;
+  totalIndirectCosts: number;
   totalEbitda: number;
   addOnEbitda: number;
   addOnPct: number;
@@ -523,37 +548,93 @@ export function calculateKPIs(inputs: ProjectInputs, scenario: Scenario): KPIRes
 
   const addOnEbitdaMonth = coachingNetMonth + tournamentsNetMonth + eventsNetMonth + otherNetMonth;
 
+  // ─── Court direct costs (variable cost per booked hour) ───
+  const courtDirectCostMonth = safe(normalized.variableCostPerHour) * bookedHoursMonth;
+
+  // ─── Indirect costs (facility-wide) and per-line allocation ───
+  const costBreakdown = calculateCostBreakdown(normalized, totalHoursMonth, bookedHoursMonth);
+  const indirectCostsMonth = costBreakdown.totalCosts * m.costMultiplier;
+
+  // Revenue shares for proportional allocation
+  const courtShare = totalRevenueMonth > 0 ? courtRevenueMonth / totalRevenueMonth : 0;
+  const coachingShare = totalRevenueMonth > 0 ? coachingRevenueMonth / totalRevenueMonth : 0;
+  const tournamentsShare = totalRevenueMonth > 0 ? tournamentsRevenueMonth / totalRevenueMonth : 0;
+  const eventsShare = totalRevenueMonth > 0 ? eventsRevenueMonth / totalRevenueMonth : 0;
+  const otherShare = totalRevenueMonth > 0 ? otherRevenueMonth / totalRevenueMonth : 0;
+
+  // Allocated indirect costs per line (monthly)
+  const courtIndirectMonth = indirectCostsMonth * courtShare;
+  const coachingIndirectMonth = indirectCostsMonth * coachingShare;
+  const tournamentsIndirectMonth = indirectCostsMonth * tournamentsShare;
+  const eventsIndirectMonth = indirectCostsMonth * eventsShare;
+  const otherIndirectMonth = indirectCostsMonth * otherShare;
+
+  // Per-line EBITDA (monthly)
+  const courtEbitdaMonth = courtRevenueMonth - courtDirectCostMonth - courtIndirectMonth;
+  const coachingEbitdaMonth = coachingRevenueMonth - coachingCostMonth - coachingIndirectMonth;
+  const tournamentsEbitdaMonth = tournamentsRevenueMonth - tournamentsCostMonth - tournamentsIndirectMonth;
+  const eventsEbitdaMonth = eventsRevenueMonth - eventsCostMonth - eventsIndirectMonth;
+  const otherEbitdaMonth = otherRevenueMonth - otherCostMonth - otherIndirectMonth;
+
+  // Annualize
+  const Y = MONTHS_PER_YEAR;
+  const courtDirectCostYear = courtDirectCostMonth * Y;
+  const totalDirectCostsYear = (courtDirectCostMonth + coachingCostMonth + tournamentsCostMonth + eventsCostMonth + otherCostMonth) * Y;
+  const totalIndirectCostsYear = indirectCostsMonth * Y;
+
   const revenueBreakdown: RevenueBreakdown = {
-    courtRevenue: courtRevenueMonth * MONTHS_PER_YEAR,
-    coachingRevenue: coachingRevenueMonth * MONTHS_PER_YEAR,
-    coachingCost: coachingCostMonth * MONTHS_PER_YEAR,
-    coachingNet: coachingNetMonth * MONTHS_PER_YEAR,
-    tournamentsRevenue: tournamentsRevenueMonth * MONTHS_PER_YEAR,
-    tournamentsCost: tournamentsCostMonth * MONTHS_PER_YEAR,
-    tournamentsNet: tournamentsNetMonth * MONTHS_PER_YEAR,
-    eventsRevenue: eventsRevenueMonth * MONTHS_PER_YEAR,
-    eventsCost: eventsCostMonth * MONTHS_PER_YEAR,
-    eventsNet: eventsNetMonth * MONTHS_PER_YEAR,
-    tournamentRevenue: tournamentsRevenueMonth * MONTHS_PER_YEAR,
-    tournamentCost: tournamentsCostMonth * MONTHS_PER_YEAR,
-    tournamentNet: tournamentsNetMonth * MONTHS_PER_YEAR,
-    otherRevenue: otherRevenueMonth * MONTHS_PER_YEAR,
-    otherCost: otherCostMonth * MONTHS_PER_YEAR,
-    otherNet: otherNetMonth * MONTHS_PER_YEAR,
+    courtRevenue: courtRevenueMonth * Y,
+    courtDirectCost: courtDirectCostYear,
+    courtAllocatedIndirect: courtIndirectMonth * Y,
+    courtEbitda: courtEbitdaMonth * Y,
+    courtEbitdaMargin: courtRevenueMonth > 0 ? (courtEbitdaMonth / courtRevenueMonth) * 100 : 0,
+
+    coachingRevenue: coachingRevenueMonth * Y,
+    coachingCost: coachingCostMonth * Y,
+    coachingNet: coachingNetMonth * Y,
+    coachingAllocatedIndirect: coachingIndirectMonth * Y,
+    coachingEbitda: coachingEbitdaMonth * Y,
+    coachingEbitdaMargin: coachingRevenueMonth > 0 ? (coachingEbitdaMonth / coachingRevenueMonth) * 100 : 0,
+
+    tournamentsRevenue: tournamentsRevenueMonth * Y,
+    tournamentsCost: tournamentsCostMonth * Y,
+    tournamentsNet: tournamentsNetMonth * Y,
+    tournamentsAllocatedIndirect: tournamentsIndirectMonth * Y,
+    tournamentsEbitda: tournamentsEbitdaMonth * Y,
+    tournamentsEbitdaMargin: tournamentsRevenueMonth > 0 ? (tournamentsEbitdaMonth / tournamentsRevenueMonth) * 100 : 0,
+
+    eventsRevenue: eventsRevenueMonth * Y,
+    eventsCost: eventsCostMonth * Y,
+    eventsNet: eventsNetMonth * Y,
+    eventsAllocatedIndirect: eventsIndirectMonth * Y,
+    eventsEbitda: eventsEbitdaMonth * Y,
+    eventsEbitdaMargin: eventsRevenueMonth > 0 ? (eventsEbitdaMonth / eventsRevenueMonth) * 100 : 0,
+
+    tournamentRevenue: tournamentsRevenueMonth * Y,
+    tournamentCost: tournamentsCostMonth * Y,
+    tournamentNet: tournamentsNetMonth * Y,
+
+    otherRevenue: otherRevenueMonth * Y,
+    otherCost: otherCostMonth * Y,
+    otherNet: otherNetMonth * Y,
+    otherAllocatedIndirect: otherIndirectMonth * Y,
+    otherEbitda: otherEbitdaMonth * Y,
+    otherEbitdaMargin: otherRevenueMonth > 0 ? (otherEbitdaMonth / otherRevenueMonth) * 100 : 0,
+
     totalRevenue: totalRevenueYear,
+    totalDirectCosts: totalDirectCostsYear,
+    totalIndirectCosts: totalIndirectCostsYear,
     totalEbitda: 0,
-    addOnEbitda: addOnEbitdaMonth * MONTHS_PER_YEAR,
+    addOnEbitda: addOnEbitdaMonth * Y,
     addOnPct: 0,
     bookingHoursPct: bookingPct,
     coachingHoursPct,
     capacityWarning,
   };
 
-  const additionalCosts = coachingCostMonth + tournamentsCostMonth + eventsCostMonth + otherCostMonth;
-  const costBreakdown = calculateCostBreakdown(normalized, totalHoursMonth, bookedHoursMonth);
-  const monthlyCosts = (costBreakdown.totalCosts + additionalCosts) * m.costMultiplier;
+  const totalAllCostsMonth = indirectCostsMonth + courtDirectCostMonth + coachingCostMonth + tournamentsCostMonth + eventsCostMonth + otherCostMonth;
 
-  const ebitdaMonth = totalRevenueMonth - monthlyCosts;
+  const ebitdaMonth = totalRevenueMonth - totalAllCostsMonth;
   const ebitdaYear = ebitdaMonth * MONTHS_PER_YEAR;
   const ebitdaMarginRaw = safeDiv(ebitdaMonth, totalRevenueMonth);
   const ebitdaMargin = makeSafeMetric(ebitdaMarginRaw !== null ? ebitdaMarginRaw * 100 : null, totalRevenueMonth > 0);
@@ -591,7 +672,9 @@ export function calculateKPIs(inputs: ProjectInputs, scenario: Scenario): KPIRes
       const totalRevMonth = courtRevMonth + coachingRevenueMonth + tournamentsRevenueMonth + eventsRevenueMonth + otherRevenueMonth;
       const bookedHrs = bookingAvailableHoursMonth * occ;
       const cb = calculateCostBreakdown(normalized, totalHoursMonth, bookedHrs);
-      const monthlyEbitda = totalRevMonth - (cb.totalCosts + additionalCosts) * m.costMultiplier;
+      const directAddon = coachingCostMonth + tournamentsCostMonth + eventsCostMonth + otherCostMonth;
+      const courtDirect = safe(normalized.variableCostPerHour) * bookedHrs;
+      const monthlyEbitda = totalRevMonth - (cb.totalCosts * m.costMultiplier) - directAddon - courtDirect;
       return monthlyEbitda * MONTHS_PER_YEAR;
     };
 
@@ -633,7 +716,7 @@ export function calculateKPIs(inputs: ProjectInputs, scenario: Scenario): KPIRes
     loanAmount: safe(loanAmount),
     annualCourtRevenue: courtRevenueMonth * MONTHS_PER_YEAR,
     annualOtherRevenue: (coachingRevenueMonth + tournamentsRevenueMonth + eventsRevenueMonth + otherRevenueMonth) * MONTHS_PER_YEAR,
-    annualCosts: monthlyCosts * MONTHS_PER_YEAR,
+    annualCosts: totalAllCostsMonth * MONTHS_PER_YEAR,
     costBreakdown,
     revenueBreakdown,
     equityInvested, annualDebtPayment, totalInterestPaid, cashFlowToEquity,
