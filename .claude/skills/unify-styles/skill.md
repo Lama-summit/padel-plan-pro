@@ -1,3 +1,8 @@
+---
+name: unify-styles
+description: Audita y unifica colores, tipografía y estilos de KPIs entre todos los componentes del proyecto
+---
+
 # unify-styles
 
 Audita y unifica estilos visuales entre componentes del proyecto.

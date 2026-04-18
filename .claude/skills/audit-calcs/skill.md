@@ -1,3 +1,8 @@
+---
+name: audit-calcs
+description: Audita cálculos financieros comparando la implementación en código con una fuente de verdad externa (Excel)
+---
+
 # audit-calcs
 
 Audita cálculos financieros comparando la implementación en código con una fuente de verdad externa (Excel del socio).

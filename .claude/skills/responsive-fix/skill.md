@@ -1,3 +1,8 @@
+---
+name: responsive-fix
+description: Audita y corrige problemas de responsive y overflow en componentes para pantallas pequeñas
+---
+
 # responsive-fix
 
 Audita y corrige problemas de responsive en un componente.

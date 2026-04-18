@@ -1,3 +1,8 @@
+---
+name: enhance-chart
+description: Mejora un componente de Recharts con tooltips, reference lines, labels inteligentes y responsive
+---
+
 # enhance-chart
 
 Mejora un componente de Recharts con elementos visuales adicionales.

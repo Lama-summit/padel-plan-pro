@@ -1,3 +1,8 @@
+---
+name: refactor-tab
+description: Refactoriza un tab para centralizar estado en ProjectInputs y eliminar estado local innecesario
+---
+
 # refactor-tab
 
 Refactoriza un tab para centralizar estado en `ProjectInputs` y eliminar estado local innecesario.
