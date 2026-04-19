@@ -657,7 +657,7 @@ export default function Dashboard() {
                     <div className="bg-card border rounded-2xl p-5">
                       <div className="flex items-center gap-2 mb-4">
                         <TrendingUp className="h-4 w-4 text-accent" />
-                        <span className="text-xs font-semibold uppercase tracking-wide">What Drives This Business</span>
+                        <span className="text-xs font-semibold uppercase tracking-wide">Key Drivers</span>
                       </div>
                       <div className="space-y-3">
                         {consolidatedDrivers.map((d, i) => (
@@ -902,7 +902,7 @@ export default function Dashboard() {
         <Sheet open={keyDriversOpen} onOpenChange={setKeyDriversOpen}>
           <SheetContent side="right" className="w-[320px] sm:w-[380px] p-0 overflow-y-auto">
             <SheetHeader className="px-5 pt-5 pb-0">
-              <SheetTitle>Key Drivers</SheetTitle>
+              <SheetTitle>Key Inputs</SheetTitle>
             </SheetHeader>
             <KeyDriversPanel
               inputs={activeVersion.inputs} onChange={handleDriverChange} onReset={handleReset}

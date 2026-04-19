@@ -417,7 +417,7 @@ export default function InputsView() {
                       {categoryFields.map(renderField)}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">All inputs for this category are available in the Key Drivers panel →</p>
+                    <p className="text-sm text-muted-foreground">All inputs for this category are available in the Key Inputs panel →</p>
                   )}
 
                   {/* Detailed Costs sub-dialog inside Operating Costs */}
@@ -460,7 +460,7 @@ export default function InputsView() {
       <Sheet open={keyDriversOpen} onOpenChange={setKeyDriversOpen}>
         <SheetContent side="right" className="w-[320px] sm:w-[380px] p-0 overflow-y-auto">
           <SheetHeader className="px-5 pt-5 pb-0">
-            <SheetTitle>Key Drivers</SheetTitle>
+            <SheetTitle>Key Inputs</SheetTitle>
           </SheetHeader>
           <KeyDriversPanel
             inputs={version.inputs}
