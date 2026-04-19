@@ -58,7 +58,7 @@ export function KeyDriversPanel({
   if (collapsed) {
     return (
       <div className={cn("flex flex-col items-center py-4 gap-3 w-12 bg-card border-l", className)}>
-        <Button variant="ghost" size="icon" className="rounded-xl" onClick={onToggle} title="Open Key Drivers">
+        <Button variant="ghost" size="icon" className="rounded-xl" onClick={onToggle} title="Open Key Inputs">
           <PanelRightOpen className="h-4 w-4" />
         </Button>
         <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
@@ -74,7 +74,7 @@ export function KeyDriversPanel({
             <div className="h-8 w-8 rounded-lg bg-accent/15 flex items-center justify-center">
               <SlidersHorizontal className="h-4 w-4 text-accent-foreground" />
             </div>
-            <h3 className="font-semibold text-sm">Key Drivers</h3>
+            <h3 className="font-semibold text-sm">Key Inputs</h3>
           </div>
           <div className="flex items-center gap-1">
             {onReset && !readOnly && (

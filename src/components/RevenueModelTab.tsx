@@ -222,7 +222,7 @@ export function RevenueModelTab({
         </p>
       </ModuleCard>
 
-      <ModuleCard icon={GraduationCap} title="Coaching" subtitle="Configured from Key Drivers and summarized here" enabled={inputs.coachingEnabled} onToggle={(value) => onInputChange("coachingEnabled", value)} readOnly={readOnly}>
+      <ModuleCard icon={GraduationCap} title="Coaching" subtitle="Configured from Key Inputs and summarized here" enabled={inputs.coachingEnabled} onToggle={(value) => onInputChange("coachingEnabled", value)} readOnly={readOnly}>
         {inputs.coachingEnabled && (
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2 mb-3">
@@ -230,7 +230,7 @@ export function RevenueModelTab({
               <ReadOnlyMetric label="Capacity Used" value={`${rb.coachingHoursPct.toFixed(0)}%`} size="sm" color="text-primary" />
             </div>
             <ModuleMetrics revenue={rb.coachingRevenue} directCost={rb.coachingCost} allocatedIndirect={rb.coachingAllocatedIndirect} ebitda={rb.coachingEbitda} ebitdaMargin={rb.coachingEbitdaMargin} currency={currency} />
-            <p className="text-[11px] text-muted-foreground mt-3">Use Key Drivers to adjust coaching hours/day, price per hour and coach cost share.</p>
+            <p className="text-[11px] text-muted-foreground mt-3">Use Key Inputs to adjust coaching hours/day, price per hour and coach cost share.</p>
           </div>
         )}
       </ModuleCard>
