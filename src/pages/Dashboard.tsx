@@ -23,7 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
@@ -31,7 +31,7 @@ import { Label } from "@/components/ui/label";
 import {
   ArrowLeft, Plus, Settings, TrendingUp, TrendingDown, PieChart, Target, Clock,
   BarChart3, GitBranch, AlertTriangle, Info, Lightbulb, Zap, Download,
-  Shield, Gauge, Save, CheckCircle, Sparkles, DollarSign, SlidersHorizontal,
+  Shield, Gauge, Save, CheckCircle, Sparkles, DollarSign, SlidersHorizontal, Pencil,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -58,6 +58,9 @@ export default function Dashboard() {
   const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState<DashboardTab>("summary");
   const [keyDriversOpen, setKeyDriversOpen] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editLocation, setEditLocation] = useState("");
 
   const project = getProject(projectId!);
   const activeVersion = useMemo(
@@ -199,9 +202,71 @@ export default function Dashboard() {
               <Button variant="ghost" size="icon" className="rounded-xl h-8 w-8 flex-shrink-0" onClick={() => navigate("/")}>
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <div className="min-w-0">
-                <h1 className="text-base font-bold tracking-tight truncate">{project.name}</h1>
-                <p className="text-xs text-muted-foreground">{project.location}</p>
+              <div className="min-w-0 flex items-center gap-2">
+                <div className="min-w-0">
+                  <h1 className="text-base font-bold tracking-tight truncate">{project.name}</h1>
+                  <p className="text-xs text-muted-foreground">{project.location}</p>
+                </div>
+                <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="rounded-xl h-7 w-7 flex-shrink-0"
+                      onClick={() => { setEditName(project.name); setEditLocation(project.location); }}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Edit project details</DialogTitle>
+                      <DialogDescription>Update the name and location of your project.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                      <div>
+                        <Label htmlFor="project-name">Project name</Label>
+                        <Input
+                          id="project-name"
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          className="mt-1.5"
+                          autoFocus
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="project-location">Location</Label>
+                        <Input
+                          id="project-location"
+                          value={editLocation}
+                          onChange={(e) => setEditLocation(e.target.value)}
+                          placeholder="City, Country"
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && editName.trim() && editLocation.trim()) {
+                              updateProject(project.id, { name: editName.trim(), location: editLocation.trim() });
+                              setRenameOpen(false);
+                              toast.success("Project updated");
+                            }
+                          }}
+                          className="mt-1.5"
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setRenameOpen(false)}>Cancel</Button>
+                      <Button
+                        disabled={!editName.trim() || !editLocation.trim()}
+                        onClick={() => {
+                          updateProject(project.id, { name: editName.trim(), location: editLocation.trim() });
+                          setRenameOpen(false);
+                          toast.success("Project updated");
+                        }}
+                      >
+                        Save
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
               {/* Currency selector in header */}
               <div className="ml-auto flex items-center gap-1.5 bg-muted/50 rounded-xl px-2 py-1">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useStore } from "@/lib/store";
 import { ProjectInputs, CostMode, RevenueLineItem } from "@/lib/types";
@@ -230,10 +230,9 @@ export default function InputsView() {
             {field.readonly && (
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             )}
-            <Input
-              type="number"
+            <NumericInput
               value={currentVal}
-              onChange={(e) => handleChange(field.key, e.target.value)}
+              onChange={(v) => handleChange(field.key, v)}
               disabled={field.readonly}
               className={`pr-12 rounded-xl h-11 text-base font-medium ${field.readonly ? 'pl-9 bg-muted border-dashed cursor-not-allowed text-foreground font-bold' : ''}`}
             />
@@ -472,5 +471,20 @@ export default function InputsView() {
         </SheetContent>
       </Sheet>
     </div>
+  );
+}
+
+function NumericInput({ value, onChange, disabled, className }: { value: number; onChange: (v: string) => void; disabled?: boolean; className?: string }) {
+  const [local, setLocal] = useState(String(value));
+  useEffect(() => { setLocal(String(value)); }, [value]);
+  return (
+    <Input
+      type="number"
+      value={local}
+      onChange={(e) => setLocal(e.target.value)}
+      onBlur={() => onChange(local === "" ? "0" : local)}
+      disabled={disabled}
+      className={className}
+    />
   );
 }

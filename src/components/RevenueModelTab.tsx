@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { ProjectInputs, RevenueLineItem, createRevenueLineItem } from "@/lib/types";
 import { KPIResult } from "@/lib/calculations";
 import { formatCurrency, getCurrencySymbol } from "@/lib/currency";
@@ -465,17 +465,21 @@ function ReadOnlyMetric({ label, value, size = "md", color = "text-primary" }: {
   return (
     <div>
       <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-0.5">{label}</p>
-      <p className={cn("font-extrabold tabular-nums", size === "sm" ? "text-sm" : "text-2xl", color)}>{value}</p>
+      <p className={cn("font-extrabold tabular-nums", size === "sm" ? "text-base" : "text-2xl", color)}>{value}</p>
     </div>
   );
 }
 
 function NumberField({ label, value, suffix, onChange, disabled }: { label: string; value: number; suffix?: string; onChange: (value: string) => void; disabled?: boolean }) {
+  const [local, setLocal] = useState(String(value));
+  useEffect(() => { setLocal(String(value)); }, [value]);
   return (
     <div className="space-y-1.5">
       <Label className="text-xs text-muted-foreground">{label}</Label>
       <div className="relative">
-        <Input type="number" value={value} onChange={(event) => onChange(event.target.value)} disabled={disabled} className="h-9 text-sm font-medium rounded-lg pr-12" />
+        <Input type="number" value={local} onChange={(e) => setLocal(e.target.value)}
+          onBlur={() => onChange(local === "" ? "0" : local)}
+          disabled={disabled} className="h-9 text-sm font-medium rounded-lg pr-12" />
         {suffix && <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-medium">{suffix}</span>}
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { ProjectInputs, Scenario, SCENARIO_MULTIPLIERS, DEFAULT_INPUTS } from "@/lib/types";
 import { calculateDriverDeltas, calculateKPIs } from "@/lib/calculations";
 import { getCurrencySymbol } from "@/lib/currency";
@@ -327,11 +327,14 @@ function CompactNumber({ label, value, suffix, onChange, delta, disabled }: {
   delta?: { annualRevenueImpact: number; ebitdaImpact: number; paybackImpact: number | null };
   disabled?: boolean;
 }) {
+  const [local, setLocal] = useState(String(value));
+  useEffect(() => { setLocal(String(value)); }, [value]);
   return (
     <div className={cn("space-y-1.5", disabled && "opacity-60")}>
       <Label className="text-xs text-muted-foreground">{label}</Label>
       <div className="relative">
-        <Input type="number" value={value} onChange={(e) => !disabled && onChange(e.target.value)}
+        <Input type="number" value={local} onChange={(e) => { if (!disabled) setLocal(e.target.value); }}
+          onBlur={() => onChange(local === "" ? "0" : local)}
           className="h-8 text-sm font-medium rounded-lg pr-10" disabled={disabled} />
         {suffix && (
           <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-medium">{suffix}</span>
